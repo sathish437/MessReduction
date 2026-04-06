@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -20,32 +21,25 @@ public class StudentDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long studentId;
-
     @NotBlank
     @Column(nullable = false)
     private String name;
-
     @NotBlank
     @Column(nullable = false,unique = true,length = 12)
     private String registerNo;
-
     @NotBlank
     @Column(nullable = false,unique = true,length = 8)
     private String rollNo;
-
-    @NotBlank
-    @Column(nullable = false,length = 52)
-    private String department;
-
     @NotNull
     @Column(nullable = false)
-    private LocalDate dob;
-
+    private Department department;
+    @NotNull
+    @Column(nullable = false)
+    private Date dob;
     @NotBlank
     @Column(nullable = false,unique = true)
     @Email
     private String emailId;
-
     @NotBlank
     @Column(nullable = false,unique = true,length = 10)
     private String phoneNo;

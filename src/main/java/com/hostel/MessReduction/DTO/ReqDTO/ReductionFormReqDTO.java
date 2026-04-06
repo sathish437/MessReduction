@@ -1,5 +1,7 @@
-package com.hostel.MessReduction.Entity;
+package com.hostel.MessReduction.DTO.ReqDTO;
 
+import com.hostel.MessReduction.Entity.FormStatus;
+import com.hostel.MessReduction.Entity.StudentDetails;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -14,21 +16,13 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-@Entity
-public class ReductionForm {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long formId;
-    @ManyToOne
-    @JoinColumn(name = "student_id",nullable = false)
-    private StudentDetails studentDetails;
+@NoArgsConstructor
+public class ReductionFormReqDTO {
     @NotNull
     @Min(1)
     @Max(4)
     private Integer year;
-    @Column(length = 6,nullable = false)
     @NotNull
     private Long roomNo;
     @NotNull
@@ -37,7 +31,4 @@ public class ReductionForm {
     private LocalDate toDate;
     @NotNull
     private LocalDate presentDate;
-    @NotBlank
-    @Enumerated(EnumType.STRING)
-    private FormStatus currentStatus;
 }

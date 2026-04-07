@@ -12,7 +12,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Time;
 import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -26,9 +28,17 @@ public class ReductionFormReqDTO {
     @NotNull
     private Long roomNo;
     @NotNull
-    private LocalDate fromDate;
+    private Date leaveDate;
     @NotNull
-    private LocalDate toDate;
+    private Time leaveTime;
     @NotNull
-    private LocalDate presentDate;
+    private Date arrivalDate;
+    @NotNull
+    private Time arrivalTime;
+    @NotNull
+    private Date presentDate;
+    @NotNull
+    private Long totalHolidays;
+    @NotBlank
+    private String reason;
 }

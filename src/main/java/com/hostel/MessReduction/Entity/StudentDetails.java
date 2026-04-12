@@ -25,11 +25,12 @@ public class StudentDetails {
     @Column(nullable = false)
     private String name;
     @NotBlank
-    @Column(nullable = false,unique = true,length = 12)
+    @Column(nullable = false,unique = true,length = 14)
     private String registerNo;
     @NotBlank
-    @Column(nullable = false,unique = true,length = 8)
+    @Column(nullable = false,unique = true,length = 10)
     private String rollNo;
+    @Enumerated(EnumType.STRING)
     @NotNull
     @Column(nullable = false)
     private Department department;

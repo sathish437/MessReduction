@@ -13,18 +13,18 @@ public class StudentDetailsMapper {
         studentDetails.setRollNo(studentDetailsReqDTO.getRollNo());
         studentDetails.setDepartment(studentDetailsReqDTO.getDepartment());
         studentDetails.setDob(studentDetailsReqDTO.getDob());
+        studentDetails.setEmailId(studentDetailsReqDTO.getEmailId());
         studentDetails.setDepartment(studentDetailsReqDTO.getDepartment());
         studentDetails.setPhoneNo(studentDetailsReqDTO.getPhoneNo());
 
         return studentDetails;
     }
 
-    public static StudentDetailsResDTO mapToStudentDetailsResDTO(StudentDetails studentDetails,String msg){
+    public static StudentDetailsResDTO mapToStudentDetailsResDTO(StudentDetails studentDetails){
         StudentDetailsResDTO studentDetailsResDTO = new StudentDetailsResDTO();
 
         studentDetailsResDTO.setStudentId(studentDetails.getStudentId());
         studentDetailsResDTO.setEmailId(studentDetails.getEmailId());
-        studentDetailsResDTO.setMessage(msg);
 
         return studentDetailsResDTO;
     }

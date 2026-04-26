@@ -36,7 +36,7 @@ public class StudentDetails {
     private Department department;
     @NotNull
     @Column(nullable = false)
-    private Date dob;
+    private LocalDate dob;
     @NotBlank
     @Column(nullable = false,unique = true)
     @Email

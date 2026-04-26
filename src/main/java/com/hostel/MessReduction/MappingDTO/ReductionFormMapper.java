@@ -5,8 +5,10 @@ import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.StudentDetails;
 
+import java.time.LocalDate;
+
 public class ReductionFormMapper {
-    public static ReductionForm mapToReductionForm(ReductionFormReqDTO reductionFormReqDTO, StudentDetails studentDetails){
+    public static ReductionForm mapToReductionForm(ReductionFormReqDTO reductionFormReqDTO, StudentDetails studentDetails, LocalDate presentDate,Long totalHolidays){
         ReductionForm reductionForm=new ReductionForm();
 
         reductionForm.setStudentDetails(studentDetails);
@@ -16,8 +18,8 @@ public class ReductionFormMapper {
         reductionForm.setLeaveTime(reductionFormReqDTO.getLeaveTime());
         reductionForm.setArrivalDate(reductionFormReqDTO.getArrivalDate());
         reductionForm.setArrivalTime(reductionFormReqDTO.getArrivalTime());
-        reductionForm.setPresentDate(reductionFormReqDTO.getPresentDate());
-        reductionForm.setTotalHolidays(reductionFormReqDTO.getTotalHolidays());
+        reductionForm.setPresentDate(presentDate);
+        reductionForm.setTotalHolidays(totalHolidays);
         reductionForm.setReason(reductionFormReqDTO.getReason());
 
         return reductionForm;

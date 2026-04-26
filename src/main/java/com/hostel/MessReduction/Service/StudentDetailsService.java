@@ -15,11 +15,16 @@ public class StudentDetailsService {
     }
 
     public StudentDetailsResDTO addStudent(StudentDetailsReqDTO dto){
-        if(studentDetailsRepo.existsByEmailId(dto.getEmailId())){
-            throw new IllegalArgumentException("Email already exists");
+        try{
+            if(studentDetailsRepo.existsByEmailId(dto.getEmailId())){
+                throw new IllegalArgumentException("Email already exists");
+            }
+            StudentDetails student= StudentDetailsMapper.mapToStudentDetails(dto);
+            studentDetailsRepo.save(student);
+            return StudentDetailsMapper.mapToStudentDetailsResDTO(student);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e.getMessage());
         }
-        StudentDetails student= StudentDetailsMapper.mapToStudentDetails(dto);
-        studentDetailsRepo.save(student);
-        return StudentDetailsMapper.mapToStudentDetailsResDTO(student);
+
     }
 }

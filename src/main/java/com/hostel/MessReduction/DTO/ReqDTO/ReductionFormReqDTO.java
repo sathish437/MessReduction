@@ -1,8 +1,8 @@
 package com.hostel.MessReduction.DTO.ReqDTO;
 
-import com.hostel.MessReduction.Entity.FormStatus;
-import com.hostel.MessReduction.Entity.StudentDetails;
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Time;
 import java.time.LocalDate;
-import java.util.Date;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -28,17 +27,21 @@ public class ReductionFormReqDTO {
     @NotNull
     private Long roomNo;
     @NotNull
-    private Date leaveDate;
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate leaveDate;
     @NotNull
-    private Time leaveTime;
+    @Schema(type = "string", example = "10:10:10")
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime leaveTime;
     @NotNull
-    private Date arrivalDate;
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate arrivalDate;
     @NotNull
-    private Time arrivalTime;
-    @NotNull
-    private Date presentDate;
-    @NotNull
-    private Long totalHolidays;
+    @Schema(type = "string", example = "10:10:10")
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime arrivalTime;
     @NotBlank
     private String reason;
 }

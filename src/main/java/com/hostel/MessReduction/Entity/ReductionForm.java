@@ -1,5 +1,7 @@
 package com.hostel.MessReduction.Entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,6 +11,7 @@ import lombok.*;
 
 import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.Timer;
 
@@ -32,15 +35,25 @@ public class ReductionForm {
     @NotNull
     private Long roomNo;
     @NotNull
-    private Date leaveDate;
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate leaveDate;
     @NotNull
-    private Time leaveTime;
+    @Schema(type = "string", example = "10:10:10")
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime leaveTime;
     @NotNull
-    private Date arrivalDate;
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate arrivalDate;
     @NotNull
-    private Time arrivalTime;
+    @Schema(type = "string", example = "10:10:10")
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime arrivalTime;
     @NotNull
-    private Date presentDate;
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate presentDate;
     @NotNull
     private Long totalHolidays;
     @NotBlank
@@ -48,4 +61,5 @@ public class ReductionForm {
     @NotNull
     @Enumerated(EnumType.STRING)
     private FormStatus currentStatus;
+
 }

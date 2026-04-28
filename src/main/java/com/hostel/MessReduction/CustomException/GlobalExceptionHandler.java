@@ -26,4 +26,35 @@ public class GlobalExceptionHandler {
     public ResponseEntity<HashMap<String, Object>> handleStatusAlreadyPending(StatusAlreadyPendingException exp) {
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
+    
+    @ExceptionHandler(DateNotValidException.class)
+    public ResponseEntity<HashMap<String, Object>> handleDateNotValid(DateNotValidException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TotalLeaveDateCountException.class)
+    public ResponseEntity<HashMap<String, Object>> handleTotalLeaveDateCount(TotalLeaveDateCountException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UnauthorizedUserException.class)
+    public ResponseEntity<HashMap<String, Object>> handleUnauthorizedUser(UnauthorizedUserException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(ReductionFormNotFoundException.class)
+    public ResponseEntity<HashMap<String, Object>> handleReductionFormNotFound(ReductionFormNotFoundException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidStatusException.class)
+    public ResponseEntity<HashMap<String, Object>> handleInvalidStatus(InvalidStatusException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidActionException.class)
+    public ResponseEntity<HashMap<String, Object>> handleInvalidAction(InvalidActionException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
+    }
+
 }

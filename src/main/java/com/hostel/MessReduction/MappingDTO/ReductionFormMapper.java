@@ -32,6 +32,7 @@ public class ReductionFormMapper {
         reductionFormResDTO.setStudentId(reductionForm.getStudentDetails().getStudentId());
         reductionFormResDTO.setName(reductionForm.getStudentDetails().getName());
         reductionFormResDTO.setYear(reductionForm.getYear());
+        reductionFormResDTO.setDepartment(reductionForm.getStudentDetails().getDepartment());
         reductionFormResDTO.setRoomNo(reductionForm.getRoomNo());
         reductionFormResDTO.setLeaveDate(reductionForm.getLeaveDate());
         reductionFormResDTO.setLeaveTime(reductionForm.getLeaveTime());

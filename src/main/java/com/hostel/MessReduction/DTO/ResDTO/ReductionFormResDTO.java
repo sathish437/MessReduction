@@ -1,6 +1,7 @@
 package com.hostel.MessReduction.DTO.ResDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.hostel.MessReduction.Entity.Department;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -30,6 +31,8 @@ public class ReductionFormResDTO {
     @Max(4)
     private Integer year;
     @NotNull
+    private Department department;
+    @NotNull
     private Long roomNo;
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -53,5 +56,4 @@ public class ReductionFormResDTO {
     private Long totalHolidays;
     @NotBlank
     private String reason;
-
 }

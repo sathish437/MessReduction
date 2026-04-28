@@ -10,4 +10,8 @@ import java.util.List;
 @Repository
 public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     boolean existsByStudentDetailsStudentIdAndCurrentStatusIn(Long id, List<FormStatus> statuses);
+    List<ReductionForm> findByCurrentStatus(FormStatus status);
+    List<ReductionForm> findByCurrentStatusAndYear(FormStatus status,Integer year);
+    Long countByCurrentStatus(FormStatus status);
+    Long countByCurrentStatusAndYear(FormStatus status,Integer year);
 }

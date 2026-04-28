@@ -42,6 +42,6 @@ public class ReductionFormMapper {
         reductionFormResDTO.setTotalHolidays(reductionForm.getTotalHolidays());
         reductionFormResDTO.setReason(reductionForm.getReason());
         return reductionFormResDTO;
-
     }
+
 }

@@ -20,12 +20,16 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
+    private final StaffJwtUtil staffJwtUtil;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final StaffUserDetailsService staffUserDetailsService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/api/auth/") || path.equals("/api/student/reg");
+        return path.startsWith("/api/auth/") || 
+               path.equals("/api/student/reg") ||
+               path.startsWith("/api/staff/login");
     }
 
     @Override
@@ -35,12 +39,42 @@ public class JwtFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             
             if (jwt != null) {
-                String emailId = jwtUtil.extractEmailId(jwt);
+                String username;
+                String role;
+                boolean isStaffToken = false;
                 
-                if (emailId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(emailId);
+                // Try to extract using StaffJwtUtil first (for staff tokens)
+                try {
+                    username = staffJwtUtil.extractUsername(jwt);
+                    role = staffJwtUtil.extractRole(jwt).name();
+                    isStaffToken = true;
+                } catch (Exception e) {
+                    // If staffJwtUtil fails, try JwtUtil (for student tokens)
+                    username = jwtUtil.extractUsername(jwt);
+                    role = jwtUtil.extractRole(jwt);
+                    isStaffToken = false;
+                }
+                
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails;
                     
-                    if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                    // Based on role, use appropriate UserDetailsService
+                    if ("STUDENT".equals(role)) {
+                        userDetails = customUserDetailsService.loadUserByUsername(username);
+                    } else {
+                        // Staff roles: WARDEN, DEPUTY_WARDEN, OFFICE
+                        userDetails = staffUserDetailsService.loadUserByUsername(username);
+                    }
+                    
+                    // Validate token using appropriate util
+                    boolean isValid;
+                    if (isStaffToken) {
+                        isValid = staffJwtUtil.validateToken(jwt, userDetails.getUsername());
+                    } else {
+                        isValid = jwtUtil.validateToken(jwt, userDetails.getUsername());
+                    }
+                    
+                    if (isValid) {
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

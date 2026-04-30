@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -18,7 +19,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
     private final JwtFilter jwtFilter;
 
@@ -33,12 +33,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/student/reg").permitAll()
+                        .requestMatchers("/api/staff/login").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/hostelStaff/staff/warden/**").hasRole("Warden")
+                        .requestMatchers("/api/hostelStaff/staff/deputyWarden/**").hasRole("DeputyWarden")
+                        .requestMatchers("/api/hostelStaff/staff/office/**").hasRole("Office")
+                        .requestMatchers("/api/hostelStaff/staff/dashboard-count").hasAnyRole("Warden", "DeputyWarden", "Office")
+                        .requestMatchers("/api/hostelStaff/staff/deputyWarden/year-count").hasRole("DeputyWarden")
+                        .requestMatchers("/api/hostelStaff/staff/office/year-count").hasRole("Office")
+                        .requestMatchers("/api/**").authenticated()
                 )
-                .userDetailsService(userDetailsService)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -52,13 +58,20 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new PasswordEncoder() {
+            private final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
+
             @Override
             public String encode(CharSequence rawPassword) {
-                return rawPassword.toString();
+                return bcrypt.encode(rawPassword);
             }
 
             @Override
             public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                // Try BCrypt first (for staff passwords)
+                if (encodedPassword.startsWith("$2a$") || encodedPassword.startsWith("$2b$") || encodedPassword.startsWith("$2y$")) {
+                    return bcrypt.matches(rawPassword, encodedPassword);
+                }
+                // For student DOB passwords (plain string comparison)
                 return rawPassword.toString().equals(encodedPassword);
             }
         };

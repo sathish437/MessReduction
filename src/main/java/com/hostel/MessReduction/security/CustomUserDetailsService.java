@@ -4,17 +4,15 @@ import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component("studentUserDetailsService")
 @RequiredArgsConstructor
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService {
 
     private final StudentDetailsRepo studentDetailsRepo;
 
-    @Override
     public UserDetails loadUserByUsername(String emailId) throws UsernameNotFoundException {
         StudentDetails student = studentDetailsRepo.findByEmailId(emailId);
         if (student == null) {

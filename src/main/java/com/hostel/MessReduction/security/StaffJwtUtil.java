@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.security;
 
+import com.hostel.MessReduction.Entity.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -13,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class JwtUtil {
+public class StaffJwtUtil {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -26,11 +27,10 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String emailId, Long studentId) {
+    public String generateToken(String username, Role role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("studentId", studentId);
-        claims.put("role", "STUDENT");
-        return createToken(claims, emailId);
+        claims.put("role", role.name());
+        return createToken(claims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -46,22 +46,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String extractEmailId(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    public String extractRole(String token) {
+    public Role extractRole(String token) {
         Claims claims = extractAllClaims(token);
-        return claims.get("role", String.class);
-    }
-
-    public Long extractStudentId(String token) {
-        Claims claims = extractAllClaims(token);
-        return claims.get("studentId", Long.class);
+        return Role.valueOf(claims.get("role", String.class));
     }
 
     public Date extractExpiration(String token) {
@@ -80,8 +71,8 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public Boolean validateToken(String token, String emailId) {
-        final String extractedEmailId = extractEmailId(token);
-        return (extractedEmailId.equals(emailId) && !isTokenExpired(token));
+    public Boolean validateToken(String token, String username) {
+        final String extractedUsername = extractUsername(token);
+        return (extractedUsername.equals(username) && !isTokenExpired(token));
     }
 }

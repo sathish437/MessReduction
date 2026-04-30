@@ -4,6 +4,7 @@ import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Service.ReductionFormService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,34 +17,40 @@ public class StaffUsersController {
         this.reductionFormService=reductionFormService;
     }
     @GetMapping("/staff/warden")
-    public List<ReductionFormResDTO> warden(@RequestParam String userName){
+    public List<ReductionFormResDTO> warden(Authentication authentication){
+        String userName = authentication.getName();
         return reductionFormService.wardenPendingStatus(userName);
     }
 
     @GetMapping("/staff/deputyWarden")
-    public List<ReductionFormResDTO> deputyWarden(@RequestParam String UserName){
-        return reductionFormService.deputyWardenPendingStatus(UserName);
+    public List<ReductionFormResDTO> deputyWarden(Authentication authentication){
+        String userName = authentication.getName();
+        return reductionFormService.deputyWardenPendingStatus(userName);
     }
 
     @GetMapping("/staff/office")
-    public List<ReductionFormResDTO> office(@RequestParam String UserName){
-        return reductionFormService.officePendingStatus(UserName);
+    public List<ReductionFormResDTO> office(Authentication authentication){
+        String userName = authentication.getName();
+        return reductionFormService.officePendingStatus(userName);
     }
 
     @PatchMapping("/staff/warden/{formId}")
-    public String updateWarden(@PathVariable Long formId,@RequestParam String action,@RequestParam String userName){
+    public String updateWarden(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+        String userName = authentication.getName();
         reductionFormService.updateWardenPendingStatus(formId,action,userName);
         return "Warden status updated successfully";
     }
 
     @PatchMapping("/staff/deputyWarden/{formId}")
-    public String updateDeputyWarden(@PathVariable Long formId,@RequestParam String action,@RequestParam String userName){
+    public String updateDeputyWarden(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+        String userName = authentication.getName();
         reductionFormService.updateDeputyWardenPendingStatus(formId,action,userName);
         return "DeputyWarden status updated successfully";
     }
 
     @PatchMapping("/staff/office/{formId}")
-    public String updateOffice(@PathVariable Long formId,@RequestParam String action,@RequestParam String userName){
+    public String updateOffice(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+        String userName = authentication.getName();
         reductionFormService.updateOfficePendingStatus(formId,action,userName);
         return "Office status updated successfully";
     }
@@ -66,8 +73,8 @@ public class StaffUsersController {
     public String updateWardenBulk(
             @RequestBody List<Long> formIds,
             @RequestParam String action,
-            @RequestParam String userName) {
-
+            Authentication authentication) {
+        String userName = authentication.getName();
         reductionFormService.updateWardenBulkStatus(formIds, action, userName);
         return "Forms updated successfully";
     }
@@ -76,8 +83,8 @@ public class StaffUsersController {
     public String updateDeputyWardenBulk(
             @RequestBody List<Long> formIds,
             @RequestParam String action,
-            @RequestParam String userName) {
-
+            Authentication authentication) {
+        String userName = authentication.getName();
         reductionFormService.updateDeputyWardenPendingBulkStatus(formIds, action, userName);
         return "Forms updated successfully";
     }
@@ -85,8 +92,8 @@ public class StaffUsersController {
     public String updateOfficeBulk(
             @RequestBody List<Long> formIds,
             @RequestParam String action,
-            @RequestParam String userName) {
-
+            Authentication authentication) {
+        String userName = authentication.getName();
         reductionFormService.updateOfficePendingBulkStatus(formIds, action, userName);
         return "Forms updated successfully";
     }

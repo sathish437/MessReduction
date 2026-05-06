@@ -29,7 +29,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path.startsWith("/api/auth/") || 
                path.equals("/api/student/reg") ||
-               path.startsWith("/api/staff/login");
+               path.startsWith("/api/staff/login") ||
+               path.equals("/api/staff/validate");
     }
 
     @Override

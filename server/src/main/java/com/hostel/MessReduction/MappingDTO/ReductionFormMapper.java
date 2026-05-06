@@ -43,5 +43,4 @@ public class ReductionFormMapper {
         reductionFormResDTO.setReason(reductionForm.getReason());
         return reductionFormResDTO;
     }
-
 }

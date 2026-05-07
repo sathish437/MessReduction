@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -26,6 +27,7 @@ public class ReductionForm {
     private Long formId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id",nullable = false)
+    @JsonBackReference
     private StudentDetails studentDetails;
     @NotNull
     @Min(1)

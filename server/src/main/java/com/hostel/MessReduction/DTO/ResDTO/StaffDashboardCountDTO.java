@@ -15,5 +15,7 @@ public class StaffDashboardCountDTO {
     private Long pendingDeputyWarden;
     private Long pendingOffice;
     private Long approved;
-    private Long rejected;
+    private Long rejectedWarden;
+    private Long rejectedDeputyWarden;
+    private Long rejectedOffice;
 }

@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.Entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +12,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -44,4 +46,8 @@ public class StudentDetails {
     @NotBlank
     @Column(nullable = false,unique = true,length = 10)
     private String phoneNo;
+
+    @OneToMany(mappedBy = "studentDetails", fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<ReductionForm> reductionForms;
 }

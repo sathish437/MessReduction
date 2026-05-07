@@ -51,6 +51,15 @@ public class ReductionFormService {
         reductionFormRepo.save(reductionForm);
         return ReductionFormMapper.mapToReductionFormResDTO(reductionForm);
     }
+    public List<ReductionFormResDTO> formDetails(Long studentId) {
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentId(studentId);
+        if (forms.isEmpty()) {
+            throw new ReductionFormNotFoundException("No forms found for this student");
+        }
+        return forms.stream()
+                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .toList();
+    }
 
     public List<ReductionFormResDTO> wardenPendingStatus(String userName){
         Integer year = switch (userName) {
@@ -62,9 +71,6 @@ public class ReductionFormService {
         };
 
         List<ReductionForm> forms=reductionFormRepo.findByCurrentStatusAndYear(FormStatus.PendingWarden,year);
-        if (forms.isEmpty()) {
-            throw new ReductionFormNotFoundException("No pending warden forms found");
-        }
         return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
     }
 
@@ -73,9 +79,6 @@ public class ReductionFormService {
             throw new UnauthorizedUserException("Unauthorized user");
         }
         List<ReductionForm> forms=reductionFormRepo.findByCurrentStatus(FormStatus.PendingDeputyWarden);
-        if (forms.isEmpty()) {
-            throw new ReductionFormNotFoundException("No pending deputyWarden forms found");
-        }
         return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
     }
 
@@ -84,9 +87,6 @@ public class ReductionFormService {
             throw new UnauthorizedUserException("Unauthorized user");
         }
         List<ReductionForm> forms=reductionFormRepo.findByCurrentStatus(FormStatus.PendingOffice);
-        if (forms.isEmpty()) {
-            throw new ReductionFormNotFoundException("No pending office forms found");
-        }
         return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
     }
 
@@ -171,7 +171,29 @@ public class ReductionFormService {
                 reductionFormRepo.countByCurrentStatus(FormStatus.PendingDeputyWarden),
                 reductionFormRepo.countByCurrentStatus(FormStatus.PendingOffice),
                 reductionFormRepo.countByCurrentStatus(FormStatus.Approved),
+                reductionFormRepo.countByCurrentStatus(FormStatus.RejectedWarden),
+                reductionFormRepo.countByCurrentStatus(FormStatus.RejectedDeputyWarden),
                 reductionFormRepo.countByCurrentStatus(FormStatus.RejectedOffice)
+        );
+    }
+
+    public StaffDashboardCountDTO getDashboardCountForWarden(String userName) {
+        Integer year = switch (userName) {
+            case "warden1" -> 1;
+            case "warden2" -> 2;
+            case "warden3" -> 3;
+            case "warden4" -> 4;
+            default -> throw new UnauthorizedUserException("Unauthorized user");
+        };
+
+        return new StaffDashboardCountDTO(
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.Approved, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedDeputyWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedOffice, year)
         );
     }
 

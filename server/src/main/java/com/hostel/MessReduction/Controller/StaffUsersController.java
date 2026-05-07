@@ -17,9 +17,14 @@ public class StaffUsersController {
         this.reductionFormService=reductionFormService;
     }
     @GetMapping("/staff/warden")
-    public List<ReductionFormResDTO> warden(Authentication authentication){
-        String userName = authentication.getName();
-        return reductionFormService.wardenPendingStatus(userName);
+    public List<ReductionFormResDTO> warden(
+            @RequestParam(required = false) String userName,
+            Authentication authentication){
+        // Use provided userName if available, otherwise extract from JWT
+        String effectiveUserName = (userName != null && !userName.isEmpty())
+                ? userName
+                : authentication.getName();
+        return reductionFormService.wardenPendingStatus(effectiveUserName);
     }
 
     @GetMapping("/staff/deputyWarden")
@@ -58,6 +63,16 @@ public class StaffUsersController {
     @GetMapping("/staff/dashboard-count")
     public StaffDashboardCountDTO getDashboardCount() {
         return reductionFormService.getDashboardCount();
+    }
+
+    @GetMapping("/staff/dashboard-count/warden")
+    public StaffDashboardCountDTO getWardenDashboardCount(
+            @RequestParam(required = false) String userName,
+            Authentication authentication) {
+        String effectiveUserName = (userName != null && !userName.isEmpty())
+                ? userName
+                : authentication.getName();
+        return reductionFormService.getDashboardCountForWarden(effectiveUserName);
     }
 
     @GetMapping("/staff/deputyWarden/year-count")

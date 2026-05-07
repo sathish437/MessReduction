@@ -165,9 +165,12 @@ const ROUTE_CONFIG = {
    - Office → /office
 6. Navigate to determined route
 7. ProtectedRoute validates via authService.validateStaff():
-   a. Call GET /api/staff/validate (dedicated auth endpoint)
-   b. Verify role matches route
-   c. For wardens, verify username matches year
+   a. Call GET /api/staff/validate (PROTECTED endpoint)
+   b. JwtFilter validates JWT and populates SecurityContextHolder
+   c. Controller reads authenticated user from SecurityContext
+   d. Returns {valid: true, username, role}
+   e. Verify role matches route
+   f. For wardens, verify username matches year
 8. Render dashboard or redirect
 ```
 
@@ -371,14 +374,12 @@ apiClient.interceptors.response.use(
 |----------|--------|-------------|------|
 | /api/auth/login | POST | Student login | Public |
 | /api/staff/login | POST | Staff login | Public |
-| /api/staff/validate | GET | Validate staff token (NEW) | Public* |
+| /api/staff/validate | GET | Validate staff token | Authenticated |
 | /api/student/reg | POST | Student registration | Public |
 | /api/student-form/StudentForm | GET | Get student forms | Student |
 | /api/student-form/StudentForm | POST | Submit new form | Student |
 | /api/hostelStaff/staff/dashboard-count | GET | Dashboard data | Staff |
 | /api/hostelStaff/staff/final-approve | POST | Final approval | Office |
-
-\* Validates token from Authorization header, returns 401 if invalid
 
 ---
 
@@ -420,7 +421,7 @@ apiClient.interceptors.response.use(
 [Dashboard refreshes data]
 ```
 
-### Authentication State Sync (Clean Flow)
+### Authentication State Sync (Corrected JWT Architecture)
 
 ```
 [StaffLogin]
@@ -434,8 +435,14 @@ apiClient.interceptors.response.use(
 [ProtectedRoute mounts]
     ↓
 [authService.validateStaff()]
-    ↓ GET /api/staff/validate (dedicated auth endpoint)
-[Backend validates JWT, returns {valid, username, role}]
+    ↓ GET /api/staff/validate (PROTECTED endpoint)
+[Request includes Authorization: Bearer <token>]
+    ↓
+[JwtFilter validates JWT]
+[SecurityContextHolder populated with Authentication]
+    ↓
+[Controller reads user from SecurityContext]
+[Returns {valid: true, username, role}]
     ↓
 [ProtectedRoute verifies role/username match]
     ↓
@@ -444,7 +451,11 @@ apiClient.interceptors.response.use(
 [Dashboard business API calls]
 ```
 
-**Key Separation:** Auth validation uses `/api/staff/validate` only. Dashboard data loading happens inside dashboard components after auth succeeds.
+**Key Architecture Points:**
+- `/api/staff/validate` is now a **protected endpoint** (not permitAll)
+- `JwtFilter` validates the JWT and populates `SecurityContextHolder`
+- Controller reads authenticated user from `SecurityContext` (not manual header parsing)
+- This follows correct Spring Security JWT patterns
 
 ---
 
@@ -502,7 +513,71 @@ deleteCookie(name)
 
 ---
 
-## Security Considerations
+## Security Architecture
+
+### JWT Authentication Flow (Corrected Implementation)
+
+The authentication system follows proper Spring Security JWT patterns:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  LOGIN FLOW                                                      │
+│  ─────────                                                       │
+│  1. StaffLogin → POST /api/staff/login                           │
+│  2. StaffAuthService.authenticate()                              │
+│  3. StaffJwtUtil.generateToken() → Returns JWT                   │
+│  4. Frontend stores token in cookies                             │
+│  5. Navigate to protected route                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  VALIDATION FLOW (Protected Endpoint)                              │
+│  ─────────────────────                                            │
+│  1. ProtectedRoute → validateStaff()                             │
+│  2. apiClient.get('/api/staff/validate')                       │
+│     ├── Request interceptor adds Authorization: Bearer <token> │
+│     └── Cookie read for token                                  │
+│  3. JwtFilter.doFilterInternal()                               │
+│     ├── Extracts JWT from Authorization header                 │
+│     ├── Validates token with StaffJwtUtil                        │
+│     ├── Loads user details via StaffUserDetailsService         │
+│     └── Populates SecurityContextHolder                        │
+│  4. StaffAuthController.validateToken()                        │
+│     ├── Reads Authentication from SecurityContextHolder          │
+│     ├── Extracts username and role from principal                │
+│     └── Returns {valid: true, username, role}                    │
+│  5. ProtectedRoute verifies role matches route requirements      │
+│  6. Dashboard renders                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Security Fixes Applied
+
+**Previous Architecture (Incorrect)**:
+- `/api/staff/validate` was `permitAll()` - unauthenticated access
+- `JwtFilter.shouldNotFilter()` skipped validate endpoint
+- Controller manually parsed JWT from header
+- No SecurityContextHolder population
+- Result: Empty SecurityContext, 401 responses, redirect loops
+
+**Corrected Architecture**:
+- `/api/staff/validate` requires authentication
+- `JwtFilter` processes ALL protected endpoints including validate
+- JwtFilter validates JWT and populates SecurityContextHolder
+- Controller reads authenticated user from SecurityContext
+- Result: Proper JWT validation flow, no redirect loops
+
+### Security Components
+
+| Component | Responsibility |
+|-----------|---------------|
+| `JwtFilter` | Validates JWT from Authorization header, populates SecurityContextHolder |
+| `StaffJwtUtil` | JWT token generation, validation, and extraction |
+| `StaffUserDetailsService` | Loads user details for JWT validation |
+| `SecurityConfig` | Defines permitAll vs authenticated endpoints |
+| `StaffAuthController.validateToken()` | Returns authenticated user info from SecurityContext |
+
+### Security Considerations
 
 1. **JWT Token Storage**: 
    - Students: sessionStorage (cleared on tab close)
@@ -572,37 +647,42 @@ Output: `target/*.jar`
 ## Troubleshooting
 
 ### Login redirect issues
-- Check that `/api/staff/validate` endpoint is accessible (should return 401 without token)
+- Check that `/api/staff/validate` endpoint returns 401 without token, 200 with valid token
 - Verify cookies are being set correctly after login
-- Check browser dev tools Network tab for validate call
-- Ensure `authService.validateStaff()` is being called in ProtectedRoute
+- Check browser dev tools Network tab for validate call - ensure `Authorization: Bearer <token>` header is present
+- Look at console logs with `[API Request]`, `[validateStaff]`, `[ProtectedRoute]` prefixes
 
-### 401 Unauthorized errors
-- Check token is being sent in Authorization header (Bearer token)
-- Verify `/api/staff/validate` returns correct JSON: `{valid: true, username, role}`
-- Ensure backend CORS allows `Authorization` header
-- Check that cookies are not blocked by browser settings
+### 401 Unauthorized on /api/staff/validate
+- **Most common cause**: Token not being sent in Authorization header
+- Check request interceptor logs: `[API Request] Token found: YES/NO`
+- Verify cookie is set before validate request: `[validateStaff] Token from cookie: YES/NO`
+- Ensure backend `JwtFilter` is not skipping `/api/staff/validate` (check `shouldNotFilter()`)
+- Verify `SecurityConfig` does NOT have `.requestMatchers("/api/staff/validate").permitAll()`
 
-### Routing not working
-- Verify App.jsx `currentPath` state updates on `navigate()` call
-- Check that `onNavigate` prop is passed to all page components
-- Look for `window.location.href` usage - should use `onNavigate()` instead
+### Role mismatch redirect (wrong dashboard)
+- Check console: `[ProtectedRoute] Role check: result.role='X' vs requiredRole='Y'`
+- Ensure user logs in with role matching their assigned route
+- Backend returns enum value (e.g., `DeputyWarden`), frontend compares to string
 
-### Staff login succeeds but dashboard doesn't open
-- Check Network tab for `/api/staff/validate` call after redirect
-- If validate returns 401: token may be expired or malformed
-- If validate returns 200 but still redirects: check role/username matching in logs
-- Verify `getStaffDashboardRoute()` returns correct path for the role+username
+### Token present but validate fails
+- Check if token is expired: decode JWT at jwt.io to check `exp` claim
+- Verify `jwt.secret` in backend matches between login and validation
+- Ensure `StaffJwtUtil` and `JwtFilter` use same signing key
 
 ### Redirect loop after login
-- This should no longer happen with the new architecture
-- If it occurs: check that ProtectedRoute is NOT calling dashboard APIs for validation
-- Verify `/api/staff/validate` does not call any business logic
+- Check if both interceptor AND validateStaff clear cookies on 401
+- Look for `[API Response] 401` followed by `[validateStaff] 401 received`
+- This should not happen with corrected architecture - both should handle 401 gracefully
 
-### Student flow broken
-- Check `sessionStorage.getItem('token')` in browser console
-- Verify student token is passed in API calls
-- Student auth is separate from staff auth - should not affect each other
+### Debug Logging
+Debug console logs have been added to trace the auth flow:
+- `[StaffLogin]` - Login success and navigation
+- `[API Request]` - Token retrieval and header setting
+- `[API Response]` - Response status and 401 handling
+- `[validateStaff]` - Token from cookie and validation results
+- `[ProtectedRoute]` - Auth state transitions and role comparisons
+
+Open browser DevTools Console and filter by these prefixes to trace issues.
 
 ---
 

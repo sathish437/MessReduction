@@ -4,10 +4,12 @@ import com.hostel.MessReduction.DTO.ReqDTO.ReductionFormReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Service.ReductionFormService;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/student-form")
@@ -16,7 +18,7 @@ public class ReductionFormController {
     public ReductionFormController(ReductionFormService reductionFormService){
         this.reductionFormService=reductionFormService;
     }
-    @GetMapping("/StudentForm/{studentId}")
+    @GetMapping("/Student/{studentId}")
     public StudentDetails fetchStudentData(@PathVariable Long studentId){
         return reductionFormService.getStudentDetails(studentId);
     }
@@ -26,6 +28,12 @@ public class ReductionFormController {
             @PathVariable Long studentId) {
 
         return ResponseEntity.ok(reductionFormService.formSubmit(dto, studentId));
+    }
+
+    @GetMapping("/StudentForm/{studentId}")
+    public ResponseEntity<List<ReductionFormResDTO>> getStudentForms(
+            @PathVariable Long studentId) {
+        return ResponseEntity.ok(reductionFormService.formDetails(studentId));
     }
 
 }

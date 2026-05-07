@@ -14,4 +14,5 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByCurrentStatusAndYear(FormStatus status,Integer year);
     Long countByCurrentStatus(FormStatus status);
     Long countByCurrentStatusAndYear(FormStatus status,Integer year);
+    List<ReductionForm> findByStudentDetailsStudentId(Long studentId);
 }

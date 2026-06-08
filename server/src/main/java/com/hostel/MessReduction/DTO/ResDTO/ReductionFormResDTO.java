@@ -2,6 +2,7 @@ package com.hostel.MessReduction.DTO.ResDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hostel.MessReduction.Entity.Department;
+import com.hostel.MessReduction.Entity.FormStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -37,6 +38,9 @@ public class ReductionFormResDTO {
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate leaveDate;
+    @NotNull
+    private FormStatus currentStatus;
+    private String rejectReason;
     @NotNull
     @Schema(type = "string", example = "10:10:10")
     @JsonFormat(pattern = "HH:mm:ss")

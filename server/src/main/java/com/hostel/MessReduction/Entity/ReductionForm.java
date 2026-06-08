@@ -13,8 +13,12 @@ import lombok.*;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Getter
 @Setter
@@ -63,5 +67,12 @@ public class ReductionForm {
     @NotNull
     @Enumerated(EnumType.STRING)
     private FormStatus currentStatus;
+
+    @Column(length = 1000)
+    private String rejectReason;
+                                                                                                                             
+    @OneToMany(mappedBy = "reductionForm", cascade = CascadeType.ALL, orphanRemoval = false)
+    @JsonIgnore
+    private List<ReductionFormHistory> history = new ArrayList<>();
 
 }

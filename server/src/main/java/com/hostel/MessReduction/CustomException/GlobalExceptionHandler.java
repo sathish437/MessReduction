@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.CustomException;
 
+import com.hostel.MessReduction.CustomException.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -40,6 +41,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedUserException.class)
     public ResponseEntity<HashMap<String, Object>> handleUnauthorizedUser(UnauthorizedUserException exp) {
         return buildErrorResponse(exp.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<HashMap<String, Object>> handleBadRequest(BadRequestException exp) {
+        return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ReductionFormNotFoundException.class)

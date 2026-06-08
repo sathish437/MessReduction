@@ -1,9 +1,13 @@
 package com.hostel.MessReduction.Controller;
 
+import com.hostel.MessReduction.DTO.ReqDTO.RejectFormReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Service.ReductionFormService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,104 +16,140 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/hostelStaff")
 public class StaffUsersController {
-    private ReductionFormService reductionFormService;
-    public StaffUsersController(ReductionFormService reductionFormService){
-        this.reductionFormService=reductionFormService;
+    private final ReductionFormService reductionFormService;
+
+    public StaffUsersController(ReductionFormService reductionFormService) {
+        this.reductionFormService = reductionFormService;
     }
+
     @GetMapping("/staff/warden")
-    public List<ReductionFormResDTO> warden(
+    public ResponseEntity<List<ReductionFormResDTO>> warden(
             @RequestParam(required = false) String userName,
-            Authentication authentication){
-        // Use provided userName if available, otherwise extract from JWT
+            Authentication authentication) {
         String effectiveUserName = (userName != null && !userName.isEmpty())
                 ? userName
                 : authentication.getName();
-        return reductionFormService.wardenPendingStatus(effectiveUserName);
+        return ResponseEntity.ok(reductionFormService.wardenPendingStatus(effectiveUserName));
     }
 
     @GetMapping("/staff/deputyWarden")
-    public List<ReductionFormResDTO> deputyWarden(Authentication authentication){
+    public ResponseEntity<List<ReductionFormResDTO>> deputyWarden(Authentication authentication) {
         String userName = authentication.getName();
-        return reductionFormService.deputyWardenPendingStatus(userName);
+        return ResponseEntity.ok(reductionFormService.deputyWardenPendingStatus(userName));
     }
 
     @GetMapping("/staff/office")
-    public List<ReductionFormResDTO> office(Authentication authentication){
+    public ResponseEntity<List<ReductionFormResDTO>> office(Authentication authentication) {
         String userName = authentication.getName();
-        return reductionFormService.officePendingStatus(userName);
+        return ResponseEntity.ok(reductionFormService.officePendingStatus(userName));
     }
 
     @PatchMapping("/staff/warden/{formId}")
-    public String updateWarden(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+    public ResponseEntity<String> updateWarden(@PathVariable Long formId,
+                                               @RequestParam String action,
+                                               Authentication authentication) {
         String userName = authentication.getName();
-        reductionFormService.updateWardenPendingStatus(formId,action,userName);
-        return "Warden status updated successfully";
+        reductionFormService.updateWardenPendingStatus(formId, action, userName);
+        return ResponseEntity.ok("Warden status updated successfully");
     }
 
     @PatchMapping("/staff/deputyWarden/{formId}")
-    public String updateDeputyWarden(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+    public ResponseEntity<String> updateDeputyWarden(@PathVariable Long formId,
+                                                     @RequestParam String action,
+                                                     Authentication authentication) {
         String userName = authentication.getName();
-        reductionFormService.updateDeputyWardenPendingStatus(formId,action,userName);
-        return "DeputyWarden status updated successfully";
+        reductionFormService.updateDeputyWardenPendingStatus(formId, action, userName);
+        return ResponseEntity.ok("DeputyWarden status updated successfully");
     }
 
     @PatchMapping("/staff/office/{formId}")
-    public String updateOffice(@PathVariable Long formId,@RequestParam String action, Authentication authentication){
+    public ResponseEntity<String> updateOffice(@PathVariable Long formId,
+                                               @RequestParam String action,
+                                               Authentication authentication) {
         String userName = authentication.getName();
-        reductionFormService.updateOfficePendingStatus(formId,action,userName);
-        return "Office status updated successfully";
+        reductionFormService.updateOfficePendingStatus(formId, action, userName);
+        return ResponseEntity.ok("Office status updated successfully");
+    }
+
+    @PatchMapping("/staff/warden/{formId}/reject")
+    public ResponseEntity<String> rejectWarden(@PathVariable Long formId,
+                                               @Valid @RequestBody RejectFormReqDTO request,
+                                               Authentication authentication) {
+        String userName = authentication.getName();
+        reductionFormService.rejectWardenForm(formId, request.getRejectReason(), userName);
+        return ResponseEntity.status(HttpStatus.OK).body("Form rejected by warden successfully");
+    }
+
+    @PatchMapping("/staff/deputyWarden/{formId}/reject")
+    public ResponseEntity<String> rejectDeputyWarden(@PathVariable Long formId,
+                                                     @Valid @RequestBody RejectFormReqDTO request,
+                                                     Authentication authentication) {
+        String userName = authentication.getName();
+        reductionFormService.rejectDeputyWardenForm(formId, request.getRejectReason(), userName);
+        return ResponseEntity.status(HttpStatus.OK).body("Form rejected by deputy warden successfully");
+    }
+
+    @PatchMapping("/staff/office/{formId}/reject")
+    public ResponseEntity<String> rejectOffice(@PathVariable Long formId,
+                                               @Valid @RequestBody RejectFormReqDTO request,
+                                               Authentication authentication) {
+        String userName = authentication.getName();
+        reductionFormService.rejectOfficeForm(formId, request.getRejectReason(), userName);
+        return ResponseEntity.status(HttpStatus.OK).body("Form rejected by office successfully");
     }
 
     @GetMapping("/staff/dashboard-count")
-    public StaffDashboardCountDTO getDashboardCount() {
-        return reductionFormService.getDashboardCount();
+    public ResponseEntity<StaffDashboardCountDTO> getDashboardCount() {
+        return ResponseEntity.ok(reductionFormService.getDashboardCount());
     }
 
     @GetMapping("/staff/dashboard-count/warden")
-    public StaffDashboardCountDTO getWardenDashboardCount(
+    public ResponseEntity<StaffDashboardCountDTO> getWardenDashboardCount(
             @RequestParam(required = false) String userName,
             Authentication authentication) {
         String effectiveUserName = (userName != null && !userName.isEmpty())
                 ? userName
                 : authentication.getName();
-        return reductionFormService.getDashboardCountForWarden(effectiveUserName);
+        return ResponseEntity.ok(reductionFormService.getDashboardCountForWarden(effectiveUserName));
     }
 
     @GetMapping("/staff/deputyWarden/year-count")
-    public YearWiseCountDTO deputyYearCount() {
-        return reductionFormService.deputyWardenYearWiseCount();
+    public ResponseEntity<YearWiseCountDTO> deputyYearCount() {
+        return ResponseEntity.ok(reductionFormService.deputyWardenYearWiseCount());
     }
+
     @GetMapping("/staff/office/year-count")
-    public YearWiseCountDTO officeYearCount() {
-        return reductionFormService.officeYearWiseCount();
+    public ResponseEntity<YearWiseCountDTO> officeYearCount() {
+        return ResponseEntity.ok(reductionFormService.officeYearWiseCount());
     }
 
     @PatchMapping("/staff/warden/bulk")
-    public String updateWardenBulk(
-            @RequestBody List<Long> formIds,
-            @RequestParam String action,
-            Authentication authentication) {
+    public ResponseEntity<String> updateWardenBulk(
+                                                   @RequestBody List<Long> formIds,
+                                                   @RequestParam String action,
+                                                   Authentication authentication) {
         String userName = authentication.getName();
         reductionFormService.updateWardenBulkStatus(formIds, action, userName);
-        return "Forms updated successfully";
+        return ResponseEntity.ok("Forms approved by warden successfully");
     }
 
     @PatchMapping("/staff/deputyWarden/bulk")
-    public String updateDeputyWardenBulk(
-            @RequestBody List<Long> formIds,
-            @RequestParam String action,
-            Authentication authentication) {
+    public ResponseEntity<String> updateDeputyWardenBulk(
+                                                         @RequestBody List<Long> formIds,
+                                                         @RequestParam String action,
+                                                         Authentication authentication) {
         String userName = authentication.getName();
         reductionFormService.updateDeputyWardenPendingBulkStatus(formIds, action, userName);
-        return "Forms updated successfully";
+        return ResponseEntity.ok("Forms approved by deputy warden successfully");
     }
+
     @PatchMapping("/staff/office/bulk")
-    public String updateOfficeBulk(
-            @RequestBody List<Long> formIds,
-            @RequestParam String action,
-            Authentication authentication) {
+    public ResponseEntity<String> updateOfficeBulk(
+                                                   @RequestBody List<Long> formIds,
+                                                   @RequestParam String action,
+                                                   Authentication authentication) {
         String userName = authentication.getName();
         reductionFormService.updateOfficePendingBulkStatus(formIds, action, userName);
-        return "Forms updated successfully";
+        return ResponseEntity.ok("Forms approved by office successfully");
     }
 }

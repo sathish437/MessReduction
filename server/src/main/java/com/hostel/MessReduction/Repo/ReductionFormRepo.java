@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
@@ -15,4 +16,5 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     Long countByCurrentStatus(FormStatus status);
     Long countByCurrentStatusAndYear(FormStatus status,Integer year);
     List<ReductionForm> findByStudentDetailsStudentId(Long studentId);
+    Optional<ReductionForm> findByFormIdAndStudentDetailsStudentId(Long formId, Long studentId);
 }

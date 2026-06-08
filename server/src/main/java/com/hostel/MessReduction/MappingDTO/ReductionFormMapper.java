@@ -41,6 +41,8 @@ public class ReductionFormMapper {
         reductionFormResDTO.setPresentDate(reductionForm.getPresentDate());
         reductionFormResDTO.setTotalHolidays(reductionForm.getTotalHolidays());
         reductionFormResDTO.setReason(reductionForm.getReason());
+        reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
+        reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
         return reductionFormResDTO;
     }
 }

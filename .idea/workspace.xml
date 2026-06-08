@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="31891577-2e2e-44b5-bcd3-5ba288515801" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/client" beforeDir="false" afterPath="$PROJECT_DIR$/client" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/client/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/Deputy_warden_side.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Deputy_warden_side.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/Hostel_office.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Hostel_office.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/Login.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Login.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/MessReductionPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/MessReductionPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/Register.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Register.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/StaffLogin.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/StaffLogin.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/Warden.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Warden.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/api/apiClient.js" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/api/apiClient.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;sathish437&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/sathish437/MessReduction.git&quot;,
+    &quot;accountId&quot;: &quot;e75c5b5b-fed8-4146-bef0-f17f4cf70102&quot;
+  }
+}</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="3DWEuOMdLyco8J2M7yOYNieEoHL" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "C:/Users/durai/Documents/SpringBoot/MessReduction"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="31891577-2e2e-44b5-bcd3-5ba288515801" name="Changes" comment="" />
+      <created>1778389649109</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1778389649109</updated>
+    </task>
+    <servers />
+  </component>
+</project>

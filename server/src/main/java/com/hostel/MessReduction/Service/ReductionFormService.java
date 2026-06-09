@@ -9,6 +9,7 @@ import com.hostel.MessReduction.CustomException.StatusAlreadyPendingException;
 import com.hostel.MessReduction.CustomException.StudentNotFoundException;
 import com.hostel.MessReduction.CustomException.TotalLeaveDateCountException;
 import com.hostel.MessReduction.CustomException.UnauthorizedUserException;
+import com.hostel.MessReduction.DTO.ReqDTO.ActivityLogRequest;
 import com.hostel.MessReduction.DTO.ReqDTO.ReductionFormReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormHistoryResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
@@ -17,11 +18,13 @@ import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.ReductionFormHistory;
+import com.hostel.MessReduction.Entity.Role;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.MappingDTO.ReductionFormMapper;
 import com.hostel.MessReduction.Repo.ReductionFormHistoryRepo;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
+import com.hostel.MessReduction.Service.ActivityLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,13 +43,16 @@ public class ReductionFormService {
     private final ReductionFormRepo reductionFormRepo;
     private final StudentDetailsRepo studentDetailsRepo;
     private final ReductionFormHistoryRepo reductionFormHistoryRepo;
+    private final ActivityLogService activityLogService;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
-                                ReductionFormHistoryRepo reductionFormHistoryRepo) {
+                                ReductionFormHistoryRepo reductionFormHistoryRepo,
+                                ActivityLogService activityLogService) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
+        this.activityLogService = activityLogService;
     }
 
     public StudentDetails getStudentDetails(Long id) {
@@ -159,6 +165,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.PendingDeputyWarden);
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
+        createActivityLog(form, Role.Warden, userName, "Approved");
     }
 
     public void updateDeputyWardenPendingStatus(Long formId, String action, String userName) {
@@ -170,6 +177,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.PendingOffice);
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingOffice, userName, null);
+        createActivityLog(form, Role.DeputyWarden, userName, "Approved");
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -181,6 +189,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.Approved);
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Office", previousStatus, FormStatus.Approved, userName, null);
+        createActivityLog(form, Role.Office, userName, "Approved");
     }
 
     public void rejectWardenForm(Long formId, String rejectReason, String userName) {
@@ -194,6 +203,7 @@ public class ReductionFormService {
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Warden", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
+        createActivityLog(form, Role.Warden, userName, "Rejected");
     }
 
     public void rejectDeputyWardenForm(Long formId, String rejectReason, String userName) {
@@ -206,6 +216,7 @@ public class ReductionFormService {
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Deputy Warden", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
+        createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
     }
 
     public void rejectOfficeForm(Long formId, String rejectReason, String userName) {
@@ -218,6 +229,7 @@ public class ReductionFormService {
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Office", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
+        createActivityLog(form, Role.Office, userName, "Rejected");
     }
 
     public StaffDashboardCountDTO getDashboardCount() {
@@ -283,6 +295,7 @@ public class ReductionFormService {
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.PendingDeputyWarden);
             saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
+            createActivityLog(form, Role.Warden, userName, "Approved");
         }
 
         reductionFormRepo.saveAll(forms);
@@ -307,6 +320,7 @@ public class ReductionFormService {
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.PendingOffice);
             saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
+            createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         }
 
         reductionFormRepo.saveAll(forms);
@@ -331,6 +345,7 @@ public class ReductionFormService {
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.Approved);
             saveFormHistory(form, "Approved by Office (Bulk)", previousStatus, FormStatus.Approved, userName, null);
+            createActivityLog(form, Role.Office, userName, "Approved");
         }
 
         reductionFormRepo.saveAll(forms);
@@ -346,6 +361,19 @@ public class ReductionFormService {
         history.setComment(comment);
         history.setEventTimestamp(LocalDateTime.now());
         reductionFormHistoryRepo.save(history);
+    }
+
+    private void createActivityLog(ReductionForm form, Role staffRole, String staffName, String action) {
+        ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+        activityLogRequest.setFormId(form.getFormId());
+        activityLogRequest.setStudentId(form.getStudentDetails().getStudentId());
+        activityLogRequest.setStudentName(form.getStudentDetails().getName());
+        activityLogRequest.setDepartment(form.getStudentDetails().getDepartment().name());
+        activityLogRequest.setStaffRole(staffRole);
+        activityLogRequest.setStaffName(staffName);
+        activityLogRequest.setAction(action);
+        activityLogRequest.setArrivalDate(form.getArrivalDate());
+        activityLogService.createLog(activityLogRequest);
     }
 
     private ReductionFormHistoryResDTO mapHistoryToDTO(ReductionFormHistory history) {

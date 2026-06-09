@@ -137,9 +137,22 @@ function Deputy_warden_side() {
         fourthYear: 0
     });
 
+    // Rejection Modal State
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [rejectFormId, setRejectFormId] = useState(null);
+    const [rejectReason, setRejectReason] = useState("");
+
     const handleAction = async (id, actionType) => {
         // Normalize action to 'Approve' or 'Reject' for backend
         const action = actionType === "Approve" || actionType === "accepted" ? "Approve" : "Reject";
+        
+        if (action === "Reject") {
+            setRejectFormId(id);
+            setRejectReason("");
+            setIsRejectModalOpen(true);
+            return;
+        }
+
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${id}?action=${action}`);
             // Refresh data after action
@@ -147,6 +160,23 @@ function Deputy_warden_side() {
         } catch (err) {
             console.error("Action error:", err);
             alert("Failed to update status.");
+        }
+    };
+
+    const handleRejectSubmit = async () => {
+        if (!rejectReason.trim()) {
+            alert("Please enter a reason for rejection.");
+            return;
+        }
+        try {
+            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
+            setIsRejectModalOpen(false);
+            setRejectFormId(null);
+            setRejectReason("");
+            await refreshData();
+        } catch (err) {
+            console.error("Deputy Warden reject error:", err);
+            alert("Failed to reject request.");
         }
     };
 
@@ -166,7 +196,7 @@ function Deputy_warden_side() {
     const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
     const toggleSelectAll = () => {
-        const pendingIds = filteredRequests.filter(r => r.status === "pending").map(r => r.id);
+        const pendingIds = filteredRequests.map(r => r.id);
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
@@ -362,12 +392,35 @@ function Deputy_warden_side() {
                         >
                             {/* Header row */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
-                                <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                                    <div className="w-1.5 h-8 bg-teal-500 rounded-full" />
-                                    Pending Requests - Deputy Review
-                                </h2>
-                                <p className="text-sm text-white/40">Forms awaiting deputy warden approval</p>
+                                <div>
+                                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                                        <div className="w-1.5 h-8 bg-teal-500 rounded-full" />
+                                        Pending Requests - Deputy Review
+                                    </h2>
+                                    <p className="text-sm text-white/40 mt-1">Forms awaiting deputy warden approval</p>
+                                </div>
                             </div>
+
+                            <AnimatePresence>
+                                {selectedIds.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-4"
+                                    >
+                                        <span className="text-emerald-400 font-bold text-sm tracking-widest uppercase">
+                                            {selectedIds.length} Form(s) Selected
+                                        </span>
+                                        <button
+                                            onClick={() => handleBulkAction("accepted")}
+                                            className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-slate-900 rounded-xl font-black tracking-widest uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center"
+                                        >
+                                            <FiCheck size={18} /> Approve Selected
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Mobile Cards - Match Warden Style */}
                             <div className="space-y-4 lg:hidden">
@@ -381,9 +434,12 @@ function Deputy_warden_side() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="bg-[#0f1f38] border border-white/5 rounded-3xl p-6 space-y-5 shadow-xl"
+                                        className={`bg-[#0f1f38] border ${selectedIds.includes(req.id) ? 'border-emerald-500/50' : 'border-white/5'} rounded-3xl p-6 space-y-5 shadow-xl transition-all`}
                                     >
                                         <div className="flex items-center gap-4">
+                                            <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
+                                                {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
+                                            </button>
                                             <div className="w-14 h-14 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-2xl">
                                                 {req.name?.charAt(0) ?? "?"}
                                             </div>
@@ -433,6 +489,11 @@ function Deputy_warden_side() {
                                     <table className="w-full text-left border-collapse min-w-[1000px]">
                                         <thead>
                                             <tr className="bg-white/[0.03] text-sm uppercase tracking-[0.3em] font-black border-b border-white/5">
+                                                <th className="px-6 py-6 text-white/40 w-16 text-center">
+                                                    <button onClick={toggleSelectAll} className="text-white/40 hover:text-white transition-colors">
+                                                        {filteredRequests.length > 0 && selectedIds.length === filteredRequests.length ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                    </button>
+                                                </th>
                                                 <th className="px-6 py-6 text-white/40">Student Name</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Department</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Room No</th>
@@ -445,7 +506,7 @@ function Deputy_warden_side() {
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {filteredRequests.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="7" className="px-6 py-24 text-center">
+                                                    <td colSpan="8" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center gap-4">
                                                             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
                                                                 <FiList size={32} />
@@ -463,8 +524,13 @@ function Deputy_warden_side() {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
-                                                    className="group hover:bg-white/[0.02] transition-colors"
+                                                    className={`group hover:bg-white/[0.04] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.02]' : ''}`}
                                                 >
+                                                    <td className="px-6 py-6 text-center">
+                                                        <button onClick={() => toggleSelect(req.id)} className={`${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors mt-1`}>
+                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                        </button>
+                                                    </td>
                                                     <td className="px-6 py-6">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-12 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-xl shadow-inner group-hover:brightness-125 transition-all">
@@ -525,6 +591,58 @@ function Deputy_warden_side() {
                     </div>
                 </div>
             </footer>
+
+            {/* Rejection Modal */}
+            <AnimatePresence>
+                {isRejectModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsRejectModalOpen(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-lg bg-[#0f1f38] border border-rose-500/30 rounded-3xl p-8 shadow-2xl shadow-rose-900/20 overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 p-8 scale-150 rotate-12 opacity-5 text-rose-500 pointer-events-none">
+                                <FiX size={100} />
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2 flex items-center gap-3">
+                                <span className="w-1.5 h-6 bg-rose-500 rounded-full" />
+                                Reason for Rejection <span className="text-rose-500">*</span>
+                            </h3>
+                            <p className="text-sm text-white/40 mb-6 font-medium">Please provide a clear reason for rejecting this request.</p>
+                            
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Enter rejection reason..."
+                                className="w-full h-32 bg-black/20 border border-white/10 rounded-xl p-4 text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 resize-none transition-all"
+                            />
+
+                            <div className="flex items-center justify-end gap-4 mt-8">
+                                <button
+                                    onClick={() => setIsRejectModalOpen(false)}
+                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRejectSubmit}
+                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                                >
+                                    Reject
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

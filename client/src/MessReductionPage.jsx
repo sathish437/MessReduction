@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText } from "react-icons/fi";
+import { 
+    FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, 
+    FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3 
+} from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import image from "./assets/1000088399.png";
 
@@ -41,6 +44,7 @@ function MessReductionPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [myRequests, setMyRequests] = useState([])
     const [loading, setLoading] = useState(true)
+    const [editingFormId, setEditingFormId] = useState(null)
 
     useEffect(() => {
         // Fetch student details and forms on mount
@@ -55,42 +59,48 @@ function MessReductionPage() {
 
     const fetchStudentData = async (studentId) => {
         try {
-            // Fetch student details and forms using single endpoint
-            const response = await apiClient.get(`/api/student-form/Student/${studentId}`);
-            if (response.data) {
-                const student = response.data;
-                setStudentDetails(student);
+            // Fetch student details and forms sequentially to guarantee fresh data
+            const [studentRes, formsRes] = await Promise.all([
+                apiClient.get(`/api/student-form/Student/${studentId}`),
+                apiClient.get(`/api/student-form/StudentForm/${studentId}`)
+            ]);
+            
+            let currentStudent = null;
+            if (studentRes.data) {
+                currentStudent = studentRes.data;
+                setStudentDetails(currentStudent);
                 // Auto-fill form with student details
                 setFormData(prev => ({
                     ...prev,
-                    name: student.name || "",
-                    id: student.registerNo || "",
-                    dept: student.department || "",
-                    mobile: student.phoneNo || ""
+                    name: currentStudent.name || "",
+                    id: currentStudent.registerNo || "",
+                    dept: currentStudent.department || "",
+                    mobile: currentStudent.phoneNo || ""
                 }));
-                // Extract forms from student.reductionForms
-                if (student.reductionForms && student.reductionForms.length > 0) {
-                    const mappedForms = student.reductionForms.map(form => ({
-                        id: form.formId,
-                        formId: form.formId,
-                        studentId: studentId,
-                        year: form.year,
-                        dept: student.department,
-                        roomNo: form.roomNo,
-                        leaveDate: form.leaveDate,
-                        leaveTime: form.leaveTime,
-                        arrivalDate: form.arrivalDate,
-                        arrivalTime: form.arrivalTime,
-                        presentDate: form.presentDate,
-                        totalHolidays: form.totalHolidays,
-                        reason: form.reason,
-                        status: form.currentStatus || "PendingWarden",
-                        submittedDate: form.presentDate
-                    })).reverse(); // Newest first
-                    setMyRequests(mappedForms);
-                } else {
-                    setMyRequests([]);
-                }
+            }
+
+            if (formsRes.data && Array.isArray(formsRes.data) && formsRes.data.length > 0) {
+                const mappedForms = formsRes.data.map(form => ({
+                    id: form.formId,
+                    formId: form.formId,
+                    studentId: studentId,
+                    year: form.year,
+                    dept: currentStudent?.department || form.department,
+                    roomNo: form.roomNo,
+                    leaveDate: form.leaveDate,
+                    leaveTime: form.leaveTime,
+                    arrivalDate: form.arrivalDate,
+                    arrivalTime: form.arrivalTime,
+                    presentDate: form.presentDate,
+                    totalHolidays: form.totalHolidays,
+                    reason: form.reason,
+                    status: form.currentStatus || "PendingWarden",
+                    rejectReason: form.rejectReason,
+                    submittedDate: form.presentDate
+                })).reverse(); // Newest first
+                setMyRequests(mappedForms);
+            } else {
+                setMyRequests([]);
             }
         } catch (error) {
             console.error("Error fetching student data:", error);
@@ -124,6 +134,28 @@ function MessReductionPage() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleEditRequest = (req) => {
+        setEditingFormId(req.formId);
+        
+        const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
+        const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
+        
+        setFormData(prev => ({
+            ...prev,
+            year: yearStrMap[req.year] || "1st",
+            room: req.roomNo?.toString() || "",
+            leaveDate: req.leaveDate || "",
+            leaveTime: req.leaveTime || "",
+            arrivalDate: req.arrivalDate || "",
+            arrivalTime: req.arrivalTime || "",
+            reason: isStandardReason ? req.reason : "other",
+            otherReason: isStandardReason ? "" : req.reason
+        }));
+        
+        // Scroll to form smoothly
+        document.getElementById("form-section")?.scrollIntoView({ behavior: "smooth" });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -149,10 +181,16 @@ function MessReductionPage() {
         };
 
         try {
-            const response = await apiClient.post(`/api/student-form/StudentForm/${savedUser.studentId}`, submissionData);
+            let response;
+            if (editingFormId) {
+                response = await apiClient.post(`/api/student-form/StudentForm/${savedUser.studentId}/${editingFormId}/resubmit`, submissionData);
+            } else {
+                response = await apiClient.post(`/api/student-form/StudentForm/${savedUser.studentId}`, submissionData);
+            }
 
             if (response.status === 200 || response.status === 201) {
-                alert("Form submitted successfully!");
+                alert(editingFormId ? "Form resubmitted successfully!" : "Form submitted successfully!");
+                setEditingFormId(null);
                 // Clear editable fields only
                 setFormData(prev => ({
                     ...prev,
@@ -220,19 +258,39 @@ function MessReductionPage() {
                         
                         {myRequests.length > 0 ? (
                             <div className="space-y-2">
-                                {myRequests.map((req, idx) => (
+                                {myRequests.map((req, idx) => {
+                                    const isRejected = req.status?.startsWith('Rejected');
+                                    return (
                                     <motion.div
                                         initial={{ opacity: 0, y: -5 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.03 }}
                                         key={req.formId || idx}
-                                        className={`rounded-lg px-4 py-2 border ${getStatusColor(req.status)}`}
+                                        className={`rounded-lg px-4 py-3 border flex flex-col gap-2 ${getStatusColor(req.status)}`}
                                     >
-                                        <p className="text-sm font-black uppercase tracking-wide">
-                                            {req.status}
-                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-black uppercase tracking-wide">
+                                                {getStatusDisplay(req.status)}
+                                            </p>
+                                            {isRejected && (
+                                                <button
+                                                    onClick={() => handleEditRequest(req)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-md text-xs font-bold transition-colors border border-white/10"
+                                                >
+                                                    <FiEdit3 size={14} /> Edit & Resubmit
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {isRejected && req.rejectReason && (
+                                            <div className="mt-1 pt-2 border-t border-rose-500/20 text-sm">
+                                                <span className="font-bold uppercase tracking-widest text-xs opacity-60 block mb-0.5">Reason</span>
+                                                <span className="font-medium text-rose-200">{req.rejectReason}</span>
+                                            </div>
+                                        )}
                                     </motion.div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className="text-white/30 text-sm">No requests submitted yet</p>
@@ -240,10 +298,14 @@ function MessReductionPage() {
                     </div>
 
                     {/* BOTTOM SECTION: Mess Reduction Form */}
-                    <div className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-xl overflow-hidden">
+                    <div id="form-section" className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-xl overflow-hidden scroll-mt-24">
                         <div className="p-4 sm:p-6 border-b border-white/5 bg-white/[0.02]">
-                            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">SUBMIT NEW REQUEST</h3>
-                            <p className="text-sm text-white/40 mt-1">Fill in your leave details below</p>
+                            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                {editingFormId ? "EDIT & RESUBMIT REQUEST" : "SUBMIT NEW REQUEST"}
+                            </h3>
+                            <p className="text-sm text-white/40 mt-1">
+                                {editingFormId ? "Update your details and resubmit." : "Fill in your leave details below"}
+                            </p>
                         </div>
                         
                         <div className="p-4 sm:p-6">
@@ -384,7 +446,7 @@ function MessReductionPage() {
                                     type="submit"
                                     disabled={isSubmitting}
                                 >
-                                    {isSubmitting ? "SUBMITTING..." : "SUBMIT REQUEST"} <FiArrowRight size={16} />
+                                    {isSubmitting ? "SUBMITTING..." : (editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST")} <FiArrowRight size={16} />
                                 </motion.button>
                             </form>
                         </div>

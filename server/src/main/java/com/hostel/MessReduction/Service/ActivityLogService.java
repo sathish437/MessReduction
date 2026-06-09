@@ -4,7 +4,6 @@ import com.hostel.MessReduction.CustomException.BadRequestException;
 import com.hostel.MessReduction.DTO.ReqDTO.ActivityLogRequest;
 import com.hostel.MessReduction.DTO.ResDTO.ActivityLogResponse;
 import com.hostel.MessReduction.Entity.ActivityLog;
-import com.hostel.MessReduction.Entity.Role;
 import com.hostel.MessReduction.Repo.ActivityLogRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -42,8 +41,11 @@ public class ActivityLogService {
         return mapToResponse(activityLogRepository.save(log));
     }
 
-    public List<ActivityLogResponse> findActiveLogsByRole(Role staffRole) {
-        return activityLogRepository.findByStaffRoleAndIsActiveTrue(staffRole).stream()
+    public List<ActivityLogResponse> findActiveLogsByStaffName(String staffName) {
+        if (staffName == null || staffName.isBlank()) {
+            throw new BadRequestException("Staff name is required to fetch activity logs");
+        }
+        return activityLogRepository.findByStaffNameAndIsActiveTrue(staffName).stream()
                 .sorted(Comparator.comparing(ActivityLog::getTimestamp).reversed())
                 .map(this::mapToResponse)
                 .toList();

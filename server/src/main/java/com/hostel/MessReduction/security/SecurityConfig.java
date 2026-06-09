@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/hostelStaff/staff/dashboard-count").hasAnyRole("Warden", "DeputyWarden", "Office")
                         .requestMatchers("/api/hostelStaff/staff/deputyWarden/year-count").hasRole("DeputyWarden")
                         .requestMatchers("/api/hostelStaff/staff/office/year-count").hasRole("Office")
+                        .requestMatchers("/api/logs/**").hasAnyRole("Warden", "DeputyWarden", "Office")
                         .requestMatchers("/api/**").authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

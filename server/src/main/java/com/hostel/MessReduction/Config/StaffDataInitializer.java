@@ -25,10 +25,10 @@ public class StaffDataInitializer implements CommandLineRunner {
         staffUsersRepo.deleteAll();
 
         // Create 4 Wardens
-        createStaff("warden1", "warden123", Role.Warden, "warden1@gmail.com");
-        createStaff("warden2", "warden123", Role.Warden, "warden2@gmail.com");
-        createStaff("warden3", "warden123", Role.Warden, "warden3@gmail.com");
-        createStaff("warden4", "warden123", Role.Warden, "warden4@gmail.com");
+        createStaff("warden1", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden2", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden3", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden4", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
 
         // Create Deputy Warden
         createStaff("deputyWarden", "deputy123", Role.DeputyWarden, "deputy@gmail.com");

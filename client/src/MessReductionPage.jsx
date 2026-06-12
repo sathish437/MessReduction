@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, 
-    FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3 
+    FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
+    FiCheckCircle, FiXCircle
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
+
 import image from "./assets/1000088399.png";
 
 const TITLE = "MESS REDUCTION";
@@ -37,7 +39,8 @@ function MessReductionPage() {
         arrivalDate: "",
         arrivalTime: "",
         reason: "",
-        otherReason: ""
+        otherReason: "",
+        isEmergency: false
     });
 
     const [studentDetails, setStudentDetails] = useState(null);
@@ -45,6 +48,12 @@ function MessReductionPage() {
     const [myRequests, setMyRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [editingFormId, setEditingFormId] = useState(null)
+    const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
 
     useEffect(() => {
         // Fetch student details and forms on mount
@@ -130,8 +139,11 @@ function MessReductionPage() {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: type === 'checkbox' ? checked : value 
+        }));
     };
 
     const handleEditRequest = (req) => {
@@ -149,7 +161,8 @@ function MessReductionPage() {
             arrivalDate: req.arrivalDate || "",
             arrivalTime: req.arrivalTime || "",
             reason: isStandardReason ? req.reason : "other",
-            otherReason: isStandardReason ? "" : req.reason
+            otherReason: isStandardReason ? "" : req.reason,
+            isEmergency: req.isEmergency || false
         }));
         
         // Scroll to form smoothly
@@ -177,7 +190,8 @@ function MessReductionPage() {
             leaveTime: formData.leaveTime.length === 5 ? `${formData.leaveTime}:00` : formData.leaveTime,
             arrivalDate: formData.arrivalDate,
             arrivalTime: formData.arrivalTime.length === 5 ? `${formData.arrivalTime}:00` : formData.arrivalTime,
-            reason: formData.reason === "other" ? formData.otherReason : formData.reason
+            reason: formData.reason === "other" ? formData.otherReason : formData.reason,
+            isEmergency: formData.isEmergency
         };
 
         try {
@@ -189,7 +203,7 @@ function MessReductionPage() {
             }
 
             if (response.status === 200 || response.status === 201) {
-                alert(editingFormId ? "Form resubmitted successfully!" : "Form submitted successfully!");
+                showToast(editingFormId ? "✅ Form resubmitted successfully! Awaiting warden approval." : "✅ Form submitted successfully! Awaiting warden approval.", 'success');
                 setEditingFormId(null);
                 // Clear editable fields only
                 setFormData(prev => ({
@@ -201,16 +215,18 @@ function MessReductionPage() {
                     arrivalDate: "",
                     arrivalTime: "",
                     reason: "",
-                    otherReason: ""
+                    otherReason: "",
+                    isEmergency: false
                 }));
                 // Refresh forms list
                 fetchStudentData(savedUser.studentId);
             } else {
-                alert("Submission failed. Please try again.");
+                showToast("Submission failed. Please try again.", 'error');
             }
         } catch (error) {
             console.error("Error submitting form:", error);
-            alert(error.response?.data?.message || "Error submitting form. Ensure all fields are valid.");
+            const errMsg = error.response?.data?.message || "Error submitting form. Ensure all fields are valid.";
+            showToast(errMsg, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -231,6 +247,27 @@ function MessReductionPage() {
         <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white selection:bg-teal-500/30 relative">
             <div className="fixed inset-0 bg-[#0a1628] -z-10" />
 
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -60 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -60 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border max-w-md w-full
+                            ${toast.type === 'success' 
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                                : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}
+                    >
+                        {toast.type === 'success' 
+                            ? <FiCheckCircle size={22} className="shrink-0 text-emerald-400" />
+                            : <FiXCircle size={22} className="shrink-0 text-rose-400" />}
+                        <p className="font-bold text-sm">{toast.message}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Header */}
             <header className="w-full flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="flex items-center gap-3">
@@ -244,6 +281,9 @@ function MessReductionPage() {
                         </span>
                     </div>
                 </div>
+                <div className="flex items-center gap-3">
+
+                </div>
             </header>
 
             <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-500/50 to-transparent shrink-0" />
@@ -254,7 +294,7 @@ function MessReductionPage() {
                     
                     {/* TOP SECTION: Request Status */}
                     <div className="w-full">
-                        <h3 className="text-sm font-black text-white/60 uppercase tracking-widest mb-3">Request Status</h3>
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-3">My Previous Submissions</h3>
                         
                         {myRequests.length > 0 ? (
                             <div className="space-y-2">
@@ -293,7 +333,7 @@ function MessReductionPage() {
                                 })}
                             </div>
                         ) : (
-                            <p className="text-white/30 text-sm">No requests submitted yet</p>
+                            <p className="text-white/70 text-sm">No requests submitted yet</p>
                         )}
                     </div>
 
@@ -437,6 +477,22 @@ function MessReductionPage() {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+
+                                {/* Emergency Request Checkbox */}
+                                <div className="flex items-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 transition-colors cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, isEmergency: !prev.isEmergency }))}>
+                                    <input 
+                                        type="checkbox" 
+                                        name="isEmergency"
+                                        id="isEmergency"
+                                        checked={formData.isEmergency}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 rounded border-rose-500/50 bg-transparent text-rose-500 focus:ring-rose-500 focus:ring-offset-0 cursor-pointer"
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <label htmlFor="isEmergency" className="text-rose-400/90 text-sm font-bold uppercase tracking-wider cursor-pointer flex-1 flex items-center gap-2">
+                                        <FiAlertTriangle size={16} /> Mark as Emergency Request
+                                    </label>
+                                </div>
 
                                 {/* Submit Button */}
                                 <motion.button

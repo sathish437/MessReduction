@@ -9,6 +9,7 @@ import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
 
+
 const handleLogout = () => {
   deleteCookie('staffToken');
   deleteCookie('staffUsername');
@@ -268,12 +269,15 @@ function Deputy_warden_side() {
                 </div>
 
                 {/* Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
-                >
-                    <FiLogOut size={16} /> Logout
-                </button>
+                <div className="flex items-center gap-3">
+
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
+                    >
+                        <FiLogOut size={16} /> Logout
+                    </button>
+                </div>
             </header>
 
             {/* ── Main Content ── */}
@@ -440,9 +444,6 @@ function Deputy_warden_side() {
                                             <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
                                                 {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
                                             </button>
-                                            <div className="w-14 h-14 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-2xl">
-                                                {req.name?.charAt(0) ?? "?"}
-                                            </div>
                                             <div>
                                                 <h4 className="text-xl font-black text-white">{req.name}</h4>
                                                 <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept}</p>
@@ -462,7 +463,7 @@ function Deputy_warden_side() {
 
                                         <div className="space-y-1">
                                             <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p className="text-sm font-medium text-white/40 leading-relaxed">{req.reason}</p>
+                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
                                         </div>
 
                                         <div className="flex items-center justify-end gap-2 pt-2">
@@ -533,9 +534,6 @@ function Deputy_warden_side() {
                                                     </td>
                                                     <td className="px-6 py-6">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-xl shadow-inner group-hover:brightness-125 transition-all">
-                                                                {req.name?.charAt(0) ?? "?"}
-                                                            </div>
                                                             <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
                                                         </div>
                                                     </td>
@@ -552,7 +550,7 @@ function Deputy_warden_side() {
                                                         <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-6">
-                                                        <p className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate">{req.reason}</p>
+                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
                                                     <td className="px-6 py-5 text-right">
                                                         <div className="flex justify-end gap-2">

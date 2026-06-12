@@ -397,9 +397,7 @@ const Warden = ({ assignedYear = null }) => {
                                             <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
                                                 {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
                                             </button>
-                                            <div className={`w-14 h-14 rounded-2xl bg-[#0a1628] border ${t.border} flex items-center justify-center ${t.text} font-black text-2xl`}>
-                                                {req.name?.charAt(0) ?? "?"}
-                                            </div>
+
                                             <div>
                                                 <h4 className="text-xl font-black text-white">{req.name}</h4>
                                                 <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept}</p>
@@ -419,7 +417,7 @@ const Warden = ({ assignedYear = null }) => {
 
                                         <div className="space-y-1">
                                             <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p className="text-sm font-medium text-white/40 leading-relaxed">{req.reason}</p>
+                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
                                         </div>
 
                                         <div className="flex items-center justify-end gap-2 pt-2">
@@ -490,9 +488,7 @@ const Warden = ({ assignedYear = null }) => {
                                                     </td>
                                                     <td className="px-6 py-6">
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`w-12 h-12 rounded-2xl bg-[#0a1628] border ${t.border} flex items-center justify-center ${t.text} font-black text-xl shadow-inner group-hover:brightness-125 transition-all`}>
-                                                                {req.name?.charAt(0) ?? "?"}
-                                                            </div>
+
                                                             <p className={`text-lg font-black text-white group-hover:${t.text} transition-colors`}>{req.name}</p>
                                                         </div>
                                                     </td>
@@ -509,7 +505,7 @@ const Warden = ({ assignedYear = null }) => {
                                                         <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-6">
-                                                        <p className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate">{req.reason}</p>
+                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
                                                     <td className="px-6 py-5 text-right">
                                                         <div className="flex justify-end gap-2">

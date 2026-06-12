@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/hostelStaff/staff/deputyWarden/year-count").hasRole("DeputyWarden")
                         .requestMatchers("/api/hostelStaff/staff/office/year-count").hasRole("Office")
                         .requestMatchers("/api/**").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

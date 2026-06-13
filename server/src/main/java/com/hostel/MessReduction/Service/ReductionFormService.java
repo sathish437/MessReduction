@@ -224,9 +224,11 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
         createActivityLog(form, Role.Warden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
-        staffUsersRepo.findByRole(Role.DeputyWarden).forEach(dw -> 
-            notificationService.createNotification(dw.getUserName(), "New Form Ready for Review", "NORMAL_REQUEST", form.getFormId())
-        );
+        if (form.isEmergency()) {
+            staffUsersRepo.findByRole(Role.DeputyWarden).forEach(dw -> 
+                notificationService.createNotification(dw.getUserName(), "Emergency Form Ready for Review", "EMERGENCY_REQUEST", form.getFormId())
+            );
+        }
     }
 
     public void updateDeputyWardenPendingStatus(Long formId, String action, String userName) {
@@ -240,9 +242,11 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingOffice, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
-        staffUsersRepo.findByRole(Role.Office).forEach(office -> 
-            notificationService.createNotification(office.getUserName(), "New Form Ready for Office Approval", "NORMAL_REQUEST", form.getFormId())
-        );
+        if (form.isEmergency()) {
+            staffUsersRepo.findByRole(Role.Office).forEach(office -> 
+                notificationService.createNotification(office.getUserName(), "Emergency Form Ready for Office Approval", "EMERGENCY_REQUEST", form.getFormId())
+            );
+        }
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -366,9 +370,11 @@ public class ReductionFormService {
             saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
             createActivityLog(form, Role.Warden, userName, "Approved");
             notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
-            staffUsersRepo.findByRole(Role.DeputyWarden).forEach(dw -> 
-                notificationService.createNotification(dw.getUserName(), "New Form Ready for Review", "NORMAL_REQUEST", form.getFormId())
-            );
+            if (form.isEmergency()) {
+                staffUsersRepo.findByRole(Role.DeputyWarden).forEach(dw -> 
+                    notificationService.createNotification(dw.getUserName(), "Emergency Form Ready for Review", "EMERGENCY_REQUEST", form.getFormId())
+                );
+            }
         }
 
         reductionFormRepo.saveAll(forms);
@@ -395,9 +401,11 @@ public class ReductionFormService {
             saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
             createActivityLog(form, Role.DeputyWarden, userName, "Approved");
             notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
-            staffUsersRepo.findByRole(Role.Office).forEach(office -> 
-                notificationService.createNotification(office.getUserName(), "New Form Ready for Office Approval", "NORMAL_REQUEST", form.getFormId())
-            );
+            if (form.isEmergency()) {
+                staffUsersRepo.findByRole(Role.Office).forEach(office -> 
+                    notificationService.createNotification(office.getUserName(), "Emergency Form Ready for Office Approval", "EMERGENCY_REQUEST", form.getFormId())
+                );
+            }
         }
 
         reductionFormRepo.saveAll(forms);

@@ -62,6 +62,34 @@ public class NotificationService {
         }
     }
 
+    public void createAggregatedNotification(String recipientUsername, String message, String type) {
+        String lockKey = recipientUsername + ":" + type + ":AGGREGATED";
+        long currentTime = System.currentTimeMillis();
+        
+        // 30 seconds cooldown to prevent rapid duplicate notifications
+        if (notificationLocks.containsKey(lockKey)) {
+            long lastSent = notificationLocks.get(lockKey);
+            if (currentTime - lastSent < 30000) {
+                logger.warn("Duplicate aggregated notification blocked for user: {} | Type: {}", recipientUsername, type);
+                return;
+            }
+        }
+        
+        notificationLocks.put(lockKey, currentTime);
+
+        try {
+            AppNotification notification = new AppNotification();
+            notification.setRecipientUsername(recipientUsername);
+            notification.setMessage(message);
+            notification.setType(type);
+            notification.setRelatedFormId(-1L); // Use -1 for aggregated notifications
+            notificationRepo.save(notification);
+            logger.info("Aggregated Notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
+        } catch (Exception e) {
+            logger.error("Failed to create aggregated notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
+        }
+    }
+
     public List<AppNotification> getUserNotifications(String username) {
         if (TESTING_MODE) {
             return notificationRepo.findByRecipientUsernameAndIdGreaterThanOrderByIdDesc(username, appStartId);

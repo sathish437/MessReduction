@@ -61,4 +61,20 @@ public class TelegramNotificationService {
             // Exception is caught and not rethrown to avoid interrupting the main workflow
         }
     }
+
+    public void sendAggregatedGroupNotification(java.util.List<com.hostel.MessReduction.Entity.ReductionForm> forms, String headerTitle) {
+        if (forms == null || forms.isEmpty()) return;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(headerTitle).append("\n\n");
+        sb.append("Total Pending Requests: ").append(forms.size()).append("\n\n");
+
+        for (com.hostel.MessReduction.Entity.ReductionForm form : forms) {
+            sb.append("#").append(form.getFormId()).append(" - ").append(form.getStudentDetails().getName()).append("\n");
+        }
+        
+        sb.append("\nPlease log in to review and process pending requests.");
+
+        sendGroupNotification(sb.toString());
+    }
 }

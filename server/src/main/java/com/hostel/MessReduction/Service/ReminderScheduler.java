@@ -14,166 +14,207 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @Transactional
 public class ReminderScheduler {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);
+
     // Testing Mode configuration
     private static final boolean TESTING_MODE = true;
     private static final LocalDateTime APP_START_TIME = LocalDateTime.now();
 
-    // Changed to 1 for development/testing. Revert to 30 for production.
-    private static final long REMINDER_INTERVAL_MINUTES = 1;
-    private static final long ESCALATION_INTERVAL_HOURS = 3;
-    private static final long ESCALATION_THRESHOLD_HOURS = 3;
-
     private final ReductionFormRepo reductionFormRepo;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final TelegramNotificationService telegramNotificationService;
     private final StaffUsersRepo staffUsersRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
 
     public ReminderScheduler(ReductionFormRepo reductionFormRepo,
                              EmailService emailService,
                              NotificationService notificationService,
+                             TelegramNotificationService telegramNotificationService,
                              StaffUsersRepo staffUsersRepo,
                              com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.emailService = emailService;
         this.notificationService = notificationService;
+        this.telegramNotificationService = telegramNotificationService;
         this.staffUsersRepo = staffUsersRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
     }
 
-    // Runs every 1 minute to check for reminders and escalations (dev/testing)
+    // Runs every 1 minute to check ONLY for emergency escalations
     @Scheduled(fixedRate = 60000)
-    public void processRemindersAndEscalations() {
-        if (TESTING_MODE) {
-            return; // Completely disable automated reminder/escalation emails during testing
-        }
+    public void processEmergencyEscalations() {
+        if (TESTING_MODE) return;
         
-        List<FormStatus> pendingStatuses = List.of(
-                FormStatus.PendingWarden,
-                FormStatus.PendingDeputyWarden,
-                FormStatus.PendingOffice
-        );
-
-        List<ReductionForm> pendingForms;
-        if (TESTING_MODE) {
-            pendingForms = reductionFormRepo.findByCurrentStatusInAndSubmittedAtAfter(pendingStatuses, APP_START_TIME);
-        } else {
-            pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
-        }
+        List<FormStatus> pendingStatuses = List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice);
+        List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
         LocalDateTime now = LocalDateTime.now();
 
         for (ReductionForm form : pendingForms) {
-            if (form.getSubmittedAt() == null) continue;
+            if (form.getSubmittedAt() == null || !form.isEmergency()) continue;
 
             long minutesElapsed = ChronoUnit.MINUTES.between(form.getSubmittedAt(), now);
-            long hoursElapsed   = ChronoUnit.HOURS.between(form.getSubmittedAt(), now);
-
-            // ── 1. Emergency fast-track (existing one-shot, unchanged) ──────────────
-            if (form.isEmergency()) {
-                if (minutesElapsed >= 15 && !form.isEmergency15MinSent()) {
-                    sendEmailAndNotificationToApprover(form, "EMERGENCY", false);
-                    form.setEmergency15MinSent(true);
-                    reductionFormRepo.save(form);
-                }
-                continue; // Emergency forms don't use the repeating reminder flow
+            if (minutesElapsed >= 15 && !form.isEmergency15MinSent()) {
+                sendEmailAndNotificationToApprover(form, "EMERGENCY", false);
+                form.setEmergency15MinSent(true);
+                reductionFormRepo.save(form);
             }
+        }
+    }
 
-            // ── 2. Repeating 30-minute reminders ────────────────────────────────────
-            if (minutesElapsed >= REMINDER_INTERVAL_MINUTES) {
-                boolean shouldSendReminder;
-                if (form.getLastReminderSentAt() == null) {
-                    // First reminder — send if at least 30 min have passed since submission
-                    shouldSendReminder = true;
-                } else {
-                    // Subsequent reminders — send if 30 min have passed since last reminder
-                    long minutesSinceLast = ChronoUnit.MINUTES.between(form.getLastReminderSentAt(), now);
-                    shouldSendReminder = minutesSinceLast >= REMINDER_INTERVAL_MINUTES;
-                }
+    // 30-Minute Summary Notification Scheduler
+    @Scheduled(fixedRate = 1800000)
+    public void sendSummaryNotifications() {
+        if (TESTING_MODE) return;
 
-                if (shouldSendReminder) {
-                    sendEmailAndNotificationToApprover(form, "REMINDER", false);
-                    form.setLastReminderSentAt(now);
-                    reductionFormRepo.save(form);
-                }
+        List<FormStatus> pendingStatuses = List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice);
+        List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
+        LocalDateTime now = LocalDateTime.now();
+
+        // Filter out emergency requests (they get instant) and forms that already received a summary
+        List<ReductionForm> formsToSummarize = pendingForms.stream()
+                .filter(f -> !f.isEmergency() && f.getLastSummarySentAt() == null)
+                .collect(Collectors.toList());
+
+        if (formsToSummarize.isEmpty()) return;
+
+        sendAggregatedAlerts(formsToSummarize, "Pending Requests Summary", "SUMMARY", false);
+
+        for (ReductionForm form : formsToSummarize) {
+            form.setLastSummarySentAt(now);
+            reductionFormRepo.save(form);
+        }
+        logger.info("Sent 30-minute summary for {} forms.", formsToSummarize.size());
+    }
+
+    // 3-Hour Reminder Notification Scheduler
+    @Scheduled(fixedRate = 10800000)
+    public void sendReminderNotifications() {
+        if (TESTING_MODE) return;
+
+        List<FormStatus> pendingStatuses = List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice);
+        List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
+        LocalDateTime now = LocalDateTime.now();
+
+        // Include all forms that are pending where last reminder was null or > 3 hours ago
+        List<ReductionForm> formsToRemind = pendingForms.stream()
+                .filter(f -> {
+                    if (f.getLastReminderSentAt() == null) {
+                        return ChronoUnit.HOURS.between(f.getSubmittedAt(), now) >= 3;
+                    } else {
+                        return ChronoUnit.HOURS.between(f.getLastReminderSentAt(), now) >= 3;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        if (formsToRemind.isEmpty()) return;
+
+        sendAggregatedAlerts(formsToRemind, "Reminder: Pending Requests Awaiting Action", "REMINDER", true);
+
+        for (ReductionForm form : formsToRemind) {
+            form.setLastReminderSentAt(now);
+            reductionFormRepo.save(form);
+        }
+        logger.info("Sent 3-hour reminder for {} forms.", formsToRemind.size());
+    }
+
+    private void sendAggregatedAlerts(List<ReductionForm> forms, String headerTitle, String type, boolean isReminder) {
+        // Group by Role
+        Map<Role, List<ReductionForm>> groupedForms = forms.stream()
+                .collect(Collectors.groupingBy(f -> getTargetRole(f.getCurrentStatus())));
+
+        for (Map.Entry<Role, List<ReductionForm>> entry : groupedForms.entrySet()) {
+            Role role = entry.getKey();
+            List<ReductionForm> roleForms = entry.getValue();
+
+            if (role == null || roleForms.isEmpty()) continue;
+
+            // Generate aggregated message for in-app / telegram
+            StringBuilder messageText = new StringBuilder();
+            messageText.append(headerTitle).append(" [").append(role.name()).append("]\n\n");
+            messageText.append("Total Pending Requests: ").append(roleForms.size()).append("\n\n");
+            for (ReductionForm form : roleForms) {
+                messageText.append("#").append(form.getFormId()).append(" - ").append(form.getStudentDetails().getName()).append("\n");
             }
+            messageText.append("\nPlease review pending requests.");
 
-            // ── 3. Repeating 3-hour escalation alerts ───────────────────────────────
-            if (hoursElapsed >= ESCALATION_THRESHOLD_HOURS) {
-                boolean shouldSendEscalation;
-                if (form.getLastEscalationSentAt() == null) {
-                    // First escalation — send if at least 3 hours have passed since submission
-                    shouldSendEscalation = true;
-                } else {
-                    // Subsequent escalations — send if 3 hours have passed since last escalation
-                    long hoursSinceLast = ChronoUnit.HOURS.between(form.getLastEscalationSentAt(), now);
-                    shouldSendEscalation = hoursSinceLast >= ESCALATION_INTERVAL_HOURS;
+            // Send Telegram Notification
+            telegramNotificationService.sendAggregatedGroupNotification(roleForms, headerTitle + " [" + role.name() + "]");
+
+            // Send to respective staff members
+            List<StaffUsers> staffList = staffUsersRepo.findByRole(role);
+            for (StaffUsers staff : staffList) {
+                // If Warden, we technically could have requests for different years. 
+                // We'll filter the list for just this warden's year.
+                List<ReductionForm> staffSpecificForms = roleForms;
+                if (role == Role.Warden) {
+                    staffSpecificForms = roleForms.stream()
+                            .filter(f -> staff.getUserName().equalsIgnoreCase("warden" + f.getYear()))
+                            .collect(Collectors.toList());
                 }
 
-                if (shouldSendEscalation) {
-                    sendEmailAndNotificationToApprover(form, "ESCALATION", true);
-                    form.setLastEscalationSentAt(now);
-                    reductionFormRepo.save(form);
+                if (staffSpecificForms.isEmpty()) continue;
+
+                // Send Email
+                try {
+                    emailService.sendAggregatedEmail(staff.getGmail(), staffSpecificForms, isReminder, role.name());
+                } catch (Exception ex) {
+                    logger.error("Error sending aggregated email", ex);
+                }
+
+                // Send In-App Notification
+                // Re-build message if staffSpecificForms is subset
+                if (role == Role.Warden) {
+                    StringBuilder wMsg = new StringBuilder();
+                    wMsg.append(headerTitle).append("\n\nTotal Pending Requests: ").append(staffSpecificForms.size()).append("\n\n");
+                    for (ReductionForm form : staffSpecificForms) {
+                        wMsg.append("#").append(form.getFormId()).append(" - ").append(form.getStudentDetails().getName()).append("\n");
+                    }
+                    wMsg.append("\nPlease review pending requests.");
+                    notificationService.createAggregatedNotification(staff.getUserName(), wMsg.toString(), type);
+                } else {
+                    notificationService.createAggregatedNotification(staff.getUserName(), messageText.toString(), type);
                 }
             }
         }
     }
 
-    /**
-     * Sends email + in-app notification to the appropriate approver for the given form.
-     * isEscalation=true → sends escalation email; isEscalation=false → sends reminder email.
-     */
     private void sendEmailAndNotificationToApprover(ReductionForm form, String type, boolean isEscalation) {
         Role targetRole = getTargetRole(form.getCurrentStatus());
         if (targetRole == null) return;
 
         List<StaffUsers> staffList = staffUsersRepo.findByRole(targetRole);
-        boolean anySent = false;
         for (StaffUsers staff : staffList) {
-            // For Wardens, only notify the warden whose username matches the form's year
             if (targetRole == Role.Warden) {
                 String expectedUsername = "warden" + form.getYear();
                 if (!staff.getUserName().equalsIgnoreCase(expectedUsername)) {
                     continue;
                 }
             }
-
-            // Send email
             try {
                 if (isEscalation) {
                     emailService.sendEscalationEmail(staff.getGmail(), form);
                 } else {
                     emailService.sendReminderEmail(staff.getGmail(), form, type);
                 }
-                anySent = true;
             } catch (Exception ex) {
-                // swallow to ensure scheduler continues; EmailService already logs failures
             }
 
-            // Send in-app notification to the staff member
             String notifMessage = isEscalation
                     ? "🚨 ESCALATION: Request #" + form.getFormId() + " from " + form.getStudentDetails().getName() + " has been pending for over " + ChronoUnit.HOURS.between(form.getSubmittedAt(), LocalDateTime.now()) + " hour(s). Immediate action required!"
                     : "⏰ Reminder: Request #" + form.getFormId() + " from " + form.getStudentDetails().getName() + " is still awaiting your approval.";
 
             String notifType = isEscalation ? "ESCALATION" : "REMINDER";
             notificationService.createNotification(staff.getUserName(), notifMessage, notifType, form.getFormId());
-        }
-
-        // Record one history entry per form send (reminder or escalation)
-        if (anySent) {
-            ReductionFormHistory history = new ReductionFormHistory();
-            history.setReductionForm(form);
-            history.setFromStatus(form.getCurrentStatus());
-            history.setToStatus(form.getCurrentStatus());
-            history.setEventType(isEscalation ? "Escalation Sent" : "Reminder Sent");
-            history.setPerformedBy("system");
-            history.setComment(isEscalation ? "Escalation alert sent by scheduler" : "Reminder sent by scheduler");
-            history.setEventTimestamp(java.time.LocalDateTime.now());
-            reductionFormHistoryRepo.save(history);
         }
     }
 

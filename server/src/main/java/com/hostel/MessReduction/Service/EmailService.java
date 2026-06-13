@@ -158,6 +158,60 @@ public class EmailService {
         }
     }
 
+    @Async("emailTaskExecutor")
+    public void sendAggregatedEmail(String to, java.util.List<ReductionForm> forms, boolean isReminder, String roleName) {
+        if (forms == null || forms.isEmpty()) return;
+        
+        MimeMessage mimeMessage = emailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+            String subjectPrefix = isReminder ? "[REMINDER] " : "[SUMMARY] ";
+            String subject = String.format("%s🍽️ HOSTEL MESS REDUCTION - %d Pending Requests for %s - [%s]",
+                    subjectPrefix, forms.size(), roleName, uniqueId);
+            helper.setSubject(subject);
+
+            StringBuilder html = new StringBuilder();
+            html.append("<html><body>")
+                .append("<h2>🍽️ HOSTEL MESS REDUCTION SYSTEM</h2>")
+                .append("<p>You have <strong>").append(forms.size()).append("</strong> pending requests awaiting your review.</p>")
+                .append("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>")
+                .append("<tr style='background-color: #f2f2f2;'>")
+                .append("<th>Request ID</th><th>Student Name</th><th>Register No</th><th>Submitted At</th>")
+                .append("</tr>");
+
+            for (ReductionForm form : forms) {
+                html.append("<tr>")
+                    .append("<td>#").append(escape(form.getFormId())).append("</td>")
+                    .append("<td>").append(escape(form.getStudentDetails().getName())).append("</td>")
+                    .append("<td>").append(escape(form.getStudentDetails().getRegisterNo())).append("</td>")
+                    .append("<td>").append(escape(form.getSubmittedAt())).append("</td>")
+                    .append("</tr>");
+            }
+
+            html.append("</table>")
+                .append("<br/>")
+                .append("<p>Please log in to the application to review and process these requests.</p>")
+                .append("<p style='font-size:small;color:gray;'>This is an automated aggregated notification.</p>")
+                .append("</body></html>");
+
+            helper.setText(html.toString(), true);
+
+            mimeMessage.addHeader("X-Priority", "1");
+            mimeMessage.addHeader("Importance", "High");
+            
+            emailSender.send(mimeMessage);
+
+            logger.info("Aggregated Mail Sent Successfully | Recipient: {} | Count: {} | Reminder: {}", to, forms.size(), isReminder);
+        } catch (Exception e) {
+            logger.error("Aggregated Mail Sent Failed | Recipient: {} | Count: {} | Error: {}", to, forms.size(), e.getMessage());
+        }
+    }
+
     private boolean isDuplicate(String key) {
         long now = System.currentTimeMillis();
         // clean up old entries occasionally if we wanted, but map size is likely small

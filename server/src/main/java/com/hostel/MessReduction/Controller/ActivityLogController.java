@@ -37,29 +37,10 @@ public class ActivityLogController {
         return ResponseEntity.ok(activityLogService.createLog(request));
     }
 
-    @GetMapping("/{role}")
+    @GetMapping("/my-logs")
     @PreAuthorize("hasAnyRole('Warden','DeputyWarden','Office')")
-    public ResponseEntity<List<ActivityLogResponse>> getLogsByRole(
-            @PathVariable String role,
-            Authentication authentication) {
-        Role requestedRole = resolveRole(role);
-        Role authenticatedRole = resolveAuthenticatedRole(authentication);
-        if (authenticatedRole != requestedRole) {
-            throw new BadRequestException("Access denied: users may only request logs for their own role");
-        }
-        return ResponseEntity.ok(activityLogService.findActiveLogsByRole(requestedRole));
-    }
-
-    private Role resolveRole(String requestedRole) {
-        if (requestedRole == null) {
-            throw new BadRequestException("Role path variable is required");
-        }
-        return switch (requestedRole.trim().toUpperCase()) {
-            case "WARDEN" -> Role.Warden;
-            case "DEPUTY", "DEPUTYWARDEN", "DEPUTY_WARDEN" -> Role.DeputyWarden;
-            case "OFFICE" -> Role.Office;
-            default -> throw new BadRequestException("Invalid role: " + requestedRole);
-        };
+    public ResponseEntity<List<ActivityLogResponse>> getMyLogs(Authentication authentication) {
+        return ResponseEntity.ok(activityLogService.findActiveLogsByStaffName(authentication.getName()));
     }
 
     private Role resolveAuthenticatedRole(Authentication authentication) {
@@ -67,7 +48,7 @@ public class ActivityLogController {
                 .map(Object::toString)
                 .filter(roleName -> roleName.startsWith("ROLE_"))
                 .map(roleName -> roleName.substring(5))
-                .map(this::resolveRole)
+                .map(Role::valueOf)
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Unable to resolve authenticated user role"));
     }

@@ -8,6 +8,7 @@ import {
 import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
+import ActivityLogModal from "./ActivityLogModal";
 
 
 const handleLogout = () => {
@@ -142,6 +143,11 @@ function Deputy_warden_side() {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
+
+    // Activity Log Modal State
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [logActionType, setLogActionType] = useState("Approved");
+    const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     const handleAction = async (id, actionType) => {
         // Normalize action to 'Approve' or 'Reject' for backend
@@ -324,10 +330,20 @@ function Deputy_warden_side() {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
                                             { label: "Pending Deputy",  count: dashboardStats.pendingDeputyWarden || 0,  color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/10"   },
-                                            { label: "Forwarded Office", count: dashboardStats.pendingOffice || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10" },
-                                            { label: "Rejected Deputy", count: dashboardStats.rejectedDeputyWarden || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10"    },
+                                            { label: "Forwarded Office", count: dashboardStats.pendingOffice || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10", action: "Approved", title: "Deputy Warden Approved" },
+                                            { label: "Rejected Deputy", count: dashboardStats.rejectedDeputyWarden || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10", action: "Rejected", title: "Deputy Warden Rejected"    },
                                         ].map(s => (
-                                            <div key={s.label} className={`p-6 sm:p-8 rounded-2xl ${s.bg} border ${s.border}`}>
+                                            <div 
+                                                key={s.label} 
+                                                onClick={() => {
+                                                    if (s.action) {
+                                                        setLogActionType(s.action);
+                                                        setLogActionTitle(s.title);
+                                                        setIsLogModalOpen(true);
+                                                    }
+                                                }}
+                                                className={`p-6 sm:p-8 rounded-2xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:scale-[1.02] transition-transform hover:opacity-80' : ''}`}
+                                            >
                                                 <p className="text-xs sm:text-sm text-white/30 uppercase font-black tracking-widest mb-2">{s.label}</p>
                                                 <p className={`text-5xl sm:text-7xl font-black ${s.color}`}>{s.count}</p>
                                             </div>
@@ -641,6 +657,15 @@ function Deputy_warden_side() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Activity Log Modal */}
+            <ActivityLogModal 
+                isOpen={isLogModalOpen} 
+                onClose={() => setIsLogModalOpen(false)} 
+                actionType={logActionType} 
+                actionTitle={logActionTitle} 
+                themeColor="blue" 
+            />
         </div>
     );
 }

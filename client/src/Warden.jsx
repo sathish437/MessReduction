@@ -8,6 +8,7 @@ import {
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import logo from './assets/1000088399.png';
+import ActivityLogModal from "./ActivityLogModal";
 
 const handleLogout = () => {
   deleteCookie('staffToken');
@@ -102,6 +103,11 @@ const Warden = ({ assignedYear = null }) => {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
+
+    // Activity Log Modal State
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [logActionType, setLogActionType] = useState("Approved");
+    const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     useEffect(() => {
         fetchData();
@@ -292,7 +298,10 @@ const Warden = ({ assignedYear = null }) => {
                                 </div>
 
                                 {/* Accepted Requests (Warden approved -> PendingDeputyWarden) */}
-                                <div className="bg-[#0f1f38] border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-between">
+                                <div 
+                                    onClick={() => { setLogActionType("Approved"); setLogActionTitle("Warden Approved"); setIsLogModalOpen(true); }}
+                                    className="bg-[#0f1f38] border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-emerald-500/40"
+                                >
                                     <div>
                                         <p className="text-sm text-emerald-400/60 uppercase font-black tracking-widest mb-2">Accepted Requests</p>
                                         <p className="text-5xl font-black text-emerald-400">{counts?.pendingDeputyWarden || 0}</p>
@@ -301,7 +310,10 @@ const Warden = ({ assignedYear = null }) => {
                                 </div>
 
                                 {/* Rejected Requests */}
-                                <div className="bg-[#0f1f38] border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-between">
+                                <div 
+                                    onClick={() => { setLogActionType("Rejected"); setLogActionTitle("Warden Rejected"); setIsLogModalOpen(true); }}
+                                    className="bg-[#0f1f38] border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-rose-500/40"
+                                >
                                     <div>
                                         <p className="text-sm text-rose-400/60 uppercase font-black tracking-widest mb-2">Rejected Requests</p>
                                         <p className="text-5xl font-black text-rose-400">{counts?.rejectedWarden || 0}</p>
@@ -596,6 +608,15 @@ const Warden = ({ assignedYear = null }) => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Activity Log Modal */}
+            <ActivityLogModal 
+                isOpen={isLogModalOpen} 
+                onClose={() => setIsLogModalOpen(false)} 
+                actionType={logActionType} 
+                actionTitle={logActionTitle} 
+                themeColor={selectedYear ? YEAR_THEME[selectedYear]?.color || "emerald" : "emerald"} 
+            />
         </div>
     );
 };

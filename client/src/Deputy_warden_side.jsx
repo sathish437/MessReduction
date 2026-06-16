@@ -349,17 +349,8 @@ function Deputy_warden_side() {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
                                             { label: "Pending Deputy",  count: dashboardStats.pendingDeputyWarden || 0,  color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/10"   },
-<<<<<<< HEAD
                                             { label: "Forwarded Warden", count: dashboardStats.pendingWarden || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10", action: "Approved", title: "Deputy Warden Approved" },
-=======
-<<<<<<< HEAD
-                                            { label: "Forwarded Warden", count: dashboardStats.pendingWarden || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10" },
-                                            { label: "Rejected Deputy", count: dashboardStats.rejectedDeputyWarden || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10"    },
-=======
-                                            { label: "Forwarded Office", count: dashboardStats.pendingOffice || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10", action: "Approved", title: "Deputy Warden Approved" },
->>>>>>> 211ddc4f6dbeb17dc1364e051d1e03c746b11015
                                             { label: "Rejected Deputy", count: dashboardStats.rejectedDeputyWarden || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10", action: "Rejected", title: "Deputy Warden Rejected"    },
->>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
                                         ].map(s => (
                                             <div 
                                                 key={s.label} 

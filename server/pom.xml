@@ -101,7 +101,6 @@
 			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
-<<<<<<< HEAD
 		<!-- Apache POI for Excel generation -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -112,23 +111,11 @@
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.5</version>
-=======
+		</dependency>
 		<dependency>
 			<groupId>com.google.firebase</groupId>
 			<artifactId>firebase-admin</artifactId>
 			<version>9.2.0</version>
->>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
-		</dependency>
-		<!-- Apache POI for Excel generation -->
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>5.2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.5</version>
 		</dependency>
 	</dependencies>
 

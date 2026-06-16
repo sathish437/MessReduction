@@ -20,36 +20,10 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     Long countByCurrentStatusAndYear(FormStatus status,Integer year);
     List<ReductionForm> findByStudentDetailsStudentId(Long studentId);
     Optional<ReductionForm> findByFormIdAndStudentDetailsStudentId(Long formId, Long studentId);
-<<<<<<< HEAD
-
-    // New methods for filtering by gender and year
-    List<ReductionForm> findByCurrentStatusAndStudentDetailsGender(FormStatus status, Gender gender);
-    List<ReductionForm> findByCurrentStatusAndYearAndStudentDetailsGender(FormStatus status, Integer year, Gender gender);
-
-    // Method to check for active approved requests by student
-    List<ReductionForm> findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfter(Long studentId, FormStatus status, java.time.LocalDate currentDate);
-
-    // isActive filtering methods
-    List<ReductionForm> findByCurrentStatusAndIsActiveTrue(FormStatus status);
-    List<ReductionForm> findByCurrentStatusAndYearAndIsActiveTrue(FormStatus status, Integer year);
-    List<ReductionForm> findByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus status, String assignedDeputyWarden);
-    Long countByCurrentStatusAndIsActiveTrue(FormStatus status);
-    Long countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus status, String assignedDeputyWarden);
-    Long countByCurrentStatusAndYearAndIsActiveTrue(FormStatus status, Integer year);
-    List<ReductionForm> findByStudentDetailsStudentIdAndIsActiveTrue(Long studentId);
-    Optional<ReductionForm> findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(Long formId, Long studentId);
-    List<ReductionForm> findByCurrentStatusAndStudentDetailsGenderAndIsActiveTrue(FormStatus status, Gender gender);
-    List<ReductionForm> findByCurrentStatusAndYearAndStudentDetailsGenderAndIsActiveTrue(FormStatus status, Integer year, Gender gender);
-    List<ReductionForm> findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfterAndIsActiveTrue(Long studentId, FormStatus status, java.time.LocalDate currentDate);
-    List<ReductionForm> findByIsActiveTrueAndArrivalDateBefore(java.time.LocalDate date);
-    List<ReductionForm> findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(FormStatus status, java.time.LocalDate startDate, java.time.LocalDate endDate);
-    List<ReductionForm> findByArrivalDateBefore(java.time.LocalDate date);
-=======
     List<ReductionForm> findByCurrentStatusIn(List<FormStatus> statuses);
     
     // Testing Mode Methods
     List<ReductionForm> findByCurrentStatusInAndSubmittedAtAfter(List<FormStatus> statuses, java.time.LocalDateTime time);
-<<<<<<< HEAD
 
     // New methods for filtering by gender and year
     List<ReductionForm> findByCurrentStatusAndStudentDetailsGender(FormStatus status, Gender gender);
@@ -73,7 +47,4 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByIsActiveTrueAndArrivalDateBefore(java.time.LocalDate date);
     List<ReductionForm> findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(FormStatus status, java.time.LocalDate startDate, java.time.LocalDate endDate);
     List<ReductionForm> findByArrivalDateBefore(java.time.LocalDate date);
-=======
->>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
->>>>>>> 211ddc4f6dbeb17dc1364e051d1e03c746b11015
 }

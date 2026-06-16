@@ -15,16 +15,24 @@ public class StudentDetailsService {
     }
 
     public StudentDetailsResDTO addStudent(StudentDetailsReqDTO dto){
-        try{
-            if(studentDetailsRepo.existsByEmailId(dto.getEmailId())){
-                throw new IllegalArgumentException("Email already exists");
-            }
-            StudentDetails student= StudentDetailsMapper.mapToStudentDetails(dto);
+        if(studentDetailsRepo.existsByEmailId(dto.getEmailId())){
+            throw new IllegalArgumentException("Email already exists");
+        }
+        try {
+            StudentDetails student = StudentDetailsMapper.mapToStudentDetails(dto);
             studentDetailsRepo.save(student);
             return StudentDetailsMapper.mapToStudentDetailsResDTO(student);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e.getMessage());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            String errorMsg = e.getMostSpecificCause().getMessage();
+            if (errorMsg != null && errorMsg.contains("phone_no")) {
+                throw new IllegalArgumentException("This Phone Number is already registered!");
+            } else if (errorMsg != null && errorMsg.contains("register_no")) {
+                throw new IllegalArgumentException("This Register Number is already registered!");
+            } else if (errorMsg != null && errorMsg.contains("roll_no")) {
+                throw new IllegalArgumentException("This Roll Number is already registered!");
+            } else {
+                throw new IllegalArgumentException("Registration failed: Details already exist.");
+            }
         }
-
     }
 }

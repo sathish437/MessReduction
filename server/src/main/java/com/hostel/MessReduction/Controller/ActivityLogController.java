@@ -43,6 +43,17 @@ public class ActivityLogController {
         return ResponseEntity.ok(activityLogService.findActiveLogsByStaffName(authentication.getName()));
     }
 
+    @GetMapping("/role")
+    @PreAuthorize("hasAnyRole('Warden','DeputyWarden','Office')")
+    public ResponseEntity<org.springframework.data.domain.Page<ActivityLogResponse>> getLogsByRoleAndAction(
+            @RequestParam String action,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        Role authenticatedRole = resolveAuthenticatedRole(authentication);
+        return ResponseEntity.ok(activityLogService.getLogsByRoleAndAction(authenticatedRole, action, page, size));
+    }
+
     private Role resolveAuthenticatedRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(Object::toString)

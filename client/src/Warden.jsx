@@ -8,6 +8,7 @@ import {
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import logo from './assets/1000088399.png';
+import ActivityLogModal from "./ActivityLogModal";
 
 const handleLogout = () => {
   deleteCookie('staffToken');
@@ -104,6 +105,11 @@ const Warden = () => {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
+
+    // Activity Log Modal State
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [logActionType, setLogActionType] = useState("Approved");
+    const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     useEffect(() => {
         fetchData();
@@ -341,7 +347,10 @@ const Warden = () => {
                                 </div>
 
                                 {/* Accepted Requests (Warden approved -> PendingDeputyWarden) */}
-                                <div className="bg-[#0f1f38] border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-between">
+                                <div 
+                                    onClick={() => { setLogActionType("Approved"); setLogActionTitle("Warden Approved"); setIsLogModalOpen(true); }}
+                                    className="bg-[#0f1f38] border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-emerald-500/40"
+                                >
                                     <div>
                                         <p className="text-sm text-emerald-400/60 uppercase font-black tracking-widest mb-2">Accepted Requests</p>
                                         <p className="text-5xl font-black text-emerald-400">{counts?.pendingDeputyWarden || 0}</p>
@@ -350,7 +359,10 @@ const Warden = () => {
                                 </div>
 
                                 {/* Rejected Requests */}
-                                <div className="bg-[#0f1f38] border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-between">
+                                <div 
+                                    onClick={() => { setLogActionType("Rejected"); setLogActionTitle("Warden Rejected"); setIsLogModalOpen(true); }}
+                                    className="bg-[#0f1f38] border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-rose-500/40"
+                                >
                                     <div>
                                         <p className="text-sm text-rose-400/60 uppercase font-black tracking-widest mb-2">Rejected Requests</p>
                                         <p className="text-5xl font-black text-rose-400">{counts?.rejectedWarden || 0}</p>
@@ -478,9 +490,7 @@ const Warden = () => {
                                             <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
                                                 {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
                                             </button>
-                                            <div className={`w-14 h-14 rounded-2xl bg-[#0a1628] border ${t.border} flex items-center justify-center ${t.text} font-black text-2xl`}>
-                                                {req.name?.charAt(0) ?? "?"}
-                                            </div>
+
                                             <div>
                                                 <h4 className="text-xl font-black text-white">{req.name}</h4>
                                                 <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept} · {req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"} Year</p>
@@ -500,7 +510,7 @@ const Warden = () => {
 
                                         <div className="space-y-1">
                                             <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p className="text-sm font-medium text-white/40 leading-relaxed">{req.reason}</p>
+                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
                                         </div>
 
                                         <div className="flex items-center justify-end gap-2 pt-2">
@@ -572,9 +582,7 @@ const Warden = () => {
                                                     </td>
                                                     <td className="px-6 py-6">
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`w-12 h-12 rounded-2xl bg-[#0a1628] border ${t.border} flex items-center justify-center ${t.text} font-black text-xl shadow-inner group-hover:brightness-125 transition-all`}>
-                                                                {req.name?.charAt(0) ?? "?"}
-                                                            </div>
+
                                                             <p className={`text-lg font-black text-white group-hover:${t.text} transition-colors`}>{req.name}</p>
                                                         </div>
                                                     </td>
@@ -594,7 +602,7 @@ const Warden = () => {
                                                         <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-6">
-                                                        <p className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate">{req.reason}</p>
+                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
                                                     <td className="px-6 py-5 text-right">
                                                         <div className="flex justify-end gap-2">
@@ -685,6 +693,15 @@ const Warden = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Activity Log Modal */}
+            <ActivityLogModal 
+                isOpen={isLogModalOpen} 
+                onClose={() => setIsLogModalOpen(false)} 
+                actionType={logActionType} 
+                actionTitle={logActionTitle} 
+                themeColor={selectedYear ? YEAR_THEME[selectedYear]?.color || "emerald" : "emerald"} 
+            />
         </div>
     );
 };

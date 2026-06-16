@@ -8,6 +8,8 @@ import {
 import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
+import ActivityLogModal from "./ActivityLogModal";
+
 
 const handleLogout = () => {
   deleteCookie('staffToken');
@@ -175,6 +177,11 @@ function HostelOffice() {
     const [rejectFormId, setRejectFormId] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
 
+    // Activity Log Modal State
+    const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [logActionType, setLogActionType] = useState("Approved");
+    const [logActionTitle, setLogActionTitle] = useState("Accepted");
+
     const handleAction = async (id, actionType) => {
         // Normalize action to 'Approve' or 'Reject' for backend
         const action = actionType === "Approve" ? "Approve" : "Reject";
@@ -304,12 +311,15 @@ function HostelOffice() {
                 </div>
 
                 {/* Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
-                >
-                    <FiLogOut size={16} /> Logout
-                </button>
+                <div className="flex items-center gap-3">
+
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
+                    >
+                        <FiLogOut size={16} /> Logout
+                    </button>
+                </div>
             </header>
 
             {/* ── Main Content ── */}
@@ -356,10 +366,20 @@ function HostelOffice() {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
                                             { label: "Pending Office",  count: dashboardStats.pendingOffice || 0,  color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/10"   },
-                                            { label: "Approved", count: dashboardStats.approved || 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/10" },
-                                            { label: "Rejected Office", count: dashboardStats.rejectedOffice || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10"    },
+                                            { label: "Approved", count: dashboardStats.approved || 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/10", action: "Approved", title: "Office Approved" },
+                                            { label: "Rejected Office", count: dashboardStats.rejectedOffice || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10", action: "Rejected", title: "Office Rejected"    },
                                         ].map(s => (
-                                            <div key={s.label} className={`p-6 sm:p-8 rounded-2xl ${s.bg} border ${s.border}`}>
+                                            <div 
+                                                key={s.label} 
+                                                onClick={() => {
+                                                    if (s.action) {
+                                                        setLogActionType(s.action);
+                                                        setLogActionTitle(s.title);
+                                                        setIsLogModalOpen(true);
+                                                    }
+                                                }}
+                                                className={`p-6 sm:p-8 rounded-2xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:scale-[1.02] transition-transform hover:opacity-80' : ''}`}
+                                            >
                                                 <p className="text-xs sm:text-sm text-white/30 uppercase font-black tracking-widest mb-2">{s.label}</p>
                                                 <p className={`text-5xl sm:text-7xl font-black ${s.color}`}>{s.count}</p>
                                             </div>
@@ -476,9 +496,6 @@ function HostelOffice() {
                                             <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
                                                 {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
                                             </button>
-                                            <div className="w-14 h-14 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-2xl">
-                                                {req.name?.charAt(0) ?? "?"}
-                                            </div>
                                             <div>
                                                 <h4 className="text-xl font-black text-white">{req.name}</h4>
                                                 <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept}</p>
@@ -498,7 +515,7 @@ function HostelOffice() {
 
                                         <div className="space-y-1">
                                             <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p className="text-sm font-medium text-white/40 leading-relaxed">{req.reason}</p>
+                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
                                         </div>
 
                                         <div className="flex items-center justify-end gap-2 pt-2">
@@ -569,9 +586,6 @@ function HostelOffice() {
                                                     </td>
                                                     <td className="px-6 py-6">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-xl shadow-inner group-hover:brightness-125 transition-all">
-                                                                {req.name?.charAt(0) ?? "?"}
-                                                            </div>
                                                             <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
                                                         </div>
                                                     </td>
@@ -588,7 +602,7 @@ function HostelOffice() {
                                                         <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-6">
-                                                        <p className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate">{req.reason}</p>
+                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
                                                     <td className="px-6 py-5 text-right">
                                                         <div className="flex justify-end gap-2">
@@ -800,6 +814,15 @@ function HostelOffice() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Activity Log Modal */}
+            <ActivityLogModal 
+                isOpen={isLogModalOpen} 
+                onClose={() => setIsLogModalOpen(false)} 
+                actionType={logActionType} 
+                actionTitle={logActionTitle} 
+                themeColor="violet" 
+            />
         </div>
     );
 }

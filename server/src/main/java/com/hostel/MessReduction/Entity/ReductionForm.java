@@ -13,12 +13,14 @@ import lombok.*;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Setter
@@ -73,7 +75,36 @@ public class ReductionForm {
 
     @Column(length = 1000)
     private String rejectReason;
-                                                                                                                             
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isEmergency = false;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime submittedAt;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean reminder30MinSent = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean reminder1HourSent = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean reminder3HourSent = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean emergency15MinSent = false;
+
+    // Repeating reminder/escalation tracking
+    @Column
+    private LocalDateTime lastReminderSentAt;
+
+    @Column
+    private LocalDateTime lastEscalationSentAt;
+
+    @Column
+    private LocalDateTime lastSummarySentAt;
+
     @OneToMany(mappedBy = "reductionForm", cascade = CascadeType.ALL, orphanRemoval = false)
     @JsonIgnore
     private List<ReductionFormHistory> history = new ArrayList<>();

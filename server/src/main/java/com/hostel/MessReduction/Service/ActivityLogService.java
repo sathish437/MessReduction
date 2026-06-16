@@ -13,6 +13,11 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.hostel.MessReduction.Entity.Role;
+
 @Service
 @Transactional
 public class ActivityLogService {
@@ -49,6 +54,15 @@ public class ActivityLogService {
                 .sorted(Comparator.comparing(ActivityLog::getTimestamp).reversed())
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    public Page<ActivityLogResponse> getLogsByRoleAndAction(Role role, String action, int page, int size) {
+        if (role == null || action == null || action.isBlank()) {
+            throw new BadRequestException("Role and action are required to fetch activity logs");
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        return activityLogRepository.findByStaffRoleAndActionAndIsActiveTrueOrderByTimestampDesc(role, action, pageable)
+                .map(this::mapToResponse);
     }
 
     public void expireLogs() {

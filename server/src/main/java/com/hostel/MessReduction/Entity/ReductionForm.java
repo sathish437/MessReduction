@@ -70,6 +70,9 @@ public class ReductionForm {
     @Enumerated(EnumType.STRING)
     private FormStatus currentStatus;
 
+    @Column(length = 255, nullable = true)
+    private String assignedDeputyWarden;
+
     @Column(length = 1000)
     private String rejectReason;
 
@@ -105,5 +108,7 @@ public class ReductionForm {
     @OneToMany(mappedBy = "reductionForm", cascade = CascadeType.ALL, orphanRemoval = false)
     @JsonIgnore
     private List<ReductionFormHistory> history = new ArrayList<>();
+
+    private boolean isActive = true;
 
 }

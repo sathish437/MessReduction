@@ -20,8 +20,19 @@ apiClient.interceptors.request.use((config) => {
   console.log(`[API Request] Token found: ${token ? 'YES (' + token.substring(0, 20) + '...)' : 'NO'}`);
 
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-    console.log(`[API Request] Authorization header set: Bearer ${token.substring(0, 20)}...`);
+    const requestPath = config.url || '';
+    // Do not attach Authorization header for public registration endpoint
+    if (!requestPath.includes('/api/student/reg')) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log(`[API Request] Authorization header set: Bearer ${token.substring(0, 20)}...`);
+        // Log headers for debugging (non-sensitive partial token only)
+        console.log('[API Request] Outgoing headers:', {
+          Authorization: config.headers.Authorization ? (config.headers.Authorization.substring(0, 20) + '...') : null,
+          'Content-Type': config.headers['Content-Type']
+        });
+    } else {
+      console.log(`[API Request] Skipping Authorization header for ${requestPath}`);
+    }
   } else {
     console.warn(`[API Request] No token found - request will be unauthenticated`);
   }
@@ -44,6 +55,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       console.warn(`[API Response] 401 Unauthorized on ${error.config?.url}`);
       console.warn('[API Response] Letting ProtectedRoute handle logout decision');
+      console.warn('[API Response] Request headers at failure:', error.config?.headers);
     }
 
     // Handle 403 Forbidden

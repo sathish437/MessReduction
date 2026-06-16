@@ -8,6 +8,7 @@ import com.hostel.MessReduction.security.StaffJwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,18 +20,28 @@ public class StaffAuthService {
     private final StaffJwtUtil staffJwtUtil;
 
     public StaffLoginResDTO login(StaffUsersReqDTO loginReqDTO) {
-        authenticationManager.authenticate(
+
+        // 1. Authenticate credentials via Spring Security
+        Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginReqDTO.getUserName(),
                         loginReqDTO.getPassword()
                 )
         );
 
+        // 2. Ensure authentication succeeded
+        if (!authentication.isAuthenticated()) {
+            throw new RuntimeException("Invalid username or password");
+        }
+
+        // 3. Fetch user from DB
         StaffUsers staff = staffUsersRepo.findByUserName(loginReqDTO.getUserName())
                 .orElseThrow(() -> new RuntimeException("Staff not found"));
 
+        // 4. Generate JWT token
         String token = staffJwtUtil.generateToken(staff.getUserName(), staff.getRole());
 
+        // 5. Return response
         return new StaffLoginResDTO(
                 token,
                 staff.getUserName(),

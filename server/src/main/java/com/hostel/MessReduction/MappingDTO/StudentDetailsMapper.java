@@ -12,9 +12,9 @@ public class StudentDetailsMapper {
         studentDetails.setRegisterNo(studentDetailsReqDTO.getRegisterNo());
         studentDetails.setRollNo(studentDetailsReqDTO.getRollNo());
         studentDetails.setDepartment(studentDetailsReqDTO.getDepartment());
+        studentDetails.setGender(studentDetailsReqDTO.getGender());
         studentDetails.setDob(studentDetailsReqDTO.getDob());
         studentDetails.setEmailId(studentDetailsReqDTO.getEmailId());
-        studentDetails.setDepartment(studentDetailsReqDTO.getDepartment());
         studentDetails.setPhoneNo(studentDetailsReqDTO.getPhoneNo());
 
         return studentDetails;

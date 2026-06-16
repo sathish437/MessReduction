@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ReductionFormHistoryRepo extends JpaRepository<ReductionFormHistory, Long> {
     List<ReductionFormHistory> findByReductionFormFormIdOrderByEventTimestampAsc(Long formId);
+    List<ReductionFormHistory> findByReductionFormFormIdAndIsActiveTrueOrderByEventTimestampAsc(Long formId);
 }

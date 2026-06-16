@@ -68,6 +68,7 @@ function Register({ onNavigate }) {
     rollNo: "",
     dob: "",
     dept: "",
+    gender: "",
     email: "",
     phone: ""
   });
@@ -105,6 +106,7 @@ function Register({ onNavigate }) {
       rollNo: formData.rollNo,
       dob: formData.dob,
       department: formData.dept,
+      gender: formData.gender,
       emailId: formData.email,
       phoneNo: formData.phone
     };
@@ -219,6 +221,23 @@ function Register({ onNavigate }) {
                     ))}
                   </select>
                 </Field>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field icon={<FiUser />}>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      required
+                      className={`${inp} appearance-none cursor-pointer`}
+                    >
+                      <option value="" className="bg-[#0f1f38] text-white/40">Select Gender</option>
+                      <option value="MALE" className="bg-[#0f1f38] text-white">Male</option>
+                      <option value="FEMALE" className="bg-[#0f1f38] text-white">Female</option>
+                    </select>
+                  </Field>
+
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field icon={<FiMail />}>

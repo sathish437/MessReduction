@@ -11,9 +11,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -41,7 +45,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/student/reg").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/student/reg").permitAll()
                         .requestMatchers("/api/staff/login").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
@@ -53,7 +57,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/hostelStaff/staff/dashboard-count").hasAnyRole("Warden", "DeputyWarden", "Office")
                         .requestMatchers("/api/hostelStaff/staff/deputyWarden/year-count").hasRole("DeputyWarden")
                         .requestMatchers("/api/hostelStaff/staff/office/year-count").hasRole("Office")
+                        .requestMatchers("/api/hostelStaff/staff/forms/delete-all").hasRole("Office")
                         .requestMatchers("/api/logs/**").hasAnyRole("Warden", "DeputyWarden", "Office")
+                        .requestMatchers("/api/student-form/**").hasRole("STUDENT")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -78,29 +84,19 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(
+            StaffUserDetailsService staffUserDetailsService,
+            PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(staffUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(authProvider);
     }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new PasswordEncoder() {
-            private final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
-
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return bcrypt.encode(rawPassword);
-            }
-
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                // Try BCrypt first (for staff passwords)
-                if (encodedPassword.startsWith("$2a$") || encodedPassword.startsWith("$2b$") || encodedPassword.startsWith("$2y$")) {
-                    return bcrypt.matches(rawPassword, encodedPassword);
-                }
-                // For student DOB passwords (plain string comparison)
-                return rawPassword.toString().equals(encodedPassword);
-            }
-        };
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
+    
 }

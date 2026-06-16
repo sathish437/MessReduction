@@ -32,4 +32,10 @@ public class StaffUsers {
     @Email
     @Column(length = 100,nullable = false)
     private String gmail;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Gender gender;
+
+    private Integer year;
 }

@@ -16,6 +16,7 @@ public class StudentLoginMapper {
         studentLoginResDTO.setPhoneNo(studentDetails.getPhoneNo());
         studentLoginResDTO.setEmailId(studentDetails.getEmailId());
         studentLoginResDTO.setDepartment(studentDetails.getDepartment());
+        studentLoginResDTO.setGender(studentDetails.getGender());
 
         return studentLoginResDTO;
     }

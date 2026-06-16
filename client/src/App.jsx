@@ -26,10 +26,7 @@ const ROUTE_CONFIG = {
   '/student-dashboard':   { screen: 'student-dashboard', protected: true, type: 'student' },
   // Protected staff routes
   '/deputy':              { screen: 'deputy', protected: true, type: 'staff', role: 'DeputyWarden' },
-  '/warden/1st':          { screen: 'warden', protected: true, type: 'staff', role: 'Warden', year: '1st', username: 'warden1' },
-  '/warden/2nd':          { screen: 'warden', protected: true, type: 'staff', role: 'Warden', year: '2nd', username: 'warden2' },
-  '/warden/3rd':          { screen: 'warden', protected: true, type: 'staff', role: 'Warden', year: '3rd', username: 'warden3' },
-  '/warden/4th':          { screen: 'warden', protected: true, type: 'staff', role: 'Warden', year: '4th', username: 'warden4' },
+  '/warden':              { screen: 'warden', protected: true, type: 'staff', role: 'Warden' },
   '/office':              { screen: 'office', protected: true, type: 'staff', role: 'Office' },
 };
 
@@ -108,10 +105,9 @@ function App() {
           <ProtectedRoute
             requiredType="staff"
             requiredRole="Warden"
-            requiredUsername={route.username}
             onNavigate={navigate}
           >
-            <Warden assignedYear={route.year} onNavigate={navigate} />
+            <Warden onNavigate={navigate} />
           </ProtectedRoute>
         );
 

@@ -38,4 +38,6 @@ public class ReductionFormHistory {
     private String comment;
 
     private LocalDateTime eventTimestamp;
+
+    private boolean isActive = true;
 }

@@ -63,14 +63,63 @@ function YearStatCard({ year, requests, yearStats }) {
 function HostelOffice() {
     const [view, setView]               = useState("dashboard");
     const [selectedYear, setSelectedYear] = useState("all");
+    const [genderFilter, setGenderFilter] = useState("ALL");
     const [requests, setRequests]       = useState([]);
     const [isLoading, setIsLoading]     = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [reportData, setReportData]   = useState([]);
+
+    const handleGenerateReport = async () => {
+        try {
+            const response = await apiClient.get("/api/hostelStaff/staff/office/report-data");
+            const data = response.data.map(r => ({
+                ...r,
+                year: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : "4th",
+                gender: r.gender || "N/A",
+                department: r.department || "N/A"
+            }));
+            setReportData(data);
+        } catch (err) {
+            console.error("Error generating report:", err);
+            alert("Failed to generate report.");
+        }
+    };
+
+    const handleDownloadReport = async () => {
+        try {
+            const response = await apiClient.get("/api/hostelStaff/staff/office/download-report", {
+                responseType: "blob"
+            });
+            const blob = new Blob([response.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "mess_reduction_report.xlsx");
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Error downloading report:", err);
+            alert("Failed to download report.");
+        }
+    };
 
     const refreshData = async () => {
         try {
-            // Fetch pending forms for Office (PendingOffice status)
-            const response = await apiClient.get("/api/hostelStaff/staff/office");
+            // Build query params for filtering
+            let queryParams = "";
+            if (genderFilter && genderFilter !== "ALL") {
+                queryParams += `gender=${genderFilter}`;
+            }
+            if (selectedYear !== "all") {
+                const yearNum = selectedYear === "1st" ? 1 : selectedYear === "2nd" ? 2 : selectedYear === "3rd" ? 3 : 4;
+                if (queryParams) queryParams += "&";
+                queryParams += `year=${yearNum}`;
+            }
+
+            // Fetch pending forms for Office (PendingOffice status) with filters
+            const response = await apiClient.get(`/api/hostelStaff/staff/office${queryParams ? "?" + queryParams : ""}`);
             const data = response.data.map(r => ({
                 ...r,
                 id: r.formId,
@@ -105,6 +154,10 @@ function HostelOffice() {
         };
         loadInitialData();
     }, []);
+
+    useEffect(() => {
+        refreshData();
+    }, [genderFilter, selectedYear]);
 
     const [dashboardStats, setDashboardStats] = useState({
         pendingOffice: 0,
@@ -186,8 +239,7 @@ function HostelOffice() {
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
-    const filteredRequests = requests
-        .filter(r => selectedYear === "all" ? true : r.year === selectedYear);
+    const filteredRequests = requests;
 
     if (isLoading) {
         return (
@@ -232,6 +284,19 @@ function HostelOffice() {
                     ))}
                 </div>
 
+                {/* Gender Filter */}
+                <div className="flex items-center gap-2">
+                    <select
+                        value={genderFilter}
+                        onChange={(e) => setGenderFilter(e.target.value)}
+                        className="bg-[#0f1f38] border border-white/10 rounded-xl px-4 py-2 text-xs sm:text-sm font-black text-white/60 focus:outline-none focus:border-teal-500/50"
+                    >
+                        <option value="ALL">Gender: All</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                    </select>
+                </div>
+
                 {/* View Toggle */}
                 <div className="flex bg-[#0f1f38]/60 p-1.5 sm:p-2 rounded-2xl border border-white/5 backdrop-blur-sm overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
                     <button onClick={() => setView("dashboard")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
@@ -239,6 +304,9 @@ function HostelOffice() {
                     </button>
                     <button onClick={() => setView("requests")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
                         <FiList size={16} /> Requests
+                    </button>
+                    <button onClick={() => setView("reports")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "reports" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
+                        <FiPieChart size={16} /> Reports
                     </button>
                 </div>
 
@@ -553,6 +621,127 @@ function HostelOffice() {
                                                         </div>
                                                     </td>
                                                 </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ════ REPORTS VIEW ════ */}
+                    {view === "reports" && (
+                        <motion.div
+                            key="reports"
+                            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
+                            transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+                            className="max-w-7xl mx-auto space-y-6"
+                        >
+                            {/* Report Header */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
+                                <div>
+                                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                                        <div className="w-1.5 h-8 bg-teal-500 rounded-full" />
+                                        Report Management
+                                    </h2>
+                                    <p className="text-sm text-white/40 mt-1">Generate and download historical approved student reduction requests</p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={handleGenerateReport}
+                                        className="flex items-center gap-2 px-6 py-3 bg-teal-500 text-slate-900 rounded-2xl font-black tracking-widest uppercase hover:bg-teal-400 transition-colors shadow-[0_0_20px_rgba(45,212,191,0.3)]"
+                                    >
+                                        <FiActivity size={18} /> Generate Report
+                                    </button>
+                                    <button
+                                        onClick={handleDownloadReport}
+                                        disabled={reportData.length === 0}
+                                        className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black tracking-widest uppercase transition-colors ${
+                                            reportData.length > 0
+                                                ? "bg-emerald-500 text-slate-900 hover:bg-emerald-400 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                                                : "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
+                                        }`}
+                                    >
+                                        <FiTrendingUp size={18} /> Download Report
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Report Table */}
+                            <div className="bg-[#0f1f38] border border-white/5 rounded-3xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
+                                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                                        <thead>
+                                            <tr className="bg-white/[0.03] text-sm uppercase tracking-[0.3em] font-black border-b border-white/5">
+                                                <th className="px-6 py-6 text-white/40">Student Name</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Register No</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Gender</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Year</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Leave Date</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Arrival Date</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Holidays</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Deputy Warden</th>
+                                                <th className="px-6 py-6 text-white/40 text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/[0.03]">
+                                            {reportData.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="10" className="px-6 py-24 text-center">
+                                                        <div className="flex flex-col items-center gap-4">
+                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
+                                                                <FiPieChart size={32} />
+                                                            </div>
+                                                            <p className="text-white/25 font-black uppercase tracking-widest text-base">
+                                                                No report data loaded. Click "Generate Report" to retrieve the last 4 months of approved requests.
+                                                            </p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : reportData.map((req, idx) => (
+                                                <tr
+                                                    key={req.formId}
+                                                    className="group hover:bg-white/[0.04] transition-colors"
+                                                >
+                                                    <td className="px-6 py-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-xl shadow-inner group-hover:brightness-125 transition-all">
+                                                                {req.name?.charAt(0) ?? "?"}
+                                                            </div>
+                                                            <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/60">{req.registerNo}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/60">{req.gender}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/60">{req.year} Yr</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.department}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/50">{req.leaveDate}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-lg font-black text-white/80">{req.totalHolidays}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="text-base font-bold text-white/50">{req.assignedDeputyWarden}</span>
+                                                    </td>
+                                                    <td className="px-6 py-6 text-right">
+                                                        <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold tracking-wider text-sm border border-emerald-500/20">{req.currentStatus}</span>
+                                                    </td>
+                                                </tr>
                                             ))}
                                         </tbody>
                                     </table>

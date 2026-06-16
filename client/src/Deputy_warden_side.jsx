@@ -6,7 +6,7 @@ import {
     FiClock, FiBarChart2, FiActivity, FiLogOut
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
-import { deleteCookie } from "./utils/cookieUtils";
+import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 
@@ -73,9 +73,26 @@ function YearStatCard({ year, requests, yearStats }) {
     );
 }
 
+const getDeputyDetails = (username) => {
+  if (!username) return null;
+  const match = username.match(/^deputyWarden([1-8])$/);
+  if (!match) return null;
+  const num = parseInt(match[1]);
+  if (num >= 1 && num <= 4) {
+    return { gender: 'MALE', year: num, label: `Male - Year ${num} Dashboard` };
+  } else if (num >= 5 && num <= 8) {
+    return { gender: 'FEMALE', year: num - 4, label: `Female - Year ${num - 4} Dashboard` };
+  }
+  return null;
+};
+
 function Deputy_warden_side() {
+    const username = getCookie('staffUsername');
+    const deputyDetails = getDeputyDetails(username);
+    const deputyYearLabel = deputyDetails ? (deputyDetails.year === 1 ? "1st" : deputyDetails.year === 2 ? "2nd" : deputyDetails.year === 3 ? "3rd" : "4th") : "all";
+
     const [view, setView]               = useState("dashboard");
-    const [selectedYear, setSelectedYear] = useState("all");
+    const [selectedYear, setSelectedYear] = useState(deputyYearLabel);
     const [requests, setRequests]       = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [isLoading, setIsLoading]     = useState(true);
@@ -83,9 +100,27 @@ function Deputy_warden_side() {
 
     const refreshData = async () => {
         try {
+            const currentUsername = getCookie('staffUsername');
+            const currentDeputyDetails = getDeputyDetails(currentUsername);
+
             // Fetch pending forms for Deputy Warden
             const response = await apiClient.get("/api/hostelStaff/staff/deputyWarden");
-            const data = response.data.map(r => ({
+
+            // Filter forms in frontend
+            const filteredData = response.data.filter(form => {
+                if (!currentDeputyDetails) return true;
+                const isGenderMatch = !form.gender || form.gender === currentDeputyDetails.gender;
+                const isYearMatch = form.year === currentDeputyDetails.year;
+                const isAssigned = form.assignedDeputyWarden === currentUsername;
+                return (isGenderMatch && isYearMatch) || isAssigned;
+            });
+
+            // TEMP DEBUG LOGS
+            console.log("[DEBUG] Logged-in deputy warden:", { username: currentUsername, gender: currentDeputyDetails?.gender, year: currentDeputyDetails?.year });
+            console.log("[DEBUG] API response before filtering:", response.data);
+            console.log("[DEBUG] Final filtered list count:", filteredData.length);
+
+            const data = filteredData.map(r => ({
                 ...r,
                 id: r.formId,
                 year: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : "4th",
@@ -125,11 +160,9 @@ function Deputy_warden_side() {
     const [dashboardStats, setDashboardStats] = useState({
         pendingDeputyWarden: 0,
         pendingWarden: 0,
-        pendingOffice: 0,
         approved: 0,
         rejectedWarden: 0,
-        rejectedDeputyWarden: 0,
-        rejectedOffice: 0
+        rejectedDeputyWarden: 0
     });
 
     const [yearStats, setYearStats] = useState({
@@ -241,27 +274,9 @@ function Deputy_warden_side() {
                 <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                     <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-11 sm:h-11 object-contain" />
                     <div className="flex flex-col leading-tight">
-                        <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] sm:tracking-[0.25em] text-teal-400/80 uppercase">Deputy Warden Panel</span>
+                        <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] sm:tracking-[0.25em] text-teal-400/80 uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
                         <span className="text-xl sm:text-3xl font-black text-white tracking-widest uppercase">MessReduction</span>
                     </div>
-                </div>
-
-                {/* Year Tabs */}
-                <div className="flex items-center gap-1.5 bg-[#112240] p-1.5 rounded-2xl border border-white/5 overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
-                    {["all", ...YEARS].map(yr => (
-                        <button
-                            key={yr}
-                            onClick={() => setSelectedYear(yr)}
-                            className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                selectedYear === yr
-                                    ? yr === "all" ? "bg-white text-slate-900 shadow-xl"
-                                        : `${YEAR_COLORS[yr]?.bg ?? ""} text-slate-900 shadow-xl`
-                                    : "text-white/30 hover:text-white"
-                            }`}
-                        >
-                            {yr === "all" ? "All" : yr}
-                        </button>
-                    ))}
                 </div>
 
                 {/* View Toggle */}
@@ -306,15 +321,19 @@ function Deputy_warden_side() {
                                     Submission Overview
                                 </h2>
                                 <p className="text-white/30 text-sm sm:text-base font-medium ml-4 sm:ml-5 mt-1">
-                                    {selectedYear === "all" ? "All academic years shown" : `Filtered to ${selectedYear} year submissions`}.
+                                    Submissions for your assigned year.
                                 </p>
                             </div>
 
                             {/* ── Year Stat Cards ── */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {YEARS.map(yr => (
-                                    <YearStatCard key={yr} year={yr} requests={requests} yearStats={yearStats} />
-                                ))}
+                            <div className="grid grid-cols-1 gap-6 max-w-sm">
+                                {deputyDetails && (
+                                    <YearStatCard 
+                                        year={deputyDetails.year === 1 ? "1st" : deputyDetails.year === 2 ? "2nd" : deputyDetails.year === 3 ? "3rd" : "4th"} 
+                                        requests={requests} 
+                                        yearStats={yearStats} 
+                                    />
+                                )}
                             </div>
 
                             {/* ── Overall Status + Total ── */}
@@ -330,7 +349,7 @@ function Deputy_warden_side() {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
                                             { label: "Pending Deputy",  count: dashboardStats.pendingDeputyWarden || 0,  color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/10"   },
-                                            { label: "Forwarded Office", count: dashboardStats.pendingOffice || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10", action: "Approved", title: "Deputy Warden Approved" },
+                                            { label: "Forwarded Warden", count: dashboardStats.pendingWarden || 0, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/10", action: "Approved", title: "Deputy Warden Approved" },
                                             { label: "Rejected Deputy", count: dashboardStats.rejectedDeputyWarden || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10", action: "Rejected", title: "Deputy Warden Rejected"    },
                                         ].map(s => (
                                             <div 
@@ -357,7 +376,7 @@ function Deputy_warden_side() {
                                          <h3 className="text-xl sm:text-2xl font-black text-white mb-2">Total Forms</h3>
                                          <p className="text-white/40 text-sm sm:text-base font-medium">Cumulative submissions received.</p>
                                      </div>
-                                     <p className="text-6xl sm:text-8xl font-black text-white mt-8">{(dashboardStats.pendingDeputyWarden || 0) + (dashboardStats.pendingOffice || 0) + (dashboardStats.rejectedDeputyWarden || 0)}</p>
+                                     <p className="text-6xl sm:text-8xl font-black text-white mt-8">{(dashboardStats.pendingDeputyWarden || 0) + (dashboardStats.pendingWarden || 0) + (dashboardStats.rejectedDeputyWarden || 0)}</p>
                                      <button
                                          onClick={() => setView("requests")}
                                          className="mt-8 flex items-center justify-center gap-3 w-full bg-white text-[#0a1628] py-4 rounded-2xl font-black text-base tracking-widest uppercase hover:bg-teal-400 transition-colors"
@@ -365,37 +384,6 @@ function Deputy_warden_side() {
                                          Manage Requests <FiArrowRight />
                                      </button>
                                  </div>
-                            </div>
-
-                            {/* ── Year-wise Bar Visual ── */}
-                            <div className="bg-[#0f1f38] border border-white/5 rounded-[2.5rem] p-10 shadow-xl">
-                                <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3">
-                                    <FiBarChart2 className="text-teal-400" /> Submission Count by Year
-                                </h3>
-                                <div className="flex items-end gap-6 h-40">
-                                    {YEARS.map(yr => {
-                                        const yearKeyMap = { "1st": "firstYear", "2nd": "secondYear", "3rd": "thirdYear", "4th": "fourthYear" };
-                                        const count = yearStats[yearKeyMap[yr]] || 0;
-                                        const max   = Math.max(yearStats.firstYear, yearStats.secondYear, yearStats.thirdYear, yearStats.fourthYear, 1);
-                                        const pct   = Math.round((count / max) * 100);
-                                        const c     = YEAR_COLORS[yr];
-                                        return (
-                                            <div key={yr} className="flex-1 flex flex-col items-center gap-3">
-                                                <span className={`text-base font-black ${c.text}`}>{count}</span>
-                                                <div className="w-full bg-white/5 rounded-xl overflow-hidden" style={{ height: "80px" }}>
-                                                    <motion.div
-                                                        initial={{ height: 0 }}
-                                                        animate={{ height: `${pct}%` }}
-                                                        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1], delay: YEARS.indexOf(yr) * 0.1 }}
-                                                        className={`w-full ${c.bg} rounded-xl`}
-                                                        style={{ marginTop: `${100 - pct}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-sm font-black text-white/30 uppercase tracking-widest">{yr} Yr</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -600,7 +588,7 @@ function Deputy_warden_side() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
                     <p className="text-sm text-white/10 tracking-[0.5em] uppercase font-bold">© 2025 Government College of Engineering · Srirangam</p>
                     <div className="flex gap-8">
-                        <span className="text-sm text-teal-400/30 font-black tracking-widest uppercase">Deputy Warden — 1 Member</span>
+                        <span className="text-sm text-teal-400/30 font-black tracking-widest uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
                         <span className="text-sm text-teal-400/30 font-black tracking-widest uppercase">System Stable</span>
                     </div>
                 </div>

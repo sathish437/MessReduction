@@ -60,11 +60,12 @@ public class StaffJwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
+        // Use parser() then build() to obtain JwtParser, then parse the JWS
         return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+            .setSigningKey(getSigningKey())
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 
     public Boolean isTokenExpired(String token) {

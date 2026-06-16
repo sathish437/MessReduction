@@ -7,6 +7,8 @@ import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Service.ReductionFormService;
 
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/student-form")
 public class ReductionFormController {
+    private static final Logger logger = LoggerFactory.getLogger(ReductionFormController.class);
     private final ReductionFormService reductionFormService;
 
     public ReductionFormController(ReductionFormService reductionFormService) {
@@ -23,6 +26,7 @@ public class ReductionFormController {
 
     @GetMapping("/Student/{studentId}")
     public StudentDetails fetchStudentData(@PathVariable Long studentId) {
+        logger.info("Student controller reached: GET /Student/{}", studentId);
         return reductionFormService.getStudentDetails(studentId);
     }
 

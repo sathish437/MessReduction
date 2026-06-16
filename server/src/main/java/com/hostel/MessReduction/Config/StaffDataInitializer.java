@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.Config;
 
+import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.Role;
 import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
@@ -24,14 +25,18 @@ public class StaffDataInitializer implements CommandLineRunner {
         // Delete existing staff accounts to avoid role column truncation issues
         staffUsersRepo.deleteAll();
 
-        // Create 4 Wardens
-        createStaff("warden1", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
-        createStaff("warden2", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
-        createStaff("warden3", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
-        createStaff("warden4", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        // Create 1 Warden (Associate Warden)
+        createStaff("warden", "warden123", Role.Warden, "warden@gmail.com");
 
-        // Create Deputy Warden
-        createStaff("deputyWarden", "deputy123", Role.DeputyWarden, "deputy@gmail.com");
+        // Create 8 Deputy Wardens
+        createDeputy("deputyWarden1", Role.DeputyWarden, "MALE", 1);
+        createDeputy("deputyWarden2", Role.DeputyWarden, "MALE", 2);
+        createDeputy("deputyWarden3", Role.DeputyWarden, "MALE", 3);
+        createDeputy("deputyWarden4", Role.DeputyWarden, "MALE", 4);
+        createDeputy("deputyWarden5", Role.DeputyWarden, "FEMALE", 1);
+        createDeputy("deputyWarden6", Role.DeputyWarden, "FEMALE", 2);
+        createDeputy("deputyWarden7", Role.DeputyWarden, "FEMALE", 3);
+        createDeputy("deputyWarden8", Role.DeputyWarden, "FEMALE", 4);
 
         // Create Office
         createStaff("office", "office123", Role.Office, "office@gmail.com");
@@ -47,5 +52,17 @@ public class StaffDataInitializer implements CommandLineRunner {
         staff.setGmail(gmail);
         staffUsersRepo.save(staff);
         log.info("Created staff: {} with role: {}", username, role);
+    }
+
+    private void createDeputy(String username, Role role, String gender, Integer year) {
+        StaffUsers staff = new StaffUsers();
+        staff.setUserName(username);
+        staff.setPassword(passwordEncoder.encode("deputy123"));
+        staff.setRole(role);
+        staff.setGmail(username + "@gmail.com");
+        staff.setGender(Gender.valueOf(gender));
+        staff.setYear(year);
+        staffUsersRepo.save(staff);
+        log.info("Created deputy warden: {} with gender: {} year: {}", username, gender, year);
     }
 }

@@ -25,8 +25,21 @@ public class StaffDataInitializer implements CommandLineRunner {
         // Delete existing staff accounts to avoid role column truncation issues
         staffUsersRepo.deleteAll();
 
+<<<<<<< HEAD
         // Create 1 Warden (Associate Warden)
         createStaff("warden", "warden123", Role.Warden, "warden@gmail.com");
+=======
+<<<<<<< HEAD
+        // Create 1 Warden (Associate Warden)
+        createStaff("warden", "warden123", Role.Warden, "warden@gmail.com");
+=======
+        // Create 4 Wardens
+        createStaff("warden1", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden2", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden3", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+        createStaff("warden4", "warden123", Role.Warden, "duraisamysathish437@gmail.com");
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
+>>>>>>> 211ddc4f6dbeb17dc1364e051d1e03c746b11015
 
         // Create 8 Deputy Wardens
         createDeputy("deputyWarden1", Role.DeputyWarden, "MALE", 1);

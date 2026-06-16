@@ -51,23 +51,34 @@ public class ReductionFormService {
     private final StudentDetailsRepo studentDetailsRepo;
     private final ReductionFormHistoryRepo reductionFormHistoryRepo;
     private final ActivityLogService activityLogService;
+<<<<<<< HEAD
+    private final StaffUsersRepo staffUsersRepo;
+=======
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final StaffUsersRepo staffUsersRepo;
     private final TelegramNotificationService telegramNotificationService;
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
                                 ReductionFormHistoryRepo reductionFormHistoryRepo,
                                 ActivityLogService activityLogService,
+<<<<<<< HEAD
+                                StaffUsersRepo staffUsersRepo) {
+=======
                                 NotificationService notificationService,
                                 EmailService emailService,
                                 StaffUsersRepo staffUsersRepo,
                                 TelegramNotificationService telegramNotificationService) {
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
         this.activityLogService = activityLogService;
+<<<<<<< HEAD
+        this.staffUsersRepo = staffUsersRepo;
+=======
         this.notificationService = notificationService;
         this.emailService = emailService;
         this.staffUsersRepo = staffUsersRepo;
@@ -88,6 +99,7 @@ public class ReductionFormService {
             status);
             
         telegramNotificationService.sendGroupNotification(message);
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
     }
 
     public StudentDetails getStudentDetails(Long id) {
@@ -99,12 +111,23 @@ public class ReductionFormService {
         StudentDetails studentDetails = getStudentDetails(studentId);
         validateNewSubmission(studentId, dto);
 
+<<<<<<< HEAD
         String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
         ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
         reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
+=======
+<<<<<<< HEAD
+        String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
+        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
+        reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
+=======
+        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto));
+        reductionForm.setCurrentStatus(FormStatus.PendingWarden);
+>>>>>>> 211ddc4f6dbeb17dc1364e051d1e03c746b11015
         if (dto.getIsEmergency() != null && dto.getIsEmergency()) {
             reductionForm.setEmergency(true);
         }
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
         reductionFormRepo.save(reductionForm);
         saveFormHistory(reductionForm, "Student Submitted", null, FormStatus.PendingWarden, "student", "Initial submission");
         
@@ -457,13 +480,20 @@ public class ReductionFormService {
             form.setCurrentStatus(FormStatus.PendingOffice);
             saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
             createActivityLog(form, Role.Warden, userName, "Approved");
+<<<<<<< HEAD
+            validForms.add(form);
+=======
             notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
             if (form.isEmergency()) {
                 staffUsersRepo.findByRole(Role.DeputyWarden).forEach(dw -> 
                     notificationService.createNotification(dw.getUserName(), "Emergency Form Ready for Review", "EMERGENCY_REQUEST", form.getFormId())
                 );
             }
+<<<<<<< HEAD
             validForms.add(form);
+=======
+>>>>>>> bb9c4d792e906e1356c5dbb9294dd97a1e3fcdaf
+>>>>>>> 211ddc4f6dbeb17dc1364e051d1e03c746b11015
         }
 
         reductionFormRepo.saveAll(validForms);

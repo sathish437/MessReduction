@@ -5,17 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="31891577-2e2e-44b5-bcd3-5ba288515801" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/client" beforeDir="false" afterPath="$PROJECT_DIR$/client" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/client/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/Deputy_warden_side.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Deputy_warden_side.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/Hostel_office.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Hostel_office.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/Login.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Login.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/MessReductionPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/MessReductionPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/Register.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Register.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/StaffLogin.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/StaffLogin.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/Warden.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/Warden.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/api/apiClient.js" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/api/apiClient.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Config/StaffDataInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Config/StaffDataInitializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Controller/ReductionFormController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Controller/ReductionFormController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Controller/StaffUsersController.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Controller/StaffUsersController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ReqDTO/StudentDetailsReqDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ReqDTO/StudentDetailsReqDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ResDTO/ReductionFormResDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ResDTO/ReductionFormResDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ResDTO/StudentLoginResDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/DTO/ResDTO/StudentLoginResDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/ReductionForm.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/ReductionForm.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/ReductionFormHistory.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/ReductionFormHistory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/StaffUsers.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/StaffUsers.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/StudentDetails.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Entity/StudentDetails.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/ReductionFormMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/ReductionFormMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/StudentDetailsMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/StudentDetailsMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/StudentLoginMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/MappingDTO/StudentLoginMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/ReductionFormHistoryRepo.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/ReductionFormHistoryRepo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/ReductionFormRepo.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/ReductionFormRepo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/StaffUsersRepo.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Repo/StaffUsersRepo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Service/ReductionFormService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Service/ReductionFormService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Service/StaffAuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/Service/StaffAuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/CustomUserDetails.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/CustomUserDetails.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/CustomUserDetailsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/CustomUserDetailsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/JwtFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/JwtFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/JwtUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/StaffJwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/java/com/hostel/MessReduction/security/StaffJwtUtil.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,15 +67,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "C:/Users/durai/Documents/SpringBoot/MessReduction"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/durai/Documents/SpringBoot/MessReduction&quot;
   }
-}]]></component>
+}</component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="31891577-2e2e-44b5-bcd3-5ba288515801" name="Changes" comment="" />

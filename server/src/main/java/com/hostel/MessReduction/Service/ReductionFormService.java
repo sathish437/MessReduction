@@ -11,11 +11,15 @@ import com.hostel.MessReduction.CustomException.TotalLeaveDateCountException;
 import com.hostel.MessReduction.CustomException.UnauthorizedUserException;
 import com.hostel.MessReduction.DTO.ReqDTO.ActivityLogRequest;
 import com.hostel.MessReduction.DTO.ReqDTO.ReductionFormReqDTO;
+import com.hostel.MessReduction.Entity.Gender;
+import com.hostel.MessReduction.Entity.StaffUsers;
+import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormHistoryResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
+import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.ReductionFormHistory;
 import com.hostel.MessReduction.Entity.Role;
@@ -31,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,15 +49,18 @@ public class ReductionFormService {
     private final StudentDetailsRepo studentDetailsRepo;
     private final ReductionFormHistoryRepo reductionFormHistoryRepo;
     private final ActivityLogService activityLogService;
+    private final StaffUsersRepo staffUsersRepo;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
                                 ReductionFormHistoryRepo reductionFormHistoryRepo,
-                                ActivityLogService activityLogService) {
+                                ActivityLogService activityLogService,
+                                StaffUsersRepo staffUsersRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
         this.activityLogService = activityLogService;
+        this.staffUsersRepo = staffUsersRepo;
     }
 
     public StudentDetails getStudentDetails(Long id) {
@@ -64,15 +72,16 @@ public class ReductionFormService {
         StudentDetails studentDetails = getStudentDetails(studentId);
         validateNewSubmission(studentId, dto);
 
-        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto));
-        reductionForm.setCurrentStatus(FormStatus.PendingWarden);
+        String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
+        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
+        reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
         reductionFormRepo.save(reductionForm);
         saveFormHistory(reductionForm, "Student Submitted", null, FormStatus.PendingWarden, "student", "Initial submission");
         return ReductionFormMapper.mapToReductionFormResDTO(reductionForm);
     }
 
     public ReductionFormResDTO getFormForEdit(Long formId, Long studentId) {
-        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentId(formId, studentId)
+        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
         if (form.getCurrentStatus() == FormStatus.Approved) {
@@ -85,7 +94,7 @@ public class ReductionFormService {
     }
 
     public ReductionFormResDTO resubmitForm(Long formId, Long studentId, ReductionFormReqDTO dto) {
-        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentId(formId, studentId)
+        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
         if (form.getCurrentStatus() == FormStatus.Approved) {
@@ -110,7 +119,8 @@ public class ReductionFormService {
         form.setReason(dto.getReason());
         form.setPresentDate(LocalDate.now());
         form.setTotalHolidays(calculateTotalLeaves(dto));
-        form.setCurrentStatus(FormStatus.PendingWarden);
+        form.setCurrentStatus(FormStatus.PendingDeputyWarden);
+        form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(form.getStudentDetails().getGender(), form.getYear()));
         form.setRejectReason(null);
 
         reductionFormRepo.save(form);
@@ -119,16 +129,16 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormHistoryResDTO> getFormHistory(Long formId, Long studentId) {
-        reductionFormRepo.findByFormIdAndStudentDetailsStudentId(formId, studentId)
+        reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
-        return reductionFormHistoryRepo.findByReductionFormFormIdOrderByEventTimestampAsc(formId).stream()
+        return reductionFormHistoryRepo.findByReductionFormFormIdAndIsActiveTrueOrderByEventTimestampAsc(formId).stream()
                 .map(this::mapHistoryToDTO)
                 .toList();
     }
 
     public List<ReductionFormResDTO> formDetails(Long studentId) {
-        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentId(studentId);
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
         if (forms.isEmpty()) {
             throw new ReductionFormNotFoundException("No forms found for this student");
         }
@@ -137,22 +147,69 @@ public class ReductionFormService {
                 .toList();
     }
 
-    public List<ReductionFormResDTO> wardenPendingStatus(String userName) {
-        Integer year = resolveWardenYear(userName);
-        List<ReductionForm> forms = reductionFormRepo.findByCurrentStatusAndYear(FormStatus.PendingWarden, year);
-        return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
+    public List<ReductionFormResDTO> wardenPendingStatus(String userName, String gender, Integer year) {
+        Integer wardenYear = resolveWardenYear(userName);
+        List<ReductionForm> forms;
+
+        // Apply filters based on parameters
+        if (gender != null && !gender.isEmpty() && year != null) {
+            // Both gender and year filters
+            Gender genderEnum = Gender.valueOf(gender.toUpperCase());
+            forms = reductionFormRepo.findByCurrentStatusAndYearAndStudentDetailsGenderAndIsActiveTrue(FormStatus.PendingWarden, year, genderEnum);
+        } else if (gender != null && !gender.isEmpty()) {
+            // Only gender filter
+            Gender genderEnum = Gender.valueOf(gender.toUpperCase());
+            forms = reductionFormRepo.findByCurrentStatusAndStudentDetailsGenderAndIsActiveTrue(FormStatus.PendingWarden, genderEnum);
+        } else if (year != null) {
+            // Only year filter
+            forms = reductionFormRepo.findByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingWarden, year);
+        } else {
+            // No filters - use existing logic based on warden year
+            forms = (wardenYear == null)
+                    ? reductionFormRepo.findByCurrentStatusAndIsActiveTrue(FormStatus.PendingWarden)
+                    : reductionFormRepo.findByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingWarden, wardenYear);
+        }
+
+        return forms.stream()
+                .filter(this::canAccessApprovedForm)
+                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .toList();
     }
 
     public List<ReductionFormResDTO> deputyWardenPendingStatus(String userName) {
         validateDeputyWardenUser(userName);
-        List<ReductionForm> forms = reductionFormRepo.findByCurrentStatus(FormStatus.PendingDeputyWarden);
-        return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
+        List<ReductionForm> forms = reductionFormRepo.findByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName);
+        return forms.stream()
+                .filter(this::canAccessApprovedForm)
+                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .toList();
     }
 
-    public List<ReductionFormResDTO> officePendingStatus(String userName) {
+    public List<ReductionFormResDTO> officePendingStatus(String userName, String gender, Integer year) {
         validateOfficeUser(userName);
-        List<ReductionForm> forms = reductionFormRepo.findByCurrentStatus(FormStatus.PendingOffice);
-        return forms.stream().map(ReductionFormMapper::mapToReductionFormResDTO).toList();
+        List<ReductionForm> forms;
+
+        // Apply filters based on parameters
+        if (gender != null && !gender.isEmpty() && year != null) {
+            // Both gender and year filters
+            Gender genderEnum = Gender.valueOf(gender.toUpperCase());
+            forms = reductionFormRepo.findByCurrentStatusAndYearAndStudentDetailsGenderAndIsActiveTrue(FormStatus.PendingOffice, year, genderEnum);
+        } else if (gender != null && !gender.isEmpty()) {
+            // Only gender filter
+            Gender genderEnum = Gender.valueOf(gender.toUpperCase());
+            forms = reductionFormRepo.findByCurrentStatusAndStudentDetailsGenderAndIsActiveTrue(FormStatus.PendingOffice, genderEnum);
+        } else if (year != null) {
+            // Only year filter
+            forms = reductionFormRepo.findByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, year);
+        } else {
+            // No filters - return all
+            forms = reductionFormRepo.findByCurrentStatusAndIsActiveTrue(FormStatus.PendingOffice);
+        }
+
+        return forms.stream()
+                .filter(this::canAccessApprovedForm)
+                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .toList();
     }
 
     public void updateWardenPendingStatus(Long formId, String action, String userName) {
@@ -162,21 +219,25 @@ public class ReductionFormService {
         validateCurrentStatus(form, FormStatus.PendingWarden, "Form is not in warden stage");
         validateWardenYear(form, year);
         FormStatus previousStatus = form.getCurrentStatus();
-        form.setCurrentStatus(FormStatus.PendingDeputyWarden);
+        form.setCurrentStatus(FormStatus.PendingOffice);
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
         createActivityLog(form, Role.Warden, userName, "Approved");
     }
+
+
+
 
     public void updateDeputyWardenPendingStatus(Long formId, String action, String userName) {
         validateDeputyWardenUser(userName);
         validateApproveAction(action, "Use the dedicated reject endpoint with a rejectReason to reject a form");
         ReductionForm form = getFormOrThrow(formId);
         validateCurrentStatus(form, FormStatus.PendingDeputyWarden, "Form is not in deputy warden stage");
+        validateAssignedDeputyWarden(form, userName);
         FormStatus previousStatus = form.getCurrentStatus();
-        form.setCurrentStatus(FormStatus.PendingOffice);
+        form.setCurrentStatus(FormStatus.PendingWarden);
         reductionFormRepo.save(form);
-        saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingOffice, userName, null);
+        saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingWarden, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
     }
 
@@ -211,6 +272,7 @@ public class ReductionFormService {
         validateRejectReason(rejectReason);
         ReductionForm form = getFormOrThrow(formId);
         validateCurrentStatus(form, FormStatus.PendingDeputyWarden, "Form is not in deputy warden stage");
+        validateAssignedDeputyWarden(form, userName);
         FormStatus previousStatus = form.getCurrentStatus();
         form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
         form.setRejectReason(rejectReason.trim());
@@ -234,44 +296,62 @@ public class ReductionFormService {
 
     public StaffDashboardCountDTO getDashboardCount() {
         return new StaffDashboardCountDTO(
-                reductionFormRepo.countByCurrentStatus(FormStatus.PendingWarden),
-                reductionFormRepo.countByCurrentStatus(FormStatus.PendingDeputyWarden),
-                reductionFormRepo.countByCurrentStatus(FormStatus.PendingOffice),
-                reductionFormRepo.countByCurrentStatus(FormStatus.Approved),
-                reductionFormRepo.countByCurrentStatus(FormStatus.RejectedWarden),
-                reductionFormRepo.countByCurrentStatus(FormStatus.RejectedDeputyWarden),
-                reductionFormRepo.countByCurrentStatus(FormStatus.RejectedOffice)
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingWarden),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingDeputyWarden),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingOffice),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.Approved),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedWarden),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedDeputyWarden),
+                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedOffice)
         );
     }
 
     public StaffDashboardCountDTO getDashboardCountForWarden(String userName) {
         Integer year = resolveWardenYear(userName);
+        if (year == null) {
+            return getDashboardCount();
+        }
         return new StaffDashboardCountDTO(
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.Approved, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedDeputyWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.RejectedOffice, year)
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingDeputyWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.Approved, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedDeputyWarden, year),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedOffice, year)
         );
     }
 
-    public YearWiseCountDTO deputyWardenYearWiseCount() {
+    public StaffDashboardCountDTO getDashboardCountForDeputy(String userName) {
+        validateDeputyWardenUser(userName);
+        return new StaffDashboardCountDTO(
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingWarden, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingOffice, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.Approved, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedWarden, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedDeputyWarden, userName),
+                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedOffice, userName)
+        );
+    }
+
+    public YearWiseCountDTO deputyWardenYearWiseCount(String userName) {
+        validateDeputyWardenUser(userName);
+        int assignedYear = resolveDeputyWardenYear(userName);
         return new YearWiseCountDTO(
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, 1),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, 2),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, 3),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingDeputyWarden, 4)
+                assignedYear == 1 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
+                assignedYear == 2 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
+                assignedYear == 3 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
+                assignedYear == 4 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L
         );
     }
 
     public YearWiseCountDTO officeYearWiseCount() {
         return new YearWiseCountDTO(
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, 1),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, 2),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, 3),
-                reductionFormRepo.countByCurrentStatusAndYear(FormStatus.PendingOffice, 4)
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, 1),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, 2),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, 3),
+                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, 4)
         );
     }
 
@@ -289,16 +369,28 @@ public class ReductionFormService {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
+        List<ReductionForm> validForms = new ArrayList<>();
         for (ReductionForm form : forms) {
-            validateCurrentStatus(form, FormStatus.PendingWarden, "Form is not in warden stage");
-            validateWardenYear(form, year);
+            // Skip inactive forms
+            if (!form.isActive()) {
+                continue;
+            }
+            // Skip forms not in PendingWarden status instead of throwing error
+            if (form.getCurrentStatus() != FormStatus.PendingWarden) {
+                continue;
+            }
+            // Skip forms that don't match warden year validation
+            if (year != null && !Objects.equals(form.getYear(), year)) {
+                continue;
+            }
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.PendingDeputyWarden);
-            saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingDeputyWarden, userName, null);
+            form.setCurrentStatus(FormStatus.PendingOffice);
+            saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
             createActivityLog(form, Role.Warden, userName, "Approved");
+            validForms.add(form);
         }
 
-        reductionFormRepo.saveAll(forms);
+        reductionFormRepo.saveAll(validForms);
     }
 
     public void updateDeputyWardenPendingBulkStatus(List<Long> formIds, String action, String userName) {
@@ -316,10 +408,15 @@ public class ReductionFormService {
         }
 
         for (ReductionForm form : forms) {
+            // Skip inactive forms
+            if (!form.isActive()) {
+                continue;
+            }
             validateCurrentStatus(form, FormStatus.PendingDeputyWarden, "Form is not in deputy warden stage");
+            validateAssignedDeputyWarden(form, userName);
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.PendingOffice);
-            saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
+            form.setCurrentStatus(FormStatus.PendingWarden);
+            saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingWarden, userName, null);
             createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         }
 
@@ -341,6 +438,10 @@ public class ReductionFormService {
         }
 
         for (ReductionForm form : forms) {
+            // Skip inactive forms
+            if (!form.isActive()) {
+                continue;
+            }
             validateCurrentStatus(form, FormStatus.PendingOffice, "Form is not in office stage");
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.Approved);
@@ -390,11 +491,86 @@ public class ReductionFormService {
     }
 
     private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
+        // Check for pending forms
         if (reductionFormRepo.existsByStudentDetailsStudentIdAndCurrentStatusIn(studentId,
                 List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice))) {
             throw new StatusAlreadyPendingException("Cannot submit a new form while a previous request is still pending");
         }
+
+        // Check for active approved requests (arrival date >= current date)
+        validateActiveApprovedRequest(studentId);
+
         validateResubmitPayload(dto);
+    }
+
+    private void validateActiveApprovedRequest(Long studentId) {
+        List<ReductionForm> activeApprovedForms = reductionFormRepo
+                .findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfterAndIsActiveTrue(
+                        studentId,
+                        FormStatus.Approved,
+                        LocalDate.now()
+                );
+
+        if (!activeApprovedForms.isEmpty()) {
+            throw new StatusAlreadyPendingException(
+                    "You already have an approved reduction request active until your arrival date. New request submission is not allowed."
+            );
+        }
+    }
+
+    public void deleteAllReductionForms() {
+        reductionFormRepo.deleteAll();
+    }
+
+    public void expireReductionForms() {
+        LocalDate today = LocalDate.now();
+        List<ReductionForm> expiredForms = reductionFormRepo.findByIsActiveTrueAndArrivalDateBefore(today);
+        if (expiredForms.isEmpty()) {
+            return;
+        }
+        List<ReductionForm> formsToDeactivate = expiredForms.stream()
+                .filter(form -> form.getCurrentStatus() != FormStatus.Approved)
+                .toList();
+        if (formsToDeactivate.isEmpty()) {
+            return;
+        }
+        formsToDeactivate.forEach(form -> {
+            form.setActive(false);
+            // Also deactivate the history records for this form
+            form.getHistory().forEach(history -> history.setActive(false));
+        });
+        reductionFormRepo.saveAll(formsToDeactivate);
+    }
+
+    public void cleanUpExpiredRequests() {
+        LocalDate thresholdDate = LocalDate.now().minusMonths(4);
+        List<ReductionForm> toDelete = reductionFormRepo.findByArrivalDateBefore(thresholdDate);
+        if (!toDelete.isEmpty()) {
+            reductionFormRepo.deleteAll(toDelete);
+        }
+    }
+
+    public List<ReductionFormResDTO> getOfficeReportData() {
+        LocalDate today = LocalDate.now();
+        LocalDate fourMonthsAgo = today.minusMonths(4);
+        List<ReductionForm> reports = reductionFormRepo.findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(
+                FormStatus.Approved, fourMonthsAgo, today
+        );
+        return reports.stream()
+                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .toList();
+    }
+
+    private boolean canAccessApprovedForm(ReductionForm form) {
+        // If form is not approved, it can be accessed
+        if (form.getCurrentStatus() != FormStatus.Approved) {
+            return true;
+        }
+
+        // If form is approved, check if current date > arrival date
+        // If current date > arrival date, form cannot be accessed
+        LocalDate currentDate = LocalDate.now();
+        return !currentDate.isAfter(form.getArrivalDate());
     }
 
     private void validateResubmitPayload(ReductionFormReqDTO dto) {
@@ -439,6 +615,7 @@ public class ReductionFormService {
 
     private ReductionForm getFormOrThrow(Long formId) {
         return reductionFormRepo.findById(formId)
+                .filter(form -> form.isActive())
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found"));
     }
 
@@ -453,6 +630,9 @@ public class ReductionFormService {
     }
 
     private Integer resolveWardenYear(String userName) {
+        if ("warden".equals(userName)) {
+            return null;
+        }
         return switch (userName) {
             case "warden1" -> 1;
             case "warden2" -> 2;
@@ -463,13 +643,34 @@ public class ReductionFormService {
     }
 
     private void validateWardenYear(ReductionForm form, Integer year) {
-        if (!Objects.equals(form.getYear(), year)) {
+        if (year != null && !Objects.equals(form.getYear(), year)) {
+            throw new UnauthorizedUserException("Unauthorized access");
+        }
+    }
+
+    private int resolveDeputyWardenYear(String userName) {
+        validateDeputyWardenUser(userName);
+        int deputyNumber = Integer.parseInt(userName.substring("deputyWarden".length()));
+        return deputyNumber > 4 ? deputyNumber - 4 : deputyNumber;
+    }
+
+    private String resolveAssignedDeputyWarden(Gender gender, Integer year) {
+        if (gender == null || year == null) {
+            throw new BadRequestException("Student gender and year are required for deputy warden routing");
+        }
+        return staffUsersRepo.findByRoleAndGenderAndYear(Role.DeputyWarden, gender, year)
+                .map(StaffUsers::getUserName)
+                .orElseThrow(() -> new BadRequestException("Unable to assign a deputy warden for the given gender and year"));
+    }
+
+    private void validateAssignedDeputyWarden(ReductionForm form, String userName) {
+        if (!Objects.equals(form.getAssignedDeputyWarden(), userName)) {
             throw new UnauthorizedUserException("Unauthorized access");
         }
     }
 
     private void validateDeputyWardenUser(String userName) {
-        if (!"deputyWarden".equals(userName)) {
+        if (userName == null || !userName.matches("deputyWarden[1-8]")) {
             throw new UnauthorizedUserException("Unauthorized user");
         }
     }

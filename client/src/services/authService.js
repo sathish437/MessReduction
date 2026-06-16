@@ -81,13 +81,7 @@ export const clearStudentAuth = () => {
 // Route resolution for staff
 export const getStaffDashboardRoute = (role, username) => {
   if (role === 'Warden') {
-    const wardenRoutes = {
-      warden1: '/warden/1st',
-      warden2: '/warden/2nd',
-      warden3: '/warden/3rd',
-      warden4: '/warden/4th',
-    };
-    return wardenRoutes[username] || null;
+    return '/warden';
   }
 
   if (role === 'DeputyWarden') {

@@ -2,8 +2,11 @@ package com.hostel.MessReduction.DTO.ResDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hostel.MessReduction.Entity.Department;
+import com.hostel.MessReduction.Entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -38,4 +41,10 @@ public class StudentLoginResDTO {
     private String emailId;
     @NotNull
     private Department department;
+    @NotNull
+    private Gender gender;
+    @NotNull
+    @Min(1)
+    @Max(4)
+    private Integer year;
 }

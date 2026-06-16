@@ -3,6 +3,7 @@ package com.hostel.MessReduction.DTO.ResDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.FormStatus;
+import com.hostel.MessReduction.Entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -35,6 +36,8 @@ public class ReductionFormResDTO {
     private Department department;
     @NotNull
     private Long roomNo;
+    @NotBlank
+    private String assignedDeputyWarden;
     @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate leaveDate;
@@ -60,4 +63,7 @@ public class ReductionFormResDTO {
     private Long totalHolidays;
     @NotBlank
     private String reason;
+    
+    private String registerNo;
+    private Gender gender;
 }

@@ -8,7 +8,7 @@ import com.hostel.MessReduction.Entity.StudentDetails;
 import java.time.LocalDate;
 
 public class ReductionFormMapper {
-    public static ReductionForm mapToReductionForm(ReductionFormReqDTO reductionFormReqDTO, StudentDetails studentDetails, LocalDate presentDate,Long totalHolidays){
+    public static ReductionForm mapToReductionForm(ReductionFormReqDTO reductionFormReqDTO, StudentDetails studentDetails, LocalDate presentDate, Long totalHolidays, String assignedDeputyWarden){
         ReductionForm reductionForm=new ReductionForm();
 
         reductionForm.setStudentDetails(studentDetails);
@@ -16,6 +16,7 @@ public class ReductionFormMapper {
         reductionForm.setRoomNo(reductionFormReqDTO.getRoomNo());
         reductionForm.setLeaveDate(reductionFormReqDTO.getLeaveDate());
         reductionForm.setLeaveTime(reductionFormReqDTO.getLeaveTime());
+        reductionForm.setAssignedDeputyWarden(assignedDeputyWarden);
         reductionForm.setArrivalDate(reductionFormReqDTO.getArrivalDate());
         reductionForm.setArrivalTime(reductionFormReqDTO.getArrivalTime());
         reductionForm.setPresentDate(presentDate);
@@ -36,6 +37,7 @@ public class ReductionFormMapper {
         reductionFormResDTO.setRoomNo(reductionForm.getRoomNo());
         reductionFormResDTO.setLeaveDate(reductionForm.getLeaveDate());
         reductionFormResDTO.setLeaveTime(reductionForm.getLeaveTime());
+        reductionFormResDTO.setAssignedDeputyWarden(reductionForm.getAssignedDeputyWarden());
         reductionFormResDTO.setArrivalDate(reductionForm.getArrivalDate());
         reductionFormResDTO.setArrivalTime(reductionForm.getArrivalTime());
         reductionFormResDTO.setPresentDate(reductionForm.getPresentDate());
@@ -43,6 +45,10 @@ public class ReductionFormMapper {
         reductionFormResDTO.setReason(reductionForm.getReason());
         reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
         reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
+        if (reductionForm.getStudentDetails() != null) {
+            reductionFormResDTO.setRegisterNo(reductionForm.getStudentDetails().getRegisterNo());
+            reductionFormResDTO.setGender(reductionForm.getStudentDetails().getGender());
+        }
         return reductionFormResDTO;
     }
 }

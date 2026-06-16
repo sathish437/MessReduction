@@ -41,35 +41,47 @@ function MessReductionPage() {
     });
 
     const [studentDetails, setStudentDetails] = useState(null);
+    const [studentId, setStudentId] = useState(null);
+    const [studentForm, setStudentForm] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [myRequests, setMyRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [editingFormId, setEditingFormId] = useState(null)
 
+    // Initialize studentId from sessionStorage and ensure token exists
     useEffect(() => {
-        // Fetch student details and forms on mount
         const savedUser = sessionStorage.getItem("currentUser");
-        if (savedUser) {
+        const token = sessionStorage.getItem('token');
+        if (!savedUser || !token) {
+            setLoading(false);
+            return;
+        }
+        try {
             const user = JSON.parse(savedUser);
-            fetchStudentData(user.studentId);
-        } else {
+            setStudentId(user.studentId);
+        } catch (e) {
+            console.error('Failed to parse savedUser', e);
             setLoading(false);
         }
     }, []);
 
+    // Fetch student details when studentId becomes available
+    useEffect(() => {
+        if (!studentId) return;
+        fetchStudentData(studentId);
+    }, [studentId]);
+
     const fetchStudentData = async (studentId) => {
         try {
-            // Fetch student details and forms sequentially to guarantee fresh data
-            const [studentRes, formsRes] = await Promise.all([
-                apiClient.get(`/api/student-form/Student/${studentId}`),
-                apiClient.get(`/api/student-form/StudentForm/${studentId}`)
-            ]);
-            
-            let currentStudent = null;
-            if (studentRes.data) {
-                currentStudent = studentRes.data;
+            console.log('[fetchStudentData] token:', sessionStorage.getItem('token'));
+            console.log('[fetchStudentData] currentUser:', sessionStorage.getItem('currentUser'));
+
+            // Use ONLY the Student endpoint which contains student details (and may include reductionForms)
+            const studentRes = await apiClient.get(`/api/student-form/Student/${studentId}`);
+
+            const currentStudent = studentRes?.data || null;
+            if (currentStudent) {
                 setStudentDetails(currentStudent);
-                // Auto-fill form with student details
                 setFormData(prev => ({
                     ...prev,
                     name: currentStudent.name || "",
@@ -77,33 +89,43 @@ function MessReductionPage() {
                     dept: currentStudent.department || "",
                     mobile: currentStudent.phoneNo || ""
                 }));
-            }
 
-            if (formsRes.data && Array.isArray(formsRes.data) && formsRes.data.length > 0) {
-                const mappedForms = formsRes.data.map(form => ({
-                    id: form.formId,
-                    formId: form.formId,
-                    studentId: studentId,
-                    year: form.year,
-                    dept: currentStudent?.department || form.department,
-                    roomNo: form.roomNo,
-                    leaveDate: form.leaveDate,
-                    leaveTime: form.leaveTime,
-                    arrivalDate: form.arrivalDate,
-                    arrivalTime: form.arrivalTime,
-                    presentDate: form.presentDate,
-                    totalHolidays: form.totalHolidays,
-                    reason: form.reason,
-                    status: form.currentStatus || "PendingWarden",
-                    rejectReason: form.rejectReason,
-                    submittedDate: form.presentDate
-                })).reverse(); // Newest first
-                setMyRequests(mappedForms);
+                // Get forms from nested reductionForms if present
+                const forms = Array.isArray(currentStudent.reductionForms) ? currentStudent.reductionForms : [];
+                setStudentForm(forms);
+
+                // Map to UI requests list (preserve existing UI shape)
+                if (forms.length > 0) {
+                    const mappedForms = forms.map(form => ({
+                        id: form.formId,
+                        formId: form.formId,
+                        studentId: studentId,
+                        year: form.year,
+                        dept: currentStudent?.department || form.department,
+                        roomNo: form.roomNo,
+                        leaveDate: form.leaveDate,
+                        leaveTime: form.leaveTime,
+                        arrivalDate: form.arrivalDate,
+                        arrivalTime: form.arrivalTime,
+                        presentDate: form.presentDate,
+                        totalHolidays: form.totalHolidays,
+                        reason: form.reason,
+                        status: form.currentStatus || "PendingWarden",
+                        rejectReason: form.rejectReason,
+                        submittedDate: form.presentDate
+                    })).reverse();
+                    setMyRequests(mappedForms);
+                } else {
+                    setMyRequests([]);
+                }
             } else {
+                setStudentDetails(null);
+                setStudentForm([]);
                 setMyRequests([]);
             }
         } catch (error) {
             console.error("Error fetching student data:", error);
+            try { console.error('Failed request headers:', error.config?.headers); } catch (e) {}
         } finally {
             setLoading(false);
         }
@@ -321,6 +343,25 @@ function MessReductionPage() {
                                         <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                                     </div>
                                 </div>
+
+                                {/* Student Forms - dynamically display all fields returned by backend */}
+                                {Array.isArray(studentForm) && studentForm.length > 0 && (
+                                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5 mt-4">
+                                        <p className="text-xs font-black text-teal-400 uppercase tracking-wider mb-3">Submitted Forms</p>
+                                        <div className="space-y-3">
+                                            {studentForm.map((form, idx) => (
+                                                <div key={form.formId || idx} className="p-3 rounded-md border bg-white/[0.01]">
+                                                    {Object.entries(form).map(([key, value]) => (
+                                                        <div key={key} className="flex justify-between text-sm text-white/80 py-0.5">
+                                                            <span className="font-medium text-white/60">{key}</span>
+                                                            <span className="font-mono text-white/80">{value === null || value === undefined ? '-' : String(value)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Editable Leave Details */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

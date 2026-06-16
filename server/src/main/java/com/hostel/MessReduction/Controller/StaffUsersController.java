@@ -5,12 +5,16 @@ import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Service.ReductionFormService;
+import com.hostel.MessReduction.utils.ExcelReportHelper;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -25,11 +29,13 @@ public class StaffUsersController {
     @GetMapping("/staff/warden")
     public ResponseEntity<List<ReductionFormResDTO>> warden(
             @RequestParam(required = false) String userName,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) Integer year,
             Authentication authentication) {
         String effectiveUserName = (userName != null && !userName.isEmpty())
                 ? userName
                 : authentication.getName();
-        return ResponseEntity.ok(reductionFormService.wardenPendingStatus(effectiveUserName));
+        return ResponseEntity.ok(reductionFormService.wardenPendingStatus(effectiveUserName, gender, year));
     }
 
     @GetMapping("/staff/deputyWarden")
@@ -39,9 +45,12 @@ public class StaffUsersController {
     }
 
     @GetMapping("/staff/office")
-    public ResponseEntity<List<ReductionFormResDTO>> office(Authentication authentication) {
+    public ResponseEntity<List<ReductionFormResDTO>> office(
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) Integer year,
+            Authentication authentication) {
         String userName = authentication.getName();
-        return ResponseEntity.ok(reductionFormService.officePendingStatus(userName));
+        return ResponseEntity.ok(reductionFormService.officePendingStatus(userName, gender, year));
     }
 
     @PatchMapping("/staff/warden/{formId}")
@@ -99,7 +108,13 @@ public class StaffUsersController {
     }
 
     @GetMapping("/staff/dashboard-count")
-    public ResponseEntity<StaffDashboardCountDTO> getDashboardCount() {
+    public ResponseEntity<StaffDashboardCountDTO> getDashboardCount(Authentication authentication) {
+        String userName = authentication.getName();
+        boolean isDeputy = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_DeputyWarden"));
+        if (isDeputy) {
+            return ResponseEntity.ok(reductionFormService.getDashboardCountForDeputy(userName));
+        }
         return ResponseEntity.ok(reductionFormService.getDashboardCount());
     }
 
@@ -114,13 +129,20 @@ public class StaffUsersController {
     }
 
     @GetMapping("/staff/deputyWarden/year-count")
-    public ResponseEntity<YearWiseCountDTO> deputyYearCount() {
-        return ResponseEntity.ok(reductionFormService.deputyWardenYearWiseCount());
+    public ResponseEntity<YearWiseCountDTO> deputyYearCount(Authentication authentication) {
+        String userName = authentication.getName();
+        return ResponseEntity.ok(reductionFormService.deputyWardenYearWiseCount(userName));
     }
 
     @GetMapping("/staff/office/year-count")
     public ResponseEntity<YearWiseCountDTO> officeYearCount() {
         return ResponseEntity.ok(reductionFormService.officeYearWiseCount());
+    }
+
+    @DeleteMapping("/staff/forms/delete-all")
+    public ResponseEntity<String> deleteAllForms(Authentication authentication) {
+        reductionFormService.deleteAllReductionForms();
+        return ResponseEntity.ok("All reduction forms deleted successfully");
     }
 
     @PatchMapping("/staff/warden/bulk")
@@ -151,5 +173,21 @@ public class StaffUsersController {
         String userName = authentication.getName();
         reductionFormService.updateOfficePendingBulkStatus(formIds, action, userName);
         return ResponseEntity.ok("Forms approved by office successfully");
+    }
+
+    @GetMapping("/staff/office/report-data")
+    public ResponseEntity<List<ReductionFormResDTO>> getOfficeReportData() {
+        return ResponseEntity.ok(reductionFormService.getOfficeReportData());
+    }
+
+    @GetMapping("/staff/office/download-report")
+    public ResponseEntity<byte[]> downloadOfficeReport() throws IOException {
+        List<ReductionFormResDTO> reports = reductionFormService.getOfficeReportData();
+        byte[] excelBytes = ExcelReportHelper.generateExcelReport(reports);
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=mess_reduction_report.xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excelBytes);
     }
 }

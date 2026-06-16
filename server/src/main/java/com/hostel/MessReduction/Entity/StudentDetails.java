@@ -1,6 +1,7 @@
 package com.hostel.MessReduction.Entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.hostel.MessReduction.Entity.Gender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -36,12 +37,14 @@ public class StudentDetails {
     @NotNull
     @Column(nullable = false)
     private Department department;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
     @NotNull
     @Column(nullable = false)
     private LocalDate dob;
     @NotBlank
     @Column(nullable = false,unique = true)
-    @Email
+    @Email 
     private String emailId;
     @NotBlank
     @Column(nullable = false,unique = true,length = 10)

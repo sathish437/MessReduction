@@ -89,15 +89,17 @@ function YearSelectScreen({ onSelect }) {
 }
 
 /* ── Main Warden Panel ── */
-const Warden = ({ assignedYear = null }) => {
-    // If a URL-level year was provided, start there directly (no selection screen)
-    const [selectedYear, setSelectedYear] = useState(assignedYear);
+const Warden = () => {
     const [requests, setRequests]         = useState([]);
     const [counts, setCounts]             = useState(null);
     const [loading, setLoading]           = useState(true);
     const [view, setView]                 = useState("dashboard"); // 'dashboard' | 'requests'
     const [selectedIds, setSelectedIds]   = useState([]);
-    
+
+    // Filter State
+    const [genderFilter, setGenderFilter] = useState("ALL");
+    const [selectedYear, setSelectedYear] = useState("all");
+
     // Rejection Modal State
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
@@ -107,18 +109,32 @@ const Warden = ({ assignedYear = null }) => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        fetchData();
+    }, [genderFilter, selectedYear]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
             // Get logged-in username from cookie
             const username = getCookie('staffUsername');
 
+            // Build query params for filtering
+            let queryParams = `userName=${username}`;
+            if (genderFilter && genderFilter !== "ALL") {
+                queryParams += `&gender=${genderFilter}`;
+            }
+            if (selectedYear !== "all") {
+                const yearNum = selectedYear === "1st" ? 1 : selectedYear === "2nd" ? 2 : selectedYear === "3rd" ? 3 : 4;
+                queryParams += `&year=${yearNum}`;
+            }
+
             // Fetch warden-specific dashboard counts (filtered by year)
             const countsRes = await apiClient.get(`/api/hostelStaff/staff/dashboard-count/warden?userName=${username}`);
             setCounts(countsRes.data);
 
-            // Fetch warden pending forms with explicit username param
-            const formsRes = await apiClient.get(`/api/hostelStaff/staff/warden?userName=${username}`);
+            // Fetch warden pending forms with filter parameters
+            const formsRes = await apiClient.get(`/api/hostelStaff/staff/warden?${queryParams}`);
 
             // Backend returns array (may be empty) - map to frontend format
             const data = Array.isArray(formsRes.data) ? formsRes.data.map(r => ({
@@ -146,13 +162,27 @@ const Warden = ({ assignedYear = null }) => {
             return;
         }
 
+        // Check token before making request
+        const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
+        console.log('[Warden Action] Token exists:', !!token);
+        if (!token) {
+            alert("Authentication token not found. Please login again.");
+            handleLogout();
+            return;
+        }
+
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/${formId}?action=${action}`);
             // Refresh data after action
             await fetchData();
         } catch (err) {
             console.error("Warden action error:", err);
-            alert("Failed to update status.");
+            if (err.response?.status === 401) {
+                alert("Session expired. Please login again.");
+                handleLogout();
+            } else {
+                alert("Failed to update status.");
+            }
         }
     };
 
@@ -161,6 +191,16 @@ const Warden = ({ assignedYear = null }) => {
             alert("Please enter a reason for rejection.");
             return;
         }
+
+        // Check token before making request
+        const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
+        console.log('[Warden Reject] Token exists:', !!token);
+        if (!token) {
+            alert("Authentication token not found. Please login again.");
+            handleLogout();
+            return;
+        }
+
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/${rejectFormId}/reject`, { rejectReason });
             setIsRejectModalOpen(false);
@@ -169,19 +209,42 @@ const Warden = ({ assignedYear = null }) => {
             await fetchData();
         } catch (err) {
             console.error("Warden reject error:", err);
-            alert("Failed to reject request.");
+            if (err.response?.status === 401) {
+                alert("Session expired. Please login again.");
+                handleLogout();
+            } else {
+                alert("Failed to reject request.");
+            }
         }
     };
 
     const handleBulkAction = async () => {
         if (selectedIds.length === 0) return;
+
+        // Check token before making request
+        const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
+        console.log('[Warden Bulk Action] Token exists:', !!token);
+        if (!token) {
+            alert("Authentication token not found. Please login again.");
+            handleLogout();
+            return;
+        }
+
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/bulk?action=Approve`, selectedIds);
             setSelectedIds([]);
             await fetchData();
         } catch (err) {
             console.error("Bulk action error:", err);
-            alert("Failed to perform bulk approval.");
+            if (err.response?.status === 401) {
+                alert("Session expired. Please login again.");
+                handleLogout();
+            } else if (err.response?.status === 409) {
+                alert("Some selected forms are not in the correct status for approval. Please refresh and try again.");
+                await fetchData();
+            } else {
+                alert("Failed to perform bulk approval.");
+            }
         }
     };
 
@@ -192,12 +255,7 @@ const Warden = ({ assignedYear = null }) => {
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
-    // ── Year selection screen (only shown when NO assignedYear from URL) ──
-    if (!selectedYear) {
-        return <YearSelectScreen onSelect={(yr) => { setSelectedYear(yr); setView("pending_final"); }} />;
-    }
-
-    const t = YEAR_THEME[selectedYear];
+    const t = { color: "teal", active: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/30", ring: "bg-teal-500/10", glow: "shadow-teal-500/30" };
 
     // Backend already filters by year and status - use data directly
     const pendingForms = requests;
@@ -206,8 +264,8 @@ const Warden = ({ assignedYear = null }) => {
         return (
             <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className={`w-16 h-16 border-4 border-t-${t.color}-500 border-${t.color}-500/20 rounded-full animate-spin`} />
-                     <p className={`${t.text} font-black tracking-widest uppercase text-base`}>Loading {selectedYear} Year Data...</p>
+                    <div className="w-16 h-16 border-4 border-t-teal-500 border-teal-500/20 rounded-full animate-spin" />
+                     <p className="text-teal-400 font-black tracking-widest uppercase text-base">Loading Warden Data...</p>
                 </div>
             </div>
         );
@@ -227,21 +285,12 @@ const Warden = ({ assignedYear = null }) => {
                     </div>
                 </div>
 
-                {/* Year badge — show switch only when NOT locked to a URL endpoint */}
+                {/* Year badge */}
                 <div className="flex items-center gap-4">
                     <div className={`flex items-center gap-2 px-4 py-2 ${t.ring} border ${t.border} rounded-2xl`}>
                         <div className={`w-2 h-2 rounded-full ${t.active} animate-pulse`} />
-                         <span className={`text-sm font-black uppercase tracking-widest ${t.text}`}>{selectedYear} Year Warden</span>
+                         <span className={`text-sm font-black uppercase tracking-widest ${t.text}`}>Chief Warden</span>
                     </div>
-                    {/* Switch Year only available when arrived via /warden (no assignedYear prop) */}
-                    {!assignedYear && (
-                         <button
-                            onClick={() => setSelectedYear(null)}
-                            className="flex items-center gap-2 px-5 py-2.5 border border-white/10 rounded-xl text-sm font-black text-white/30 uppercase tracking-widest hover:text-white hover:border-white/20 transition-all"
-                        >
-                            <FiLogOut size={14} /> Switch Year
-                        </button>
-                    )}
                 </div>
 
                 {/* Logout Button */}
@@ -352,9 +401,41 @@ const Warden = ({ assignedYear = null }) => {
                                 <div>
                                     <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                                         <FiFileText className={t.text} />
-                                        Pending Requests - {selectedYear} Year
+                                        Pending Requests
                                     </h2>
                                     <p className="text-sm text-white/40 mt-1">Forms awaiting warden approval</p>
+                                </div>
+
+                                {/* Filter Controls */}
+                                <div className="flex items-center gap-2">
+                                    {/* Year Tabs */}
+                                    <div className="flex items-center gap-1.5 bg-[#112240] p-1.5 rounded-2xl border border-white/5 overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
+                                        {["all", ...YEARS].map(yr => (
+                                            <button
+                                                key={yr}
+                                                onClick={() => setSelectedYear(yr)}
+                                                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                                    selectedYear === yr
+                                                        ? yr === "all" ? "bg-white text-slate-900 shadow-xl"
+                                                            : `${YEAR_THEME[yr]?.active ?? ""} text-slate-900 shadow-xl`
+                                                        : "text-white/30 hover:text-white"
+                                                }`}
+                                            >
+                                                {yr === "all" ? "All" : yr}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Gender Filter */}
+                                    <select
+                                        value={genderFilter}
+                                        onChange={(e) => setGenderFilter(e.target.value)}
+                                        className="bg-[#0f1f38] border border-white/10 rounded-xl px-4 py-2 text-sm font-black text-white/60 focus:outline-none focus:border-teal-500/50"
+                                    >
+                                        <option value="ALL">Gender: All</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -402,7 +483,7 @@ const Warden = ({ assignedYear = null }) => {
                                             </div>
                                             <div>
                                                 <h4 className="text-xl font-black text-white">{req.name}</h4>
-                                                <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept}</p>
+                                                <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept} · {req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"} Year</p>
                                             </div>
                                         </div>
 
@@ -453,6 +534,7 @@ const Warden = ({ assignedYear = null }) => {
                                                 </th>
                                                 <th className="px-6 py-6 text-white/40">Student Name</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-6 text-white/40 text-center">Year</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Room No</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Leave Date</th>
                                                 <th className="px-4 py-6 text-white/40 text-center">Arrival Date</th>
@@ -463,13 +545,13 @@ const Warden = ({ assignedYear = null }) => {
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {pendingForms.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="8" className="px-6 py-24 text-center">
+                                                    <td colSpan="9" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center gap-4">
                                                             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
                                                                 <FiFilter size={32} />
                                                             </div>
                                                             <p className="text-white/25 font-black uppercase tracking-widest text-base">
-                                                                No pending requests for {selectedYear} Year
+                                                                No pending requests
                                                             </p>
                                                         </div>
                                                     </td>
@@ -498,6 +580,9 @@ const Warden = ({ assignedYear = null }) => {
                                                     </td>
                                                     <td className="px-4 py-6 text-center">
                                                         <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
+                                                    </td>
+                                                    <td className="px-4 py-6 text-center">
+                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
                                                     </td>
                                                     <td className="px-4 py-6 text-center">
                                                         <span className="text-lg font-black text-white/80">{req.roomNo}</span>
@@ -543,7 +628,7 @@ const Warden = ({ assignedYear = null }) => {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
                     <p className="text-sm text-white/10 tracking-[0.5em] uppercase font-bold">© 2025 Government College of Engineering · Srirangam</p>
                     <div className="flex gap-8">
-                        <span className={`text-sm ${t.text} opacity-30 font-black tracking-widest uppercase`}>Warden Panel — {selectedYear} Year</span>
+                        <span className={`text-sm ${t.text} opacity-30 font-black tracking-widest uppercase`}>Warden Panel</span>
                         <span className={`text-sm ${t.text} opacity-30 font-black tracking-widest uppercase`}>System Stable</span>
                     </div>
                 </div>

@@ -69,11 +69,12 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
+        // Use parser() then build() to obtain JwtParser, then parse the JWS
         return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+            .setSigningKey(getSigningKey())
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 
     public Boolean isTokenExpired(String token) {
@@ -81,7 +82,14 @@ public class JwtUtil {
     }
 
     public Boolean validateToken(String token, String emailId) {
-        final String extractedEmailId = extractEmailId(token);
-        return (extractedEmailId.equals(emailId) && !isTokenExpired(token));
+        try {
+            final String extractedEmailId = extractEmailId(token);
+            boolean isValid = extractedEmailId.equals(emailId) && !isTokenExpired(token);
+            System.out.println("JWT Validation - extractedEmailId: " + extractedEmailId + ", providedEmailId: " + emailId + ", isValid: " + isValid);
+            return isValid;
+        } catch (Exception e) {
+            System.out.println("JWT Validation failed: " + e.getMessage());
+            return false;
+        }
     }
 }

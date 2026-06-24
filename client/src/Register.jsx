@@ -178,16 +178,16 @@ function Register({ onNavigate }) {
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field icon={<FiUser />}>
-                    <input 
-                      type="text" placeholder="Full name" name="name" 
-                      className={inp} value={formData.name} onChange={handleChange} required 
+                    <input
+                      type="text" placeholder="Full name" name="name"
+                      className={inp} value={formData.name} onChange={handleChange} required
                     />
                   </Field>
 
                   <Field icon={<FiCreditCard />}>
-                    <input 
+                    <input
                       type="text" inputMode="numeric" placeholder="Register No" name="regNo"
-                      className={inp} onKeyDown={handleNumKey} value={formData.regNo} onChange={handleChange} required 
+                      className={inp} onKeyDown={handleNumKey} value={formData.regNo} onChange={handleChange} required
                     />
                   </Field>
                 </div>
@@ -196,12 +196,12 @@ function Register({ onNavigate }) {
                   <Field icon={<FiHash />}>
                     <input
                       type="text" placeholder="Roll number" name="rollNo"
-                      className={inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} required 
+                      className={inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} required
                     />
                   </Field>
 
-                  <Field icon={<FiCalendar />}>
-                    <input 
+                  <Field icon={<FiCalendar size={15} />}>
+                    <input
                       type="text" placeholder="Date of birth" name="dob" className={inp}
                       value={formData.dob} onChange={handleChange} required
                       onFocus={(e) => (e.target.type = "date")}
@@ -211,7 +211,7 @@ function Register({ onNavigate }) {
                 </div>
 
                 <Field icon={<FiBookOpen />}>
-                  <select 
+                  <select
                     name="dept" value={formData.dept} onChange={handleChange} required
                     className={`${inp} appearance-none cursor-pointer`}
                   >
@@ -241,16 +241,16 @@ function Register({ onNavigate }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field icon={<FiMail />}>
-                    <input 
-                      type="email" placeholder="Email address" name="email" 
-                      className={inp} value={formData.email} onChange={handleChange} required 
+                    <input
+                      type="email" placeholder="Email address" name="email"
+                      className={inp} value={formData.email} onChange={handleChange} required
                     />
                   </Field>
 
                   <Field icon={<FiPhone />}>
-                    <input 
+                    <input
                       type="tel" inputMode="numeric" placeholder="Phone number" name="phone"
-                      className={inp} onKeyDown={handleNumKey} value={formData.phone} onChange={handleChange} required 
+                      className={inp} onKeyDown={handleNumKey} value={formData.phone} onChange={handleChange} required
                     />
                   </Field>
                 </div>
@@ -267,9 +267,9 @@ function Register({ onNavigate }) {
 
               <p className="text-center text-sm mt-4 text-white/30">
                 Already have an account?{" "}
-                <button 
-                  type="button" 
-                  onClick={goToLogin} 
+                <button
+                  type="button"
+                  onClick={goToLogin}
                   className="text-teal-400 font-black hover:text-teal-300 underline underline-offset-4 transition-colors"
                 >
                   Sign in

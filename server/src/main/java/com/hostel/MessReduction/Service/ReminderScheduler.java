@@ -50,25 +50,10 @@ public class ReminderScheduler {
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
     }
 
-    // Runs every 1 minute to check ONLY for emergency escalations
+    // Runs every 1 minute
     @Scheduled(fixedRate = 60000)
     public void processEmergencyEscalations() {
-        if (TESTING_MODE) return;
-        
-        List<FormStatus> pendingStatuses = List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice);
-        List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
-        LocalDateTime now = LocalDateTime.now();
-
-        for (ReductionForm form : pendingForms) {
-            if (form.getSubmittedAt() == null || !form.isEmergency()) continue;
-
-            long minutesElapsed = ChronoUnit.MINUTES.between(form.getSubmittedAt(), now);
-            if (minutesElapsed >= 15 && !form.isEmergency15MinSent()) {
-                sendEmailAndNotificationToApprover(form, "EMERGENCY", false);
-                form.setEmergency15MinSent(true);
-                reductionFormRepo.save(form);
-            }
-        }
+        // No-op: emergency requests removed
     }
 
     // 30-Minute Summary Notification Scheduler
@@ -80,9 +65,9 @@ public class ReminderScheduler {
         List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusIn(pendingStatuses);
         LocalDateTime now = LocalDateTime.now();
 
-        // Filter out emergency requests (they get instant) and forms that already received a summary
+        // Filter out forms that already received a summary
         List<ReductionForm> formsToSummarize = pendingForms.stream()
-                .filter(f -> !f.isEmergency() && f.getLastSummarySentAt() == null)
+                .filter(f -> f.getLastSummarySentAt() == null)
                 .collect(Collectors.toList());
 
         if (formsToSummarize.isEmpty()) return;

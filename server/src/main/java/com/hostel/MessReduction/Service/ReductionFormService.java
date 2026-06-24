@@ -91,6 +91,7 @@ public class ReductionFormService {
     }
 
     public StudentDetails getStudentDetails(Long id) {
+        autoDeactivateAllExpiredForms();
         return studentDetailsRepo.findById(id)
                 .orElseThrow(() -> new StudentNotFoundException("Student not found"));
     }
@@ -102,9 +103,6 @@ public class ReductionFormService {
         String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
         ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
         reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
-        if (dto.getIsEmergency() != null && dto.getIsEmergency()) {
-            reductionForm.setEmergency(true);
-        }
         reductionFormRepo.save(reductionForm);
         saveFormHistory(reductionForm, "Student Submitted", null, FormStatus.PendingDeputyWarden, "student", "Initial submission");
         
@@ -117,17 +115,8 @@ public class ReductionFormService {
         String deputyUsername = form.getAssignedDeputyWarden();
         if (deputyUsername != null) {
             staffUsersRepo.findByUserName(deputyUsername).ifPresent(dw -> {
-                if (form.isEmergency()) {
-                    emailService.sendReminderEmail(dw.getGmail(), form, "EMERGENCY");
-                    notificationService.createNotification(dw.getUserName(), "Emergency Reduction Request Received", "EMERGENCY_REQUEST", form.getFormId());
-                } else {
-                    notificationService.createNotification(dw.getUserName(), "New Reduction Request Received", "NORMAL_REQUEST", form.getFormId());
-                }
+                notificationService.createNotification(dw.getUserName(), "New Reduction Request Received", "NORMAL_REQUEST", form.getFormId());
             });
-        }
-        
-        if (form.isEmergency()) {
-            sendTelegramGroupNotification(form, "Emergency Request Submitted");
         }
     }
 
@@ -192,6 +181,7 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormResDTO> formDetails(Long studentId) {
+        autoDeactivateAllExpiredForms();
         List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
         if (forms.isEmpty()) {
             return java.util.Collections.emptyList();
@@ -202,6 +192,7 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormResDTO> wardenPendingStatus(String userName, String gender, Integer year) {
+        autoDeactivateAllExpiredForms();
         Integer wardenYear = resolveWardenYear(userName);
         List<ReductionForm> forms;
 
@@ -231,6 +222,7 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormResDTO> deputyWardenPendingStatus(String userName) {
+        autoDeactivateAllExpiredForms();
         validateDeputyWardenUser(userName);
         List<ReductionForm> forms = reductionFormRepo.findByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName);
         return forms.stream()
@@ -240,6 +232,7 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormResDTO> officePendingStatus(String userName, String gender, Integer year) {
+        autoDeactivateAllExpiredForms();
         validateOfficeUser(userName);
         List<ReductionForm> forms;
 
@@ -278,9 +271,6 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingOffice, userName, null);
         createActivityLog(form, Role.Warden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
-        if (form.isEmergency()) {
-            notificationService.createNotification("office", "Emergency Form Ready for Office Approval", "EMERGENCY_REQUEST", form.getFormId());
-        }
     }
 
 
@@ -298,9 +288,6 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingWarden, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
-        if (form.isEmergency()) {
-            notificationService.createNotification("warden", "Emergency Form Ready for Review", "EMERGENCY_REQUEST", form.getFormId());
-        }
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -454,9 +441,6 @@ public class ReductionFormService {
             saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
             createActivityLog(form, Role.Warden, userName, "Approved");
             notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
-            if (form.isEmergency()) {
-                notificationService.createNotification("office", "Emergency Form Ready for Office Approval", "EMERGENCY_REQUEST", form.getFormId());
-            }
             validForms.add(form);
         }
 
@@ -489,9 +473,6 @@ public class ReductionFormService {
             saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingWarden, userName, null);
             createActivityLog(form, Role.DeputyWarden, userName, "Approved");
             notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
-            if (form.isEmergency()) {
-                notificationService.createNotification("warden", "Emergency Form Ready for Review", "EMERGENCY_REQUEST", form.getFormId());
-            }
         }
 
         reductionFormRepo.saveAll(forms);
@@ -565,32 +546,37 @@ public class ReductionFormService {
         );
     }
 
-    private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
-        // Check for pending forms
-        if (reductionFormRepo.existsByStudentDetailsStudentIdAndCurrentStatusIn(studentId,
-                List.of(FormStatus.PendingWarden, FormStatus.PendingDeputyWarden, FormStatus.PendingOffice))) {
-            throw new StatusAlreadyPendingException("Cannot submit a new form while a previous request is still pending");
+    public void autoDeactivateAllExpiredForms() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ReductionForm> activeForms = reductionFormRepo.findByIsActiveTrue();
+        List<ReductionForm> updated = new ArrayList<>();
+        for (ReductionForm form : activeForms) {
+            LocalDateTime arrivalDateTime = LocalDateTime.of(form.getArrivalDate(), form.getArrivalTime());
+            if (!now.isBefore(arrivalDateTime)) {
+                form.setActive(false);
+                form.getHistory().forEach(history -> history.setActive(false));
+                updated.add(form);
+            }
         }
+        if (!updated.isEmpty()) {
+            reductionFormRepo.saveAll(updated);
+        }
+    }
 
-        // Check for active approved requests (arrival date >= current date)
-        validateActiveApprovedRequest(studentId);
+    private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
+        autoDeactivateAllExpiredForms();
+
+        // Check if there is any active form for this student
+        List<ReductionForm> activeForms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
+        if (!activeForms.isEmpty()) {
+            throw new StatusAlreadyPendingException("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.");
+        }
 
         validateResubmitPayload(dto);
     }
 
     private void validateActiveApprovedRequest(Long studentId) {
-        List<ReductionForm> activeApprovedForms = reductionFormRepo
-                .findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfterAndIsActiveTrue(
-                        studentId,
-                        FormStatus.Approved,
-                        LocalDate.now()
-                );
-
-        if (!activeApprovedForms.isEmpty()) {
-            throw new StatusAlreadyPendingException(
-                    "You already have an approved reduction request active until your arrival date. New request submission is not allowed."
-            );
-        }
+        // Kept for backward compatibility if needed, but not used during validateNewSubmission anymore.
     }
 
     public void deleteAllReductionForms() {
@@ -598,23 +584,7 @@ public class ReductionFormService {
     }
 
     public void expireReductionForms() {
-        LocalDate today = LocalDate.now();
-        List<ReductionForm> expiredForms = reductionFormRepo.findByIsActiveTrueAndArrivalDateBefore(today);
-        if (expiredForms.isEmpty()) {
-            return;
-        }
-        List<ReductionForm> formsToDeactivate = expiredForms.stream()
-                .filter(form -> form.getCurrentStatus() != FormStatus.Approved)
-                .toList();
-        if (formsToDeactivate.isEmpty()) {
-            return;
-        }
-        formsToDeactivate.forEach(form -> {
-            form.setActive(false);
-            // Also deactivate the history records for this form
-            form.getHistory().forEach(history -> history.setActive(false));
-        });
-        reductionFormRepo.saveAll(formsToDeactivate);
+        autoDeactivateAllExpiredForms();
     }
 
     public void cleanUpExpiredRequests() {

@@ -44,5 +44,4 @@ public class ReductionFormReqDTO {
     private LocalTime arrivalTime;
     @NotBlank
     private String reason;
-    private Boolean isEmergency;
 }

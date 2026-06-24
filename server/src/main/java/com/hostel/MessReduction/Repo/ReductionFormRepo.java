@@ -45,6 +45,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByCurrentStatusAndYearAndStudentDetailsGenderAndIsActiveTrue(FormStatus status, Integer year, Gender gender);
     List<ReductionForm> findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfterAndIsActiveTrue(Long studentId, FormStatus status, java.time.LocalDate currentDate);
     List<ReductionForm> findByIsActiveTrueAndArrivalDateBefore(java.time.LocalDate date);
+    List<ReductionForm> findByIsActiveTrue();
     List<ReductionForm> findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(FormStatus status, java.time.LocalDate startDate, java.time.LocalDate endDate);
     List<ReductionForm> findByArrivalDateBefore(java.time.LocalDate date);
 }

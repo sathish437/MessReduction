@@ -76,8 +76,7 @@ public class ReductionForm {
     @Column(length = 1000)
     private String rejectReason;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean isEmergency = false;
+
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -92,8 +91,7 @@ public class ReductionForm {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean reminder3HourSent = false;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean emergency15MinSent = false;
+
 
     // Repeating reminder/escalation tracking
     @Column

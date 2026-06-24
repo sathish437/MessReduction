@@ -47,10 +47,15 @@ function MessReductionPage() {
     const [studentId, setStudentId] = useState(null);
     const [studentForm, setStudentForm] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [myRequests, setMyRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [editingFormId, setEditingFormId] = useState(null)
     const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
+
+    const activeRequest = Array.isArray(studentForm)
+        ? studentForm.find(form => form.active === true || form.isActive === true)
+        : null;
+
+    const isSubmitBlocked = !!activeRequest && !editingFormId;
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -102,35 +107,9 @@ function MessReductionPage() {
                 // Get forms from nested reductionForms if present
                 const forms = Array.isArray(currentStudent.reductionForms) ? currentStudent.reductionForms : [];
                 setStudentForm(forms);
-
-                // Map to UI requests list (preserve existing UI shape)
-                if (forms.length > 0) {
-                    const mappedForms = forms.map(form => ({
-                        id: form.formId,
-                        formId: form.formId,
-                        studentId: studentId,
-                        year: form.year,
-                        dept: currentStudent?.department || form.department,
-                        roomNo: form.roomNo,
-                        leaveDate: form.leaveDate,
-                        leaveTime: form.leaveTime,
-                        arrivalDate: form.arrivalDate,
-                        arrivalTime: form.arrivalTime,
-                        presentDate: form.presentDate,
-                        totalHolidays: form.totalHolidays,
-                        reason: form.reason,
-                        status: form.currentStatus || "PendingWarden",
-                        rejectReason: form.rejectReason,
-                        submittedDate: form.presentDate
-                    })).reverse();
-                    setMyRequests(mappedForms);
-                } else {
-                    setMyRequests([]);
-                }
             } else {
                 setStudentDetails(null);
                 setStudentForm([]);
-                setMyRequests([]);
             }
         } catch (error) {
             console.error("Error fetching student data:", error);
@@ -193,6 +172,12 @@ function MessReductionPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (isSubmitBlocked) {
+            showToast("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.", 'error');
+            return;
+        }
+
         setIsSubmitting(true);
 
         const savedUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
@@ -213,7 +198,7 @@ function MessReductionPage() {
             arrivalDate: formData.arrivalDate,
             arrivalTime: formData.arrivalTime.length === 5 ? `${formData.arrivalTime}:00` : formData.arrivalTime,
             reason: formData.reason === "other" ? formData.otherReason : formData.reason,
-            isEmergency: formData.isEmergency
+            isEmergency: false
         };
 
         try {
@@ -313,53 +298,59 @@ function MessReductionPage() {
             {/* Main Content */}
             <main className="flex-1 w-full flex flex-col items-center px-4 py-6 sm:py-8">
                 <div className="w-full max-w-[600px] space-y-4">
-                    
-                    {/* TOP SECTION: Request Status */}
-                    <div className="w-full">
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-3">My Previous Submissions</h3>
-                        
-                        {myRequests.length > 0 ? (
-                            <div className="space-y-2">
-                                {myRequests.map((req, idx) => {
-                                    const isRejected = req.status?.startsWith('Rejected');
-                                    return (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.03 }}
-                                        key={req.formId || idx}
-                                        className={`rounded-lg px-4 py-3 border flex flex-col gap-2 ${getStatusColor(req.status)}`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-black uppercase tracking-wide">
-                                                {getStatusDisplay(req.status)}
-                                            </p>
-                                            {isRejected && (
-                                                <button
-                                                    onClick={() => handleEditRequest(req)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-md text-xs font-bold transition-colors border border-white/10"
-                                                >
-                                                    <FiEdit3 size={14} /> Edit & Resubmit
-                                                </button>
-                                            )}
-                                        </div>
-                                        
-                                        {isRejected && req.rejectReason && (
-                                            <div className="mt-1 pt-2 border-t border-rose-500/20 text-sm">
-                                                <span className="font-bold uppercase tracking-widest text-xs opacity-60 block mb-0.5">Reason</span>
-                                                <span className="font-medium text-rose-200">{req.rejectReason}</span>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <p className="text-white/70 text-sm">No requests submitted yet</p>
-                        )}
+
+                    {/* 1. Student Details (Auto-filled) */}
+                    <div className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] p-5 shadow-xl">
+                        <h4 className="text-xs font-black text-teal-400/80 uppercase tracking-widest mb-3">Student Details (Auto-filled)</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Field icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
+                            <Field icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
+                            <Field icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
+                            <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
+                        </div>
                     </div>
 
-                    {/* BOTTOM SECTION: Mess Reduction Form */}
+                    {/* 2. Active Request Status (only when active request exists) */}
+                    {activeRequest && (
+                        <div className="w-full rounded-2xl border border-teal-500/30 bg-[#0f1f38] p-5 shadow-xl">
+                            <h4 className="text-xs font-black text-teal-400 uppercase tracking-widest mb-3">Active Request Status</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Current Status</span>
+                                    <span className={`inline-block mt-1 px-3 py-1 rounded-md text-xs font-bold border ${getStatusColor(activeRequest.currentStatus)}`}>
+                                        {getStatusDisplay(activeRequest.currentStatus)}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Assigned Deputy Warden</span>
+                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.assignedDeputyWarden || "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Leave Date</span>
+                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.leaveDate}</span>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Arrival Date</span>
+                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.arrivalDate}</span>
+                                </div>
+                            </div>
+                            
+                            {((activeRequest.currentStatus)?.startsWith('Rejected')) && (
+                                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-4">
+                                    <span className="text-xs font-bold text-rose-400">Request rejected. You can edit and resubmit.</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEditRequest(activeRequest)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-slate-900 rounded-md text-xs font-bold transition-colors"
+                                    >
+                                        <FiEdit3 size={14} /> Edit & Resubmit
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3. New Request Form */}
                     <div id="form-section" className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-xl overflow-hidden scroll-mt-24">
                         <div className="p-4 sm:p-6 border-b border-white/5 bg-white/[0.02]">
                             <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -373,36 +364,6 @@ function MessReductionPage() {
                         <div className="p-4 sm:p-6">
                             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                                 
-                                {/* Student Details Section - Auto-filled */}
-                                <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                                    <p className="text-xs font-black text-teal-400 uppercase tracking-wider mb-3">Student Details (Auto-filled)</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <Field icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
-                                        <Field icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
-                                        <Field icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
-                                        <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
-                                    </div>
-                                </div>
-
-                                {/* Student Forms - dynamically display all fields returned by backend */}
-                                {Array.isArray(studentForm) && studentForm.length > 0 && (
-                                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5 mt-4">
-                                        <p className="text-xs font-black text-teal-400 uppercase tracking-wider mb-3">Submitted Forms</p>
-                                        <div className="space-y-3">
-                                            {studentForm.map((form, idx) => (
-                                                <div key={form.formId || idx} className="p-3 rounded-md border bg-white/[0.01]">
-                                                    {Object.entries(form).map(([key, value]) => (
-                                                        <div key={key} className="flex justify-between text-sm text-white/80 py-0.5">
-                                                            <span className="font-medium text-white/60">{key}</span>
-                                                            <span className="font-mono text-white/80">{value === null || value === undefined ? '-' : String(value)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Editable Leave Details */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors relative">
@@ -519,29 +480,24 @@ function MessReductionPage() {
                                     )}
                                 </AnimatePresence>
 
-                                {/* Emergency Request Checkbox */}
-                                <div className="flex items-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 transition-colors cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, isEmergency: !prev.isEmergency }))}>
-                                    <input 
-                                        type="checkbox" 
-                                        name="isEmergency"
-                                        id="isEmergency"
-                                        checked={formData.isEmergency}
-                                        onChange={handleChange}
-                                        className="w-5 h-5 rounded border-rose-500/50 bg-transparent text-rose-500 focus:ring-rose-500 focus:ring-offset-0 cursor-pointer"
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                    <label htmlFor="isEmergency" className="text-rose-400/90 text-sm font-bold uppercase tracking-wider cursor-pointer flex-1 flex items-center gap-2">
-                                        <FiAlertTriangle size={16} /> Mark as Emergency Request
-                                    </label>
-                                </div>
+
+                                {/* Restriction Warning Block */}
+                                {isSubmitBlocked && (
+                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-amber-400">
+                                        <FiAlertTriangle size={20} className="shrink-0 mt-0.5" />
+                                        <p className="text-sm font-bold leading-normal">
+                                            You already have an active mess reduction request. New requests can be submitted after your arrival date and time.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Submit Button */}
                                 <motion.button
-                                    whileHover={{ scale: 1.01 }}
-                                    whileTap={{ scale: 0.99 }}
-                                    className={`mt-2 flex items-center justify-center gap-3 w-full rounded-xl py-3.5 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all duration-200 tracking-widest ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    whileHover={isSubmitBlocked ? {} : { scale: 1.01 }}
+                                    whileTap={isSubmitBlocked ? {} : { scale: 0.99 }}
+                                    className={`mt-2 flex items-center justify-center gap-3 w-full rounded-xl py-3.5 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all duration-200 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
                                     type="submit"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || isSubmitBlocked}
                                 >
                                     {isSubmitting ? "SUBMITTING..." : (editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST")} <FiArrowRight size={16} />
                                 </motion.button>

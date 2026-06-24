@@ -57,8 +57,8 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-                            <h3 className={`text-2xl font-black text-white flex items-center gap-3 ${t.text}`}>
-                                <FiActivity size={24} />
+                            <h3 className={`text-lg font-bold text-white flex items-center gap-2 ${t.text}`}>
+                                <FiActivity size={20} />
                                 {actionTitle} Logs
                             </h3>
                             <button
@@ -80,7 +80,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                     <div className={`w-16 h-16 rounded-full ${t.bg} ${t.border} flex items-center justify-center`}>
                                         <FiClock size={32} className={t.text} />
                                     </div>
-                                    <p className="font-black uppercase tracking-widest">No activity logs found.</p>
+                                    <p className="font-medium text-sm text-white/50 tracking-wider">No activity logs found.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
@@ -88,21 +88,21 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                         <div key={log.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5 hover:bg-white/[0.04] transition-all">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                 <div>
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <span className="text-white/40 text-xs font-black tracking-widest uppercase">Form #{log.formId}</span>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <span className="text-white/40 text-xs font-semibold tracking-wider uppercase">Form #{log.formId}</span>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
                                                             {log.action}
                                                         </span>
                                                     </div>
-                                                    <h4 className="text-lg font-black text-white">{log.studentName}</h4>
-                                                    <p className="text-sm text-white/40 font-bold uppercase tracking-widest">{log.department}</p>
+                                                    <h4 className="text-sm font-semibold text-white">{log.studentName}</h4>
+                                                    <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{log.department}</p>
                                                 </div>
                                                 
                                                 <div className="flex flex-col sm:items-end gap-2 mt-2 sm:mt-0">
                                                     <div className="flex items-center gap-2 text-sm text-white/50 font-medium">
                                                         <FiUser size={14} /> {log.staffName}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-xs text-white/30 font-bold uppercase tracking-widest">
+                                                    <div className="flex items-center gap-2 text-xs text-white/30 font-semibold uppercase tracking-wider">
                                                         <FiClock size={12} /> {new Date(log.timestamp).toLocaleString()}
                                                     </div>
                                                 </div>
@@ -123,7 +123,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                 >
                                     <FiChevronLeft /> Prev
                                 </button>
-                                <span className="text-xs font-black text-white/30 uppercase tracking-widest">
+                                <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
                                     Page {page + 1} of {totalPages}
                                 </span>
                                 <button

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    FiUsers, FiCheck, FiX, FiPieChart, FiList, 
+import {
+    FiUsers, FiCheck, FiX, FiPieChart, FiList,
     FiTrendingUp, FiArrowRight, FiBarChart2, FiActivity, FiLogOut,
     FiCheckSquare, FiSquare
 } from "react-icons/fi";
@@ -12,19 +12,19 @@ import ActivityLogModal from "./ActivityLogModal";
 
 
 const handleLogout = () => {
-  deleteCookie('staffToken');
-  deleteCookie('staffUsername');
-  deleteCookie('staffRole');
-  window.location.href = '/staff-login';
+    deleteCookie('staffToken');
+    deleteCookie('staffUsername');
+    deleteCookie('staffRole');
+    window.location.href = '/staff-login';
 };
 
 const YEARS = ["1st", "2nd", "3rd", "4th"];
 
 const YEAR_COLORS = {
-    "1st": { accent: "teal",    bg: "bg-teal-500",    text: "text-teal-400",    border: "border-teal-500/30",    glow: "shadow-teal-500/20",    ring: "bg-teal-500/10"  },
-    "2nd": { accent: "blue",    bg: "bg-blue-500",    text: "text-blue-400",    border: "border-blue-500/30",    glow: "shadow-blue-500/20",    ring: "bg-blue-500/10"  },
-    "3rd": { accent: "violet",  bg: "bg-violet-500",  text: "text-violet-400",  border: "border-violet-500/30",  glow: "shadow-violet-500/20",  ring: "bg-violet-500/10"},
-    "4th": { accent: "amber",   bg: "bg-amber-500",   text: "text-amber-400",   border: "border-amber-500/30",   glow: "shadow-amber-500/20",   ring: "bg-amber-500/10" },
+    "1st": { accent: "teal", bg: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", glow: "shadow-md", ring: "bg-teal-500/10" },
+    "2nd": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-md", ring: "bg-blue-500/10" },
+    "3rd": { accent: "violet", bg: "bg-violet-500", text: "text-violet-400", border: "border-violet-500/20", glow: "shadow-md", ring: "bg-violet-500/10" },
+    "4th": { accent: "amber", bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", glow: "shadow-md", ring: "bg-amber-500/10" },
 };
 
 function YearStatCard({ year, requests, yearStats }) {
@@ -35,24 +35,23 @@ function YearStatCard({ year, requests, yearStats }) {
 
     return (
         <motion.div
-            whileHover={{ scale: 1.02, translateY: -4 }}
-            className={`bg-[#0f1f38] border ${c.border} rounded-3xl p-7 shadow-xl shadow-black/30 relative overflow-hidden group`}
+            whileHover={{ y: -2 }}
+            className={`bg-[#0f1f38] border ${c.border} rounded-xl p-6 shadow-sm relative overflow-hidden group transition-all duration-200`}
         >
-            <div className={`absolute -top-10 -right-10 w-36 h-36 ${c.bg} opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity duration-500`} />
-            <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className={`px-4 py-1.5 rounded-lg ${c.ring} border ${c.border}`}>
-                    <span className={`text-sm font-black tracking-[0.25em] uppercase ${c.text}`}>{year} Year</span>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className={`px-3 py-1 rounded-lg ${c.ring} border ${c.border}`}>
+                    <span className={`text-xs font-semibold tracking-wider uppercase ${c.text}`}>{year} Year</span>
                 </div>
-                <span className={`text-6xl font-black ${c.text}`}>{total}</span>
+                <span className={`text-3xl font-bold ${c.text}`}>{total}</span>
             </div>
-            <div className="grid grid-cols-2 gap-2 relative z-10">
+            <div className="grid grid-cols-2 gap-2 relative z-10 border-t border-white/5 pt-3">
                 {[
-                    { label: "Pending",  val: pending,  color: "text-amber-400" },
+                    { label: "Pending", val: pending, color: "text-amber-400" },
                     { label: "Total Rec.", val: total, color: "text-emerald-400" },
                 ].map(({ label, val, color }) => (
                     <div key={label} className="text-center">
-                        <p className={`text-2xl font-black ${color}`}>{val}</p>
-                        <p className="text-sm font-bold text-white/25 uppercase tracking-widest">{label}</p>
+                        <p className={`text-lg font-bold ${color}`}>{val}</p>
+                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">{label}</p>
                     </div>
                 ))}
             </div>
@@ -61,13 +60,13 @@ function YearStatCard({ year, requests, yearStats }) {
 }
 
 function HostelOffice() {
-    const [view, setView]               = useState("dashboard");
+    const [view, setView] = useState("dashboard");
     const [selectedYear, setSelectedYear] = useState("all");
     const [genderFilter, setGenderFilter] = useState("ALL");
-    const [requests, setRequests]       = useState([]);
-    const [isLoading, setIsLoading]     = useState(true);
+    const [requests, setRequests] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
-    const [reportData, setReportData]   = useState([]);
+    const [reportData, setReportData] = useState([]);
 
     const handleGenerateReport = async () => {
         try {
@@ -185,7 +184,7 @@ function HostelOffice() {
     const handleAction = async (id, actionType) => {
         // Normalize action to 'Approve' or 'Reject' for backend
         const action = actionType === "Approve" ? "Approve" : "Reject";
-        
+
         if (action === "Reject") {
             setRejectFormId(id);
             setRejectReason("");
@@ -256,68 +255,70 @@ function HostelOffice() {
         <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white">
             <div className="fixed inset-0 bg-[#0a1628] -z-10" />
 
-            {/* ── Header ── */}
-            <header className="w-full flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 sm:py-5 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-xl sticky top-0 z-50 gap-4">
-                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                    <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-11 sm:h-11 object-contain" />
-                    <div className="flex flex-col leading-tight">
-                        <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] sm:tracking-[0.25em] text-teal-400/80 uppercase">Hostel Office Panel</span>
-                        <span className="text-xl sm:text-3xl font-black text-white tracking-widest uppercase">MessReduction</span>
+            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-white/10 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50 gap-4">
+                <div className="flex items-center gap-4 justify-between w-full lg:w-auto">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
+                            <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                        </div>
+                        <div className="flex flex-col leading-tight">
+                            <span className="text-[10px] font-semibold tracking-wider text-teal-400/80 uppercase">Hostel Office Panel</span>
+                            <span className="text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Year Tabs */}
-                <div className="flex items-center gap-1.5 bg-[#112240] p-1.5 rounded-2xl border border-white/5 overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
-                    {["all", ...YEARS].map(yr => (
-                        <button
-                            key={yr}
-                            onClick={() => setSelectedYear(yr)}
-                            className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                selectedYear === yr
-                                    ? yr === "all" ? "bg-white text-slate-900 shadow-xl"
-                                        : `${YEAR_COLORS[yr]?.bg ?? ""} text-slate-900 shadow-xl`
-                                    : "text-white/30 hover:text-white"
-                            }`}
-                        >
-                            {yr === "all" ? "All" : yr}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Gender Filter */}
-                <div className="flex items-center gap-2">
+                {/* Filters Row */}
+                <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full lg:w-auto">
+                    {/* Gender Filter */}
                     <select
                         value={genderFilter}
                         onChange={(e) => setGenderFilter(e.target.value)}
-                        className="bg-[#0f1f38] border border-white/10 rounded-xl px-4 py-2 text-xs sm:text-sm font-black text-white/60 focus:outline-none focus:border-teal-500/50"
+                        className="w-full lg:w-auto bg-[#0f1f38] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-white/60 focus:outline-none focus:border-teal-500/55 cursor-pointer order-1 lg:order-2"
                     >
                         <option value="ALL">Gender: All</option>
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
                     </select>
+
+                    {/* Year Tabs */}
+                    <div className="flex items-center gap-1 bg-[#112240] p-1 rounded-xl border border-white/10 overflow-x-auto w-full lg:w-auto justify-between sm:justify-start [&::-webkit-scrollbar]:hidden order-2 lg:order-1">
+                        {["all", ...YEARS].map(yr => (
+                            <button
+                                key={yr}
+                                onClick={() => setSelectedYear(yr)}
+                                className={`flex-1 lg:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap text-center ${selectedYear === yr
+                                        ? yr === "all" ? "bg-white text-slate-950 shadow-sm"
+                                            : `${YEAR_COLORS[yr]?.bg ?? ""} text-slate-955 shadow-sm`
+                                        : "text-white/40 hover:text-white"
+                                    }`}
+                            >
+                                {yr === "all" ? "All" : yr}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex bg-[#0f1f38]/60 p-1.5 sm:p-2 rounded-2xl border border-white/5 backdrop-blur-sm overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
-                    <button onClick={() => setView("dashboard")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
-                        <FiBarChart2 size={16} /> Dashboard
+                <div className="flex w-full lg:w-auto bg-[#0f1f38] p-1 rounded-xl border border-white/10 shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-955 shadow-sm" : "text-white/40 hover:text-white"}`}>
+                        <FiBarChart2 size={14} /> Dashboard
                     </button>
-                    <button onClick={() => setView("requests")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
-                        <FiList size={16} /> Requests
+                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-955 shadow-sm" : "text-white/40 hover:text-white"}`}>
+                        <FiList size={14} /> Requests
                     </button>
-                    <button onClick={() => setView("reports")} className={`flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "reports" ? "bg-teal-500 text-slate-900 shadow-[0_0_20px_rgba(45,212,191,0.3)]" : "text-white/40 hover:text-white"}`}>
-                        <FiPieChart size={16} /> Reports
+                    <button onClick={() => setView("reports")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "reports" ? "bg-teal-500 text-slate-955 shadow-sm" : "text-white/40 hover:text-white"}`}>
+                        <FiPieChart size={14} /> Reports
                     </button>
                 </div>
 
                 {/* Logout Button */}
-                <div className="flex items-center gap-3">
-
+                <div className="flex items-center gap-3 w-full lg:w-auto">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
+                        className="w-full lg:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-semibold tracking-wider uppercase"
                     >
-                        <FiLogOut size={16} /> Logout
+                        <FiLogOut size={14} /> Logout
                     </button>
                 </div>
             </header>
@@ -337,11 +338,11 @@ function HostelOffice() {
                         >
                             {/* Section heading */}
                             <div>
-                                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight flex items-center gap-3 sm:gap-4">
-                                    <div className="w-1.5 h-6 sm:h-8 bg-teal-500 rounded-full" />
+                                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                                    <div className="w-1 h-5 bg-teal-500 rounded-full" />
                                     Submission Overview
                                 </h2>
-                                <p className="text-white/30 text-sm sm:text-base font-medium ml-4 sm:ml-5 mt-1">
+                                <p className="text-white/40 text-xs sm:text-sm font-normal ml-3 mt-0.5">
                                     {selectedYear === "all" ? "All academic years shown" : `Filtered to ${selectedYear} year submissions`}.
                                 </p>
                             </div>
@@ -354,23 +355,20 @@ function HostelOffice() {
                             </div>
 
                             {/* ── Overall Status + Total ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Overall Status Tracking */}
-                                <div className="lg:col-span-2 bg-[#0f1f38] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-10 scale-150 rotate-12 opacity-5 text-teal-400 pointer-events-none group-hover:opacity-10 transition-opacity duration-700">
-                                        <FiActivity size={200} />
-                                    </div>
-                                    <h3 className="text-xl sm:text-2xl font-black text-white mb-6 sm:mb-8 flex items-center gap-3">
+                                <div className="lg:col-span-2 bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+                                    <h3 className="text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
                                         <FiTrendingUp className="text-teal-400" /> Overall Status Tracking
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
-                                            { label: "Pending Office",  count: dashboardStats.pendingOffice || 0,  color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/10"   },
+                                            { label: "Pending Office", count: dashboardStats.pendingOffice || 0, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/10" },
                                             { label: "Approved", count: dashboardStats.approved || 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/10", action: "Approved", title: "Office Approved" },
-                                            { label: "Rejected Office", count: dashboardStats.rejectedOffice || 0, color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/10", action: "Rejected", title: "Office Rejected"    },
+                                            { label: "Rejected Office", count: dashboardStats.rejectedOffice || 0, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/10", action: "Rejected", title: "Office Rejected" },
                                         ].map(s => (
-                                            <div 
-                                                key={s.label} 
+                                            <div
+                                                key={s.label}
                                                 onClick={() => {
                                                     if (s.action) {
                                                         setLogActionType(s.action);
@@ -378,56 +376,56 @@ function HostelOffice() {
                                                         setIsLogModalOpen(true);
                                                     }
                                                 }}
-                                                className={`p-6 sm:p-8 rounded-2xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:scale-[1.02] transition-transform hover:opacity-80' : ''}`}
+                                                className={`p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-white/[0.02] transition-colors' : ''}`}
                                             >
-                                                <p className="text-xs sm:text-sm text-white/30 uppercase font-black tracking-widest mb-2">{s.label}</p>
-                                                <p className={`text-5xl sm:text-7xl font-black ${s.color}`}>{s.count}</p>
+                                                <p className="text-xs text-white/40 uppercase font-semibold tracking-wider mb-1.5">{s.label}</p>
+                                                <p className={`text-3xl sm:text-4xl font-bold ${s.color}`}>{s.count}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                 {/* Total Forms */}
-                                 <div className="bg-gradient-to-br from-teal-500/20 to-emerald-500/20 border border-teal-500/30 rounded-3xl p-8 sm:p-10 flex flex-col justify-between">
-                                     <div>
-                                         <h3 className="text-xl sm:text-2xl font-black text-white mb-2">Total Forms</h3>
-                                         <p className="text-white/40 text-sm sm:text-base font-medium">Cumulative submissions received.</p>
-                                     </div>
-                                     <p className="text-6xl sm:text-8xl font-black text-white mt-8">{(dashboardStats.pendingOffice || 0) + (dashboardStats.approved || 0) + (dashboardStats.rejectedOffice || 0)}</p>
-                                     <button
-                                         onClick={() => setView("requests")}
-                                         className="mt-8 flex items-center justify-center gap-3 w-full bg-white text-[#0a1628] py-4 rounded-2xl font-black text-base tracking-widest uppercase hover:bg-teal-400 transition-colors"
-                                     >
-                                         Manage Requests <FiArrowRight />
-                                     </button>
-                                 </div>
+                                {/* Total Forms */}
+                                <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white mb-1">Total Forms</h3>
+                                        <p className="text-white/40 text-xs font-normal">Cumulative submissions received.</p>
+                                    </div>
+                                    <p className="text-4xl sm:text-5xl font-bold text-white mt-4">{(dashboardStats.pendingOffice || 0) + (dashboardStats.approved || 0) + (dashboardStats.rejectedOffice || 0)}</p>
+                                    <button
+                                        onClick={() => setView("requests")}
+                                        className="mt-6 flex items-center justify-center gap-2 w-full bg-white text-[#0a1628] py-3 rounded-xl font-semibold text-xs tracking-wider uppercase hover:bg-teal-400 transition-colors"
+                                    >
+                                        Manage Requests <FiArrowRight />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* ── Year-wise Bar Visual ── */}
-                            <div className="bg-[#0f1f38] border border-white/5 rounded-[2.5rem] p-10 shadow-xl">
-                                <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3">
+                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-8 shadow-sm">
+                                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                                     <FiBarChart2 className="text-teal-400" /> Submission Count by Year
                                 </h3>
-                                <div className="flex items-end gap-6 h-40">
+                                <div className="flex items-end gap-6 h-36 max-w-2xl">
                                     {YEARS.map(yr => {
                                         const yearKeyMap = { "1st": "firstYear", "2nd": "secondYear", "3rd": "thirdYear", "4th": "fourthYear" };
                                         const count = yearStats[yearKeyMap[yr]] || 0;
-                                        const max   = Math.max(yearStats.firstYear, yearStats.secondYear, yearStats.thirdYear, yearStats.fourthYear, 1);
-                                        const pct   = Math.round((count / max) * 100);
-                                        const c     = YEAR_COLORS[yr];
+                                        const max = Math.max(yearStats.firstYear, yearStats.secondYear, yearStats.thirdYear, yearStats.fourthYear, 1);
+                                        const pct = Math.round((count / max) * 100);
+                                        const c = YEAR_COLORS[yr];
                                         return (
-                                            <div key={yr} className="flex-1 flex flex-col items-center gap-3">
-                                                <span className={`text-base font-black ${c.text}`}>{count}</span>
-                                                <div className="w-full bg-white/5 rounded-xl overflow-hidden" style={{ height: "80px" }}>
+                                            <div key={yr} className="flex-1 flex flex-col items-center gap-2">
+                                                <span className={`text-sm font-semibold ${c.text}`}>{count}</span>
+                                                <div className="w-full bg-white/5 rounded-lg overflow-hidden" style={{ height: "70px" }}>
                                                     <motion.div
                                                         initial={{ height: 0 }}
                                                         animate={{ height: `${pct}%` }}
                                                         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1], delay: YEARS.indexOf(yr) * 0.1 }}
-                                                        className={`w-full ${c.bg} rounded-xl`}
+                                                        className={`w-full ${c.bg} rounded-lg`}
                                                         style={{ marginTop: `${100 - pct}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-sm font-black text-white/30 uppercase tracking-widest">{yr} Yr</span>
+                                                <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">{yr} Yr</span>
                                             </div>
                                         );
                                     })}
@@ -449,11 +447,11 @@ function HostelOffice() {
                             {/* Header row */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
                                 <div>
-                                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                                        <div className="w-1.5 h-8 bg-teal-500 rounded-full" />
+                                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                        <div className="w-1 h-5 bg-teal-500 rounded-full" />
                                         Pending Requests - Office Review
                                     </h2>
-                                    <p className="text-sm text-white/40 mt-1">Forms awaiting office final approval</p>
+                                    <p className="text-xs text-white/40 mt-0.5">Forms awaiting office final approval</p>
                                 </div>
                             </div>
 
@@ -463,14 +461,14 @@ function HostelOffice() {
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-4"
+                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 gap-4"
                                     >
-                                        <span className="text-emerald-400 font-bold text-sm tracking-widest uppercase">
+                                        <span className="text-emerald-400 font-semibold text-xs tracking-wider uppercase">
                                             {selectedIds.length} Form(s) Selected
                                         </span>
                                         <button
                                             onClick={handleBulkAction}
-                                            className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-slate-900 rounded-xl font-black tracking-widest uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center"
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-slate-955 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center shadow-sm"
                                         >
                                             <FiCheck size={18} /> Approve Selected
                                         </button>
@@ -478,93 +476,35 @@ function HostelOffice() {
                                 )}
                             </AnimatePresence>
 
-                            {/* Mobile Cards - Match Deputy/Warden Style */}
-                            <div className="space-y-4 lg:hidden">
-                                {filteredRequests.length === 0 ? (
-                                    <div className="bg-[#0f1f38] border border-white/5 rounded-3xl p-12 text-center">
-                                         <p className="text-white/25 font-black uppercase tracking-widest text-base">No pending office requests</p>
-                                    </div>
-                                ) : filteredRequests.map((req, idx) => (
-                                    <motion.div
-                                        key={req.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className={`bg-[#0f1f38] border ${selectedIds.includes(req.id) ? 'border-emerald-500/50' : 'border-white/5'} rounded-3xl p-6 space-y-5 shadow-xl transition-all`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
-                                                {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
-                                            </button>
-                                            <div>
-                                                <h4 className="text-xl font-black text-white">{req.name}</h4>
-                                                <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
-                                            <div>
-                                                <p className="text-xs font-black text-white/20 uppercase tracking-widest mb-1">Room No</p>
-                                                <p className="text-sm font-bold text-white/60">{req.roomNo}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-white/20 uppercase tracking-widest mb-1">Period</p>
-                                                <p className="text-sm font-bold text-white/60">{req.leaveDate} - {req.arrivalDate}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
-                                        </div>
-
-                                        <div className="flex items-center justify-end gap-2 pt-2">
-                                            <button
-                                                onClick={() => handleAction(req.id, "Approve")}
-                                                className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl hover:bg-emerald-500 hover:text-slate-900 transition-all border border-emerald-500/10"
-                                            >
-                                                <FiCheck size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleAction(req.id, "Reject")}
-                                                className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
-                                            >
-                                                <FiX size={18} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-
-                            {/* Desktop Table - Match Deputy/Warden Structure */}
-                            <div className="hidden lg:block bg-[#0f1f38] border border-white/5 rounded-3xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-                                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                            {/* Requests Table */}
+                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                     <table className="w-full text-left border-collapse min-w-[1000px]">
-                                        <thead>
-                                            <tr className="bg-white/[0.03] text-sm uppercase tracking-[0.3em] font-black border-b border-white/5">
-                                                <th className="px-6 py-6 text-white/40 w-16 text-center">
+                                        <thead className="sticky top-0 bg-[#0f1f38] z-10">
+                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
+                                                <th className="px-6 py-4 text-white/40 w-16 text-center">
                                                     <button onClick={toggleSelectAll} className="text-white/40 hover:text-white transition-colors">
-                                                        {filteredRequests.length > 0 && selectedIds.length === filteredRequests.length ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                        {filteredRequests.length > 0 && selectedIds.length === filteredRequests.length ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
-                                                <th className="px-6 py-6 text-white/40">Student Name</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Department</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Room No</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Leave Date</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Arrival Date</th>
-                                                <th className="px-4 py-6 text-white/40">Reason</th>
-                                                <th className="px-6 py-6 text-white/40 text-right w-40">Action</th>
+                                                <th className="px-6 py-4 text-white/40">Student Name</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Room No</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Leave Date</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Arrival Date</th>
+                                                <th className="px-4 py-4 text-white/40">Reason</th>
+                                                <th className="px-6 py-4 text-white/40 text-right w-40">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {filteredRequests.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="8" className="px-6 py-24 text-center">
-                                                        <div className="flex flex-col items-center gap-4">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
-                                                                <FiList size={32} />
+                                                    <td colSpan="8" className="px-6 py-16 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                                                <FiList size={24} />
                                                             </div>
-                                                            <p className="text-white/25 font-black uppercase tracking-widest text-base">
+                                                            <p className="text-white/30 font-semibold uppercase tracking-wider text-xs">
                                                                 No pending office requests
                                                             </p>
                                                         </div>
@@ -577,46 +517,46 @@ function HostelOffice() {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
-                                                    className={`group hover:bg-white/[0.04] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.02]' : ''}`}
+                                                    className={`group hover:bg-white/[0.02] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''}`}
                                                 >
-                                                    <td className="px-6 py-6 text-center">
+                                                    <td className="px-6 py-4 text-center">
                                                         <button onClick={() => toggleSelect(req.id)} className={`${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors mt-1`}>
-                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                         </button>
                                                     </td>
-                                                    <td className="px-6 py-6">
+                                                    <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
-                                                            <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
+                                                            <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-lg font-black text-white/80">{req.roomNo}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-semibold text-white/80">{req.roomNo}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.leaveDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.leaveDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.arrivalDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6">
-                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
+                                                    <td className="px-4 py-4">
+                                                        <p title={req.reason} className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
-                                                    <td className="px-6 py-5 text-right">
-                                                        <div className="flex justify-end gap-2">
+                                                    <td className="px-6 py-3 text-right">
+                                                        <div className="flex justify-end gap-1.5">
                                                             <button
                                                                 onClick={() => handleAction(req.id, "Approve")}
-                                                                className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl hover:bg-emerald-500 hover:text-slate-900 transition-all border border-emerald-500/10"
+                                                                className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10"
                                                             >
-                                                                <FiCheck size={18} />
+                                                                <FiCheck size={16} />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleAction(req.id, "Reject")}
-                                                                className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
+                                                                className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
                                                             >
-                                                                <FiX size={18} />
+                                                                <FiX size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -637,109 +577,114 @@ function HostelOffice() {
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
                             transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-                            className="max-w-7xl mx-auto space-y-6"
+                            className="space-y-6"
                         >
                             {/* Report Header */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
                                 <div>
-                                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                                        <div className="w-1.5 h-8 bg-teal-500 rounded-full" />
+                                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                        <div className="w-1 h-5 bg-teal-500 rounded-full" />
                                         Report Management
                                     </h2>
-                                    <p className="text-sm text-white/40 mt-1">Generate and download historical approved student reduction requests</p>
+                                    <p className="text-xs text-white/40 mt-0.5">Generate and download historical approved student reduction requests</p>
                                 </div>
-                                <div className="flex gap-4">
+                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                     <button
                                         onClick={handleGenerateReport}
-                                        className="flex items-center gap-2 px-6 py-3 bg-teal-500 text-slate-900 rounded-2xl font-black tracking-widest uppercase hover:bg-teal-400 transition-colors shadow-[0_0_20px_rgba(45,212,191,0.3)]"
+                                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-teal-500 text-slate-955 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-teal-400 transition-colors shadow-sm w-full sm:w-auto"
                                     >
-                                        <FiActivity size={18} /> Generate Report
+                                        <FiActivity size={14} /> Generate Report
                                     </button>
                                     <button
                                         onClick={handleDownloadReport}
                                         disabled={reportData.length === 0}
-                                        className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black tracking-widest uppercase transition-colors ${
-                                            reportData.length > 0
-                                                ? "bg-emerald-500 text-slate-900 hover:bg-emerald-400 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors w-full sm:w-auto ${reportData.length > 0
+                                                ? "bg-emerald-500 text-slate-955 hover:bg-emerald-400 cursor-pointer shadow-sm"
                                                 : "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
-                                        }`}
+                                            }`}
                                     >
-                                        <FiTrendingUp size={18} /> Download Report
+                                        <FiTrendingUp size={14} /> Download Report
                                     </button>
                                 </div>
                             </div>
 
                             {/* Report Table */}
-                            <div className="bg-[#0f1f38] border border-white/5 rounded-3xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
-                                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                     <table className="w-full text-left border-collapse min-w-[1000px]">
-                                        <thead>
-                                            <tr className="bg-white/[0.03] text-sm uppercase tracking-[0.3em] font-black border-b border-white/5">
-                                                <th className="px-6 py-6 text-white/40">Student Name</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Register No</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Gender</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Year</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Department</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Leave Date</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Arrival Date</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Holidays</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Deputy Warden</th>
-                                                <th className="px-6 py-6 text-white/40 text-right">Status</th>
+                                        <thead className="sticky top-0 bg-[#0f1f38] z-10">
+                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
+                                                <th className="px-6 py-4 text-white/40">Student Name</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Register No</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Gender</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Year</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Leave Date</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Arrival Date</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Holidays</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Deputy Warden</th>
+                                                <th className="px-6 py-4 text-white/40 text-right">Refund Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {reportData.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="10" className="px-6 py-24 text-center">
-                                                        <div className="flex flex-col items-center gap-4">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
-                                                                <FiPieChart size={32} />
+                                                    <td colSpan="10" className="px-6 py-16 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                                                <FiPieChart size={24} />
                                                             </div>
-                                                            <p className="text-white/25 font-black uppercase tracking-widest text-base">
-                                                                No report data loaded. Click "Generate Report" to retrieve the last 4 months of approved requests.
+                                                            <p className="text-white/30 font-semibold uppercase tracking-wider text-xs">
+                                                                No report generated yet
                                                             </p>
+                                                            <button
+                                                                onClick={handleGenerateReport}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-semibold text-white hover:bg-white/10 transition-colors uppercase tracking-wider"
+                                                            >
+                                                                Generate Data
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ) : reportData.map((req, idx) => (
                                                 <tr
                                                     key={req.formId}
-                                                    className="group hover:bg-white/[0.04] transition-colors"
+                                                    className="group hover:bg-white/[0.02] transition-colors"
                                                 >
-                                                    <td className="px-6 py-6">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-2xl bg-[#0a1628] border border-white/10 flex items-center justify-center text-teal-400 font-black text-xl shadow-inner group-hover:brightness-125 transition-all">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 font-semibold text-sm">
                                                                 {req.name?.charAt(0) ?? "?"}
                                                             </div>
-                                                            <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
+                                                            <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/60">{req.registerNo}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-medium text-white/70">{req.registerNo}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/60">{req.gender}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-medium text-white/70">{req.gender}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/60">{req.year} Yr</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-medium text-white/70">{req.year} Yr</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.department}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider">{req.department}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.leaveDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.leaveDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.arrivalDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-lg font-black text-white/80">{req.totalHolidays}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-semibold text-white/80">{req.totalHolidays}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.assignedDeputyWarden}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-medium text-white/70">{req.assignedDeputyWarden}</span>
                                                     </td>
-                                                    <td className="px-6 py-6 text-right">
-                                                        <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold tracking-wider text-sm border border-emerald-500/20">{req.currentStatus}</span>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg font-semibold tracking-wider text-xs border border-emerald-500/20">{req.currentStatus}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -753,12 +698,12 @@ function HostelOffice() {
             </main>
 
             {/* ── Footer ── */}
-            <footer className="px-8 py-5 text-center border-t border-white/5 bg-[#0a1628]/80 backdrop-blur-xl">
+            <footer className="px-8 py-4 text-center border-t border-white/5 bg-[#0a1628]/80 backdrop-blur-md">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
-                    <p className="text-sm text-white/10 tracking-[0.5em] uppercase font-bold">© 2025 Government College of Engineering · Srirangam</p>
-                    <div className="flex gap-8">
-                        <span className="text-sm text-teal-400/30 font-black tracking-widest uppercase">Hostel Office — 1 Member</span>
-                        <span className="text-sm text-teal-400/30 font-black tracking-widest uppercase">System Stable</span>
+                    <p className="text-xs text-white/20 tracking-wider uppercase font-semibold">© 2025 Government College of Engineering · Srirangam</p>
+                    <div className="flex gap-6">
+                        <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">Hostel Office — 1 Member</span>
+                        <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">System Stable</span>
                     </div>
                 </div>
             </footer>
@@ -778,34 +723,31 @@ function HostelOffice() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-lg bg-[#0f1f38] border border-rose-500/30 rounded-3xl p-8 shadow-2xl shadow-rose-900/20 overflow-hidden"
+                            className="relative w-full max-w-lg bg-[#0f1f38] border border-white/10 rounded-xl p-6 shadow-xl overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 p-8 scale-150 rotate-12 opacity-5 text-rose-500 pointer-events-none">
-                                <FiX size={100} />
-                            </div>
-                            <h3 className="text-2xl font-black text-white mb-2 flex items-center gap-3">
-                                <span className="w-1.5 h-6 bg-rose-500 rounded-full" />
+                            <h3 className="text-lg font-bold text-white mb-1.5 flex items-center gap-2">
+                                <span className="w-1 h-5 bg-rose-500 rounded-full" />
                                 Reason for Rejection <span className="text-rose-500">*</span>
                             </h3>
-                            <p className="text-sm text-white/40 mb-6 font-medium">Please provide a clear reason for rejecting this request.</p>
-                            
+                            <p className="text-xs text-white/40 mb-4 font-normal">Please provide a clear reason for rejecting this request.</p>
+
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Enter rejection reason..."
-                                className="w-full h-32 bg-black/20 border border-white/10 rounded-xl p-4 text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 resize-none transition-all"
+                                className="w-full h-28 bg-black/20 border border-white/15 rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
                             />
 
-                            <div className="flex items-center justify-end gap-4 mt-8">
+                            <div className="flex items-center justify-end gap-3 mt-6">
                                 <button
                                     onClick={() => setIsRejectModalOpen(false)}
-                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-white/40 hover:text-white transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleRejectSubmit}
-                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
                                 >
                                     Reject
                                 </button>
@@ -816,12 +758,12 @@ function HostelOffice() {
             </AnimatePresence>
 
             {/* Activity Log Modal */}
-            <ActivityLogModal 
-                isOpen={isLogModalOpen} 
-                onClose={() => setIsLogModalOpen(false)} 
-                actionType={logActionType} 
-                actionTitle={logActionTitle} 
-                themeColor="violet" 
+            <ActivityLogModal
+                isOpen={isLogModalOpen}
+                onClose={() => setIsLogModalOpen(false)}
+                actionType={logActionType}
+                actionTitle={logActionTitle}
+                themeColor="violet"
             />
         </div>
     );

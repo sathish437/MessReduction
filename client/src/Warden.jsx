@@ -20,19 +20,18 @@ const handleLogout = () => {
 const YEARS = ["1st", "2nd", "3rd", "4th"];
 
 const YEAR_THEME = {
-    "1st": { color: "teal",   active: "bg-teal-500",  text: "text-teal-400",  border: "border-teal-500/30",  ring: "bg-teal-500/10",   glow: "shadow-teal-500/30"  },
-    "2nd": { color: "blue",   active: "bg-blue-500",  text: "text-blue-400",  border: "border-blue-500/30",  ring: "bg-blue-500/10",   glow: "shadow-blue-500/30"  },
-    "3rd": { color: "violet", active: "bg-violet-500",text: "text-violet-400",border: "border-violet-500/30",ring: "bg-violet-500/10", glow: "shadow-violet-500/30"},
-    "4th": { color: "amber",  active: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/30", ring: "bg-amber-500/10",  glow: "shadow-amber-500/30" },
+    "1st": { color: "teal",   active: "bg-teal-500",  text: "text-teal-400",  border: "border-teal-500/20",  ring: "bg-teal-500/10",   glow: "shadow-md"  },
+    "2nd": { color: "blue",   active: "bg-blue-500",  text: "text-blue-400",  border: "border-blue-500/20",  ring: "bg-blue-500/10",   glow: "shadow-md"  },
+    "3rd": { color: "violet", active: "bg-violet-500",text: "text-violet-400",border: "border-violet-500/20",ring: "bg-violet-500/10", glow: "shadow-md"},
+    "4th": { color: "amber",  active: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", ring: "bg-amber-500/10",  glow: "shadow-md" },
 };
 
 /* ── Year Selection Screen ── */
 function YearSelectScreen({ onSelect }) {
     return (
         <div className="min-h-screen w-full bg-[#0a1628] flex flex-col items-center justify-center font-sans text-white px-6">
-            {/* Background glow */}
+            {/* Background glow removed for professional admin dashboard */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-teal-500/5 rounded-full blur-[120px]" />
             </div>
 
             <motion.div
@@ -45,9 +44,9 @@ function YearSelectScreen({ onSelect }) {
                 <div className="flex flex-col items-center gap-4 text-center">
                     <img src={logo} alt="GCES" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
                     <div>
-                        <p className="text-xs sm:text-sm font-black tracking-[0.3em] text-teal-400/70 uppercase mb-2">Authority Panel</p>
-                        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-widest uppercase px-2">Chief Warden</h1>
-                        <p className="text-base sm:text-lg text-white/30 font-medium mt-3">Select your year assignment to continue</p>
+                        <p className="text-xs font-semibold tracking-wider text-teal-400/80 uppercase mb-1.5">Authority Panel</p>
+                        <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-wide uppercase px-2">Chief Warden</h1>
+                        <p className="text-sm sm:text-base text-white/40 font-medium mt-2">Select your year assignment to continue</p>
                     </div>
                 </div>
 
@@ -61,21 +60,20 @@ function YearSelectScreen({ onSelect }) {
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 + 0.2 }}
-                                whileHover={{ scale: 1.04, translateY: -4 }}
-                                whileTap={{ scale: 0.97 }}
+                                whileHover={{ y: -2 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => onSelect(yr)}
-                                className={`group relative bg-[#0f1f38] ${t.border} border rounded-3xl p-8 flex flex-col items-start gap-4 text-left overflow-hidden hover:shadow-2xl ${t.glow} transition-all duration-300`}
+                                className={`group relative bg-[#0f1f38] ${t.border} border rounded-2xl p-6 flex flex-col items-start gap-4 text-left overflow-hidden hover:bg-white/[0.02] shadow-sm transition-all duration-200`}
                             >
-                                <div className={`absolute -top-8 -right-8 w-32 h-32 ${t.active} opacity-5 rounded-full blur-2xl group-hover:opacity-15 transition-opacity duration-500`} />
-                                <div className={`w-12 h-12 rounded-2xl ${t.ring} border ${t.border} flex items-center justify-center`}>
-                                    <FiUsers className={t.text} size={22} />
+                                <div className={`w-10 h-10 rounded-xl ${t.ring} border ${t.border} flex items-center justify-center`}>
+                                    <FiUsers className={t.text} size={18} />
                                 </div>
                                 <div>
-                                    <p className={`text-sm font-black tracking-[0.3em] uppercase ${t.text} mb-2`}>Year {i + 1}</p>
-                                    <h3 className="text-4xl font-black text-white">{yr}</h3>
-                                    <p className="text-base text-white/30 font-medium mt-1">Warden Panel</p>
+                                    <p className={`text-xs font-semibold tracking-wider uppercase ${t.text} mb-1`}>Year {i + 1}</p>
+                                    <h3 className="text-2xl font-bold text-white">{yr}</h3>
+                                    <p className="text-sm text-white/40 font-medium mt-0.5">Warden Panel</p>
                                 </div>
-                                <div className={`flex items-center gap-2 ${t.text} text-sm font-black uppercase tracking-widest mt-auto`}>
+                                <div className={`flex items-center gap-1.5 ${t.text} text-xs font-semibold uppercase tracking-wider mt-auto`}>
                                     Enter <FiArrowRight size={14} />
                                 </div>
                             </motion.button>
@@ -261,7 +259,7 @@ const Warden = () => {
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
-    const t = { color: "teal", active: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/30", ring: "bg-teal-500/10", glow: "shadow-teal-500/30" };
+    const t = { color: "teal", active: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", ring: "bg-teal-500/10", glow: "shadow-sm" };
 
     // Backend already filters by year and status - use data directly
     const pendingForms = requests;
@@ -280,46 +278,46 @@ const Warden = () => {
     return (
         <div className="min-h-screen w-full bg-[#0a1628] text-white font-sans selection:bg-teal-500/30">
             {/* ── Header ── */}
-            <header className="w-full flex items-center justify-between px-4 sm:px-10 py-4 sm:py-6 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-xl sticky top-0 z-50 gap-4 flex-wrap sm:flex-nowrap">
-                <div className="flex items-center gap-3 sm:gap-5">
-                    <div className={`p-1.5 sm:p-2 ${t.ring} rounded-xl sm:rounded-2xl border ${t.border}`}>
-                        <img src={logo} alt="Logo" className="w-8 h-8 sm:w-11 sm:h-11 object-contain" />
+            <header className="w-full flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50 gap-4 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-4">
+                    <div className={`p-2 ${t.ring} rounded-xl border ${t.border}`}>
+                        <img src={logo} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
                     </div>
                      <div className="flex flex-col">
-                        <span className={`text-xs sm:text-base font-black tracking-[.2em] sm:tracking-[.3em] ${t.text} uppercase`}>Authority Panel</span>
-                        <span className="text-xl sm:text-4xl font-black text-white tracking-widest uppercase">Chief Warden</span>
+                        <span className={`text-[10px] font-semibold tracking-wider ${t.text} uppercase`}>Authority Panel</span>
+                        <span className="text-xl font-bold text-white tracking-normal uppercase">Chief Warden</span>
                     </div>
                 </div>
-
-                {/* Year badge */}
-                <div className="flex items-center gap-4">
-                    <div className={`flex items-center gap-2 px-4 py-2 ${t.ring} border ${t.border} rounded-2xl`}>
-                        <div className={`w-2 h-2 rounded-full ${t.active} animate-pulse`} />
-                         <span className={`text-sm font-black uppercase tracking-widest ${t.text}`}>Chief Warden</span>
-                    </div>
-                </div>
-
-                {/* Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest"
-                >
-                    <FiLogOut size={16} /> Logout
-                </button>
 
                 {/* Main View Toggle */}
-                <div className="flex bg-[#0f1f38] p-1.5 rounded-2xl border border-white/5 shadow-xl overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
+                <div className="flex bg-[#0f1f38] p-1 rounded-xl border border-white/10 shadow-sm overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
                     <button
                         onClick={() => setView("dashboard")}
-                        className={`flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "dashboard" ? `${t.active} text-slate-900 shadow-lg` : "text-white/40 hover:text-white"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? `${t.active} text-slate-950 shadow-sm` : "text-white/40 hover:text-white"}`}
                     >
-                        <FiTrendingUp size={18} /> Dashboard
+                        <FiTrendingUp size={14} /> Dashboard
                     </button>
                     <button
                         onClick={() => setView("requests")}
-                        className={`flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-4 rounded-xl text-sm sm:text-base font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap ${view === "requests" ? `${t.active} text-slate-900 shadow-lg` : "text-white/40 hover:text-white"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? `${t.active} text-slate-950 shadow-sm` : "text-white/40 hover:text-white"}`}
                     >
-                        <FiFileText size={18} /> Requests
+                        <FiFileText size={14} /> Requests
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {/* Active session badge */}
+                    <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 ${t.ring} border ${t.border} rounded-lg`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${t.active}`} />
+                         <span className={`text-xs font-semibold uppercase tracking-wider ${t.text}`}>Active Session</span>
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-semibold uppercase tracking-wider"
+                    >
+                        <FiLogOut size={14} /> Logout
                     </button>
                 </div>
             </header>
@@ -338,62 +336,61 @@ const Warden = () => {
                             {/* ── Stats Row ── */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Pending Requests */}
-                                <div className={`bg-[#0f1f38] border ${t.border} rounded-2xl p-6 flex flex-col justify-between`}>
+                                <div className={`bg-[#0f1f38] border ${t.border} rounded-xl p-6 flex flex-col justify-between shadow-sm`}>
                                     <div>
-                                        <p className="text-sm text-white/40 uppercase font-black tracking-widest mb-2">Pending Requests</p>
-                                        <p className="text-5xl font-black text-white">{counts?.pendingWarden || 0}</p>
+                                        <p className="text-xs text-white/40 uppercase font-semibold tracking-wider mb-2">Pending Requests</p>
+                                        <p className="text-3xl font-bold text-white">{counts?.pendingWarden || 0}</p>
                                     </div>
-                                    <div className={`mt-4 px-3 py-1 ${t.ring} border ${t.border} rounded-full text-xs font-black ${t.text} uppercase inline-block w-fit`}>Need Action</div>
+                                    <div className={`mt-4 px-2.5 py-1 ${t.ring} border ${t.border} rounded-lg text-xs font-semibold ${t.text} uppercase inline-block w-fit`}>Need Action</div>
                                 </div>
 
                                 {/* Accepted Requests (Warden approved -> PendingDeputyWarden) */}
                                 <div 
                                     onClick={() => { setLogActionType("Approved"); setLogActionTitle("Warden Approved"); setIsLogModalOpen(true); }}
-                                    className="bg-[#0f1f38] border border-emerald-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-emerald-500/40"
+                                    className="bg-[#0f1f38] border border-emerald-500/20 rounded-xl p-6 flex flex-col justify-between cursor-pointer hover:bg-white/[0.01] transition-colors hover:border-emerald-500/40 shadow-sm"
                                 >
                                     <div>
-                                        <p className="text-sm text-emerald-400/60 uppercase font-black tracking-widest mb-2">Accepted Requests</p>
-                                        <p className="text-5xl font-black text-emerald-400">{counts?.pendingDeputyWarden || 0}</p>
+                                        <p className="text-xs text-emerald-400/70 uppercase font-semibold tracking-wider mb-2">Accepted Requests</p>
+                                        <p className="text-3xl font-bold text-emerald-400">{counts?.pendingDeputyWarden || 0}</p>
                                     </div>
-                                    <div className="mt-4 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-black text-emerald-400 uppercase inline-block w-fit">Warden Approved</div>
+                                    <div className="mt-4 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs font-semibold text-emerald-400 uppercase inline-block w-fit">Warden Approved</div>
                                 </div>
 
                                 {/* Rejected Requests */}
                                 <div 
                                     onClick={() => { setLogActionType("Rejected"); setLogActionTitle("Warden Rejected"); setIsLogModalOpen(true); }}
-                                    className="bg-[#0f1f38] border border-rose-500/20 rounded-2xl p-6 flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform hover:border-rose-500/40"
+                                    className="bg-[#0f1f38] border border-rose-500/20 rounded-xl p-6 flex flex-col justify-between cursor-pointer hover:bg-white/[0.01] transition-colors hover:border-rose-500/40 shadow-sm"
                                 >
                                     <div>
-                                        <p className="text-sm text-rose-400/60 uppercase font-black tracking-widest mb-2">Rejected Requests</p>
-                                        <p className="text-5xl font-black text-rose-400">{counts?.rejectedWarden || 0}</p>
+                                        <p className="text-xs text-rose-400/70 uppercase font-semibold tracking-wider mb-2">Rejected Requests</p>
+                                        <p className="text-3xl font-bold text-rose-400">{counts?.rejectedWarden || 0}</p>
                                     </div>
-                                    <div className="mt-4 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full text-xs font-black text-rose-400 uppercase inline-block w-fit">Warden Rejected</div>
+                                    <div className="mt-4 px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs font-semibold text-rose-400 uppercase inline-block w-fit">Warden Rejected</div>
                                 </div>
                             </div>
 
-                            {/* Quick Actions / Info */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div className="bg-[#0f1f38] border border-white/5 rounded-[2.5rem] p-10 flex flex-col justify-center">
-                                    <h3 className="text-2xl font-black text-white mb-4">Warden Protocol</h3>
-                                    <p className="text-lg text-white/30 leading-relaxed font-medium">
-                                        Review requests pre-approved by Deputy Wardens. Your digital signature finalized the reduction for the Hostel Office records.
+                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-8 flex flex-col justify-center shadow-sm">
+                                    <h3 className="text-xl font-bold text-white mb-3">Warden Protocol</h3>
+                                    <p className="text-sm text-white/50 leading-relaxed font-normal">
+                                        Review requests pre-approved by Deputy Wardens. Your digital signature finalizes the reduction for the Hostel Office records.
                                     </p>
-                                    <div className="mt-8 flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-2xl ${t.ring} flex items-center justify-center`}>
-                                            <FiShield className={t.text} size={20} />
+                                    <div className="mt-6 flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg ${t.ring} flex items-center justify-center`}>
+                                            <FiShield className={t.text} size={18} />
                                         </div>
-                                        <span className="text-sm font-black text-white/20 uppercase tracking-[0.2em]">Verified Secure Portal</span>
+                                        <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">Verified Secure Portal</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-[2.5rem] p-10 flex flex-col justify-between">
+                                <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-8 flex flex-col justify-between shadow-sm">
                                     <div>
-                                        <h3 className="text-2xl font-black text-white mb-2">Review Requests</h3>
-                                        <p className="text-white/40 text-lg font-medium">Navigate to the requests table to process forms.</p>
+                                        <h3 className="text-xl font-bold text-white mb-2">Review Requests</h3>
+                                        <p className="text-sm text-white/50 font-normal">Navigate to the requests table to process forms.</p>
                                     </div>
                                     <button
                                         onClick={() => setView("requests")}
-                                        className={`mt-10 flex items-center justify-center gap-3 w-full ${t.active} text-slate-900 py-5 rounded-2xl font-black text-base tracking-widest uppercase hover:scale-[1.02] transition-all shadow-xl ${t.glow}`}
+                                        className={`mt-6 flex items-center justify-center gap-2 w-full ${t.active} text-slate-950 py-3.5 rounded-xl font-semibold text-sm tracking-wider uppercase hover:bg-teal-400 transition-colors shadow-sm`}
                                     >
                                         Process Forms <FiArrowRight />
                                     </button>
@@ -403,51 +400,47 @@ const Warden = () => {
                     ) : (
                         <motion.div
                             key="requests"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-8"
+                            className="space-y-6"
                         >
-                            {/* ── Requests Header ── */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 px-1">
                                 <div>
-                                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                                         <FiFileText className={t.text} />
                                         Pending Requests
                                     </h2>
-                                    <p className="text-sm text-white/40 mt-1">Forms awaiting warden approval</p>
+                                    <p className="text-xs text-white/40 mt-0.5">Leave reduction forms awaiting your review</p>
                                 </div>
 
                                 {/* Filter Controls */}
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto">
+                                    {/* Gender Filter */}
+                                    <select
+                                        value={genderFilter}
+                                        onChange={(e) => setGenderFilter(e.target.value)}
+                                        className="w-full sm:w-auto bg-[#0f1f38] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-white/60 focus:outline-none focus:border-teal-500/55 cursor-pointer order-1 sm:order-2"
+                                    >
+                                        <option value="ALL">Gender: All</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                    </select>
+
                                     {/* Year Tabs */}
-                                    <div className="flex items-center gap-1.5 bg-[#112240] p-1.5 rounded-2xl border border-white/5 overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
+                                    <div className="flex items-center gap-1 bg-[#112240] p-1 rounded-xl border border-white/10 overflow-x-auto w-full md:w-auto justify-between sm:justify-start [&::-webkit-scrollbar]:hidden order-2 sm:order-1">
                                         {["all", ...YEARS].map(yr => (
                                             <button
                                                 key={yr}
                                                 onClick={() => setSelectedYear(yr)}
-                                                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
                                                     selectedYear === yr
-                                                        ? yr === "all" ? "bg-white text-slate-900 shadow-xl"
-                                                            : `${YEAR_THEME[yr]?.active ?? ""} text-slate-900 shadow-xl`
-                                                        : "text-white/30 hover:text-white"
+                                                        ? yr === "all" ? "bg-white text-slate-950 shadow-sm"
+                                                            : `${YEAR_THEME[yr]?.active ?? ""} text-slate-950 shadow-sm`
+                                                        : "text-white/40 hover:text-white"
                                                 }`}
                                             >
                                                 {yr === "all" ? "All" : yr}
                                             </button>
                                         ))}
                                     </div>
-
-                                    {/* Gender Filter */}
-                                    <select
-                                        value={genderFilter}
-                                        onChange={(e) => setGenderFilter(e.target.value)}
-                                        className="bg-[#0f1f38] border border-white/10 rounded-xl px-4 py-2 text-sm font-black text-white/60 focus:outline-none focus:border-teal-500/50"
-                                    >
-                                        <option value="ALL">Gender: All</option>
-                                        <option value="MALE">Male</option>
-                                        <option value="FEMALE">Female</option>
-                                    </select>
                                 </div>
                             </div>
 
@@ -457,14 +450,14 @@ const Warden = () => {
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-4"
+                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 gap-4"
                                     >
-                                        <span className="text-emerald-400 font-bold text-sm tracking-widest uppercase">
+                                        <span className="text-emerald-400 font-semibold text-xs tracking-wider uppercase">
                                             {selectedIds.length} Form(s) Selected
                                         </span>
                                         <button
                                             onClick={handleBulkAction}
-                                            className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-slate-900 rounded-xl font-black tracking-widest uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center"
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-slate-955 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center shadow-sm"
                                         >
                                             <FiCheck size={18} /> Approve Selected
                                         </button>
@@ -472,95 +465,36 @@ const Warden = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Mobile Cards */}
-                            <div className="space-y-4 lg:hidden">
-                                {pendingForms.length === 0 ? (
-                                    <div className="bg-[#0f1f38] border border-white/5 rounded-3xl p-12 text-center">
-                                         <p className="text-white/25 font-black uppercase tracking-widest text-base">No pending requests</p>
-                                    </div>
-                                ) : pendingForms.map((req, idx) => (
-                                    <motion.div
-                                        key={req.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className={`bg-[#0f1f38] border ${selectedIds.includes(req.id) ? 'border-emerald-500/50' : t.border} rounded-3xl p-6 space-y-5 shadow-xl transition-all`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <button onClick={() => toggleSelect(req.id)} className={`flex-shrink-0 ${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors`}>
-                                                {selectedIds.includes(req.id) ? <FiCheckSquare size={24} /> : <FiSquare size={24} />}
-                                            </button>
-
-                                            <div>
-                                                <h4 className="text-xl font-black text-white">{req.name}</h4>
-                                                <p className="text-sm font-bold text-white/20 tracking-widest uppercase">{req.dept} · {req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"} Year</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
-                                            <div>
-                                                <p className="text-xs font-black text-white/20 uppercase tracking-widest mb-1">Room No</p>
-                                                <p className="text-sm font-bold text-white/60">{req.roomNo}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-white/20 uppercase tracking-widest mb-1">Period</p>
-                                                <p className="text-sm font-bold text-white/60">{req.leaveDate} - {req.arrivalDate}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-black text-white/20 uppercase tracking-widest">Reason</p>
-                                            <p title={req.reason} className="text-sm font-medium text-white/40 leading-relaxed cursor-pointer">{req.reason}</p>
-                                        </div>
-
-                                        <div className="flex items-center justify-end gap-2 pt-2">
-                                            <button
-                                                onClick={() => handleAction(req.id, "Approve")}
-                                                className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl hover:bg-emerald-500 hover:text-slate-900 transition-all border border-emerald-500/10"
-                                            >
-                                                <FiCheck size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleAction(req.id, "Reject")}
-                                                className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
-                                            >
-                                                <FiX size={18} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-
-                            {/* Desktop Table */}
-                            <div className={`hidden lg:block bg-[#0f1f38] border ${t.border} rounded-3xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.4)]`}>
-                                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                            {/* Requests Table */}
+                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                     <table className="w-full text-left border-collapse min-w-[1000px]">
-                                        <thead>
-                                            <tr className="bg-white/[0.03] text-sm uppercase tracking-[0.3em] font-black border-b border-white/5">
-                                                <th className="px-6 py-6 text-white/40 w-16 text-center">
+                                        <thead className="sticky top-0 bg-[#0f1f38] z-10">
+                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
+                                                <th className="px-6 py-4 text-white/40 w-16 text-center">
                                                     <button onClick={toggleSelectAll} className="text-white/40 hover:text-white transition-colors">
-                                                        {pendingForms.length > 0 && selectedIds.length === pendingForms.length ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                        {pendingForms.length > 0 && selectedIds.length === pendingForms.length ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
-                                                <th className="px-6 py-6 text-white/40">Student Name</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Department</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Year</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Room No</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Leave Date</th>
-                                                <th className="px-4 py-6 text-white/40 text-center">Arrival Date</th>
-                                                <th className="px-4 py-6 text-white/40">Reason</th>
-                                                <th className="px-6 py-6 text-white/40 text-right w-40">Action</th>
+                                                <th className="px-6 py-4 text-white/40">Student Name</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Year</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Room No</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Leave Date</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Arrival Date</th>
+                                                <th className="px-4 py-4 text-white/40">Reason</th>
+                                                <th className="px-6 py-4 text-white/40 text-right w-40">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {pendingForms.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="9" className="px-6 py-24 text-center">
-                                                        <div className="flex flex-col items-center gap-4">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/10">
-                                                                <FiFilter size={32} />
+                                                    <td colSpan="9" className="px-6 py-16 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                                                                <FiFilter size={24} />
                                                             </div>
-                                                            <p className="text-white/25 font-black uppercase tracking-widest text-base">
+                                                            <p className="text-white/30 font-semibold uppercase tracking-wider text-xs">
                                                                 No pending requests
                                                             </p>
                                                         </div>
@@ -573,50 +507,49 @@ const Warden = () => {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
-                                                    className={`group hover:bg-white/[0.04] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.02]' : ''}`}
+                                                    className={`group hover:bg-white/[0.02] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''}`}
                                                 >
-                                                    <td className="px-6 py-6 text-center">
+                                                    <td className="px-6 py-4 text-center">
                                                         <button onClick={() => toggleSelect(req.id)} className={`${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors mt-1`}>
-                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={20} /> : <FiSquare size={20} />}
+                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                         </button>
                                                     </td>
-                                                    <td className="px-6 py-6">
+                                                    <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
-
-                                                            <p className={`text-lg font-black text-white group-hover:${t.text} transition-colors`}>{req.name}</p>
+                                                            <p className={`text-sm font-semibold text-white group-hover:${t.text} transition-colors`}>{req.name}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="px-4 py-1.5 bg-white/5 rounded-lg text-base font-black text-white/50 border border-white/5 tracking-wider">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-lg font-black text-white/80">{req.roomNo}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-sm font-semibold text-white/80">{req.roomNo}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.leaveDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.leaveDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6 text-center">
-                                                        <span className="text-base font-bold text-white/50">{req.arrivalDate}</span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-white/50">{req.arrivalDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-6">
-                                                        <p title={req.reason} className="text-base font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
+                                                    <td className="px-4 py-4">
+                                                        <p title={req.reason} className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
-                                                    <td className="px-6 py-5 text-right">
-                                                        <div className="flex justify-end gap-2">
+                                                    <td className="px-6 py-3 text-right">
+                                                        <div className="flex justify-end gap-1.5">
                                                             <button
                                                                 onClick={() => handleAction(req.id, "Approve")}
-                                                                className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl hover:bg-emerald-500 hover:text-slate-900 transition-all border border-emerald-500/10"
+                                                                className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10"
                                                             >
-                                                                <FiCheck size={18} />
+                                                                <FiCheck size={16} />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleAction(req.id, "Reject")}
-                                                                className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
+                                                                className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
                                                             >
-                                                                <FiX size={18} />
+                                                                <FiX size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -632,12 +565,12 @@ const Warden = () => {
             </main>
 
             {/* Footer */}
-            <footer className="px-8 py-5 text-center border-t border-white/5 bg-[#0a1628]/80 backdrop-blur-xl shrink-0 mt-auto">
+            <footer className="px-8 py-4 text-center border-t border-white/5 bg-[#0a1628]/80 backdrop-blur-md shrink-0 mt-auto">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
-                    <p className="text-sm text-white/10 tracking-[0.5em] uppercase font-bold">© 2025 Government College of Engineering · Srirangam</p>
-                    <div className="flex gap-8">
-                        <span className={`text-sm ${t.text} opacity-30 font-black tracking-widest uppercase`}>Warden Panel</span>
-                        <span className={`text-sm ${t.text} opacity-30 font-black tracking-widest uppercase`}>System Stable</span>
+                    <p className="text-xs text-white/20 tracking-wider uppercase font-semibold">© 2025 Government College of Engineering · Srirangam</p>
+                    <div className="flex gap-6">
+                        <span className={`text-xs ${t.text} opacity-40 font-semibold tracking-wider uppercase`}>Warden Panel</span>
+                        <span className={`text-xs ${t.text} opacity-40 font-semibold tracking-wider uppercase`}>System Stable</span>
                     </div>
                 </div>
             </footer>
@@ -657,34 +590,31 @@ const Warden = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-lg bg-[#0f1f38] border border-rose-500/30 rounded-3xl p-8 shadow-2xl shadow-rose-900/20 overflow-hidden"
+                            className="relative w-full max-w-lg bg-[#0f1f38] border border-white/10 rounded-xl p-6 shadow-xl overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 p-8 scale-150 rotate-12 opacity-5 text-rose-500 pointer-events-none">
-                                <FiX size={100} />
-                            </div>
-                            <h3 className="text-2xl font-black text-white mb-2 flex items-center gap-3">
-                                <span className="w-1.5 h-6 bg-rose-500 rounded-full" />
+                            <h3 className="text-lg font-bold text-white mb-1.5 flex items-center gap-2">
+                                <span className="w-1 h-5 bg-rose-500 rounded-full" />
                                 Reason for Rejection <span className="text-rose-500">*</span>
                             </h3>
-                            <p className="text-sm text-white/40 mb-6 font-medium">Please provide a clear reason for rejecting this request.</p>
+                            <p className="text-xs text-white/40 mb-4 font-normal">Please provide a clear reason for rejecting this request.</p>
                             
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Enter rejection reason..."
-                                className="w-full h-32 bg-black/20 border border-white/10 rounded-xl p-4 text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 resize-none transition-all"
+                                className="w-full h-28 bg-black/20 border border-white/15 rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
                             />
 
-                            <div className="flex items-center justify-end gap-4 mt-8">
+                            <div className="flex items-center justify-end gap-3 mt-6">
                                 <button
                                     onClick={() => setIsRejectModalOpen(false)}
-                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-white/40 hover:text-white transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleRejectSubmit}
-                                    className="px-6 py-2.5 rounded-xl font-black tracking-widest uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
                                 >
                                     Reject
                                 </button>

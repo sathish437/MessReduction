@@ -18,9 +18,9 @@ const getInitial = () => {
 
 function Field({ icon, ...props }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors duration-200">
+    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 focus-within:border-teal-500/40 focus-within:bg-teal-500/5 transition-colors duration-200">
       <span className="text-teal-400/60 shrink-0">{icon}</span>
-      <input className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 font-medium" {...props} />
+      <input className="flex-1 bg-transparent focus:outline-none text-sm text-white placeholder:text-white/25 font-medium" {...props} />
     </div>
   )
 }
@@ -91,8 +91,8 @@ function StaffLogin({ onNavigate }) {
                 <div className="flex items-center gap-3">
                     <img src={image} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
                     <div className="flex flex-col leading-tight">
-                        <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-teal-400/80 uppercase">Government College of Engineering</span>
-                        <span className="text-lg sm:text-xl font-black text-white tracking-widest">SRIRANGAM</span>
+                        <span className="text-xs font-medium tracking-wider text-teal-400/80 uppercase">Government College of Engineering</span>
+                        <span className="text-base sm:text-lg font-bold text-white tracking-wide">Srirangam</span>
                     </div>
                 </div>
                 <button
@@ -110,22 +110,22 @@ function StaffLogin({ onNavigate }) {
                         animate={{ opacity: 1, y: 0 }}
                         className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
                     >
-                        <div className="h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+                        <div className="h-[1px] bg-amber-500/30" />
                         <div className="p-8">
-                            <div className="mb-8">
-                                <p className="text-xs font-black tracking-[0.3em] text-amber-400/70 uppercase mb-2">Restricted Access</p>
-                                <h2 className="text-4xl font-black text-white tracking-tight">STAFF LOGIN</h2>
-                                <p className="text-base text-white/30 mt-2">Sign in with your staff credentials</p>
+                            <div className="mb-6">
+                                <p className="text-xs font-semibold tracking-wider text-amber-400/80 uppercase mb-1.5">Restricted Access</p>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">Staff Login</h2>
+                                <p className="text-sm text-white/40 mt-1">Sign in with your staff credentials</p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-amber-500/60 focus-within:bg-amber-950/20 transition-all">
+                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-amber-500/40 focus-within:bg-amber-500/5 transition-all">
                                     <span className="text-amber-400/60"><FiShield size={18} /></span>
                                     <select
                                         value={role}
                                         onChange={(e) => setRole(e.target.value)}
                                         required
-                                        className="flex-1 bg-transparent focus:outline-none text-base text-white appearance-none cursor-pointer"
+                                        className="flex-1 bg-transparent focus:outline-none text-sm text-white appearance-none cursor-pointer"
                                     >
                                         <option value="" disabled className="bg-[#0f1f38]">Select Role</option>
                                         <option value="Warden" className="bg-[#0f1f38]">Warden</option>
@@ -140,11 +140,11 @@ function StaffLogin({ onNavigate }) {
                                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 
                                 <motion.button
-                                    whileHover={{ scale: 1.01 }}
-                                    whileTap={{ scale: 0.99 }}
+                                    whileHover={{ scale: 1.005 }}
+                                    whileTap={{ scale: 0.995 }}
                                     type="submit"
                                     disabled={loading}
-                                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-lg font-black text-slate-900 bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 shadow-lg shadow-amber-900/30 transition-all tracking-widest ${loading ? "opacity-50" : ""}`}
+                                    className={`mt-4 flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 transition-colors shadow-md ${loading ? "opacity-50" : ""}`}
                                 >
                                     {loading ? "AUTHENTICATING..." : "SIGN IN"} <FiArrowRight size={18} />
                                 </motion.button>

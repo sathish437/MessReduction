@@ -65,3 +65,4 @@ public class ReductionFormController {
         return ResponseEntity.ok(reductionFormService.getFormHistory(formId, studentId));
     }
 }
+

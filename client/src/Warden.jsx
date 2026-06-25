@@ -87,6 +87,206 @@ function YearSelectScreen({ onSelect }) {
     );
 }
 
+function AutoAcceptSettingsCard() {
+    const [enabled, setEnabled] = useState(false);
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+    const [reason, setReason] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await apiClient.get("/api/hostelStaff/staff/auto-accept");
+                if (res.data) {
+                    setEnabled(res.data.enabled);
+                    setFromDate(res.data.fromDate || "");
+                    setToDate(res.data.toDate || "");
+                    setReason(res.data.reason || "");
+                }
+            } catch (err) {
+                console.error("Error fetching auto-accept settings:", err);
+                setError("Failed to load auto-accept settings");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        setMessage(null);
+        setError(null);
+
+        if (!fromDate || !toDate) {
+            setError("Both from and to dates are required.");
+            setSaving(false);
+            return;
+        }
+
+        if (new Date(fromDate) > new Date(toDate)) {
+            setError("From date cannot be after to date.");
+            setSaving(false);
+            return;
+        }
+
+        try {
+            await apiClient.post("/api/hostelStaff/staff/auto-accept", {
+                enabled,
+                fromDate,
+                toDate,
+                reason
+            });
+            setMessage("Settings saved successfully!");
+            setTimeout(() => setMessage(null), 3000);
+        } catch (err) {
+            console.error("Error saving auto-accept settings:", err);
+            setError(err.response?.data?.message || "Failed to save settings");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const getStatusInfo = () => {
+        if (!enabled) return { label: "Disabled", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate) : null;
+        if (from) from.setHours(0, 0, 0, 0);
+        if (to) to.setHours(0, 0, 0, 0);
+
+        if (!from || !to) return { label: "Incomplete Date Range", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" };
+        
+        if (today >= from && today <= to) {
+            const diffTime = to.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const expiryText = diffDays === 0 ? "Expires today" : `Expires in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+            return { label: "Active Now", sub: expiryText, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
+        } else if (today > to) {
+            return { label: "Expired", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" };
+        } else {
+            return { label: "Scheduled", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
+        }
+    };
+
+    const statusInfo = getStatusInfo();
+    const isSaveDisabled = !fromDate || !toDate || new Date(fromDate) > new Date(toDate);
+
+    if (loading) {
+        return (
+            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 shadow-sm flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-t-teal-500 border-teal-500/20 rounded-full animate-spin mr-3" />
+                <span className="text-white/60 text-sm">Loading auto-accept settings...</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-6">
+                <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <FiClock className="text-teal-400" /> Auto Accept / Auto Forward
+                    </h3>
+                    <p className="text-white/40 text-xs font-normal mt-1">
+                        Automatically forward incoming requests during your leave or unavailability.
+                    </p>
+                </div>
+                <div className="flex flex-col items-start sm:items-end gap-1.5">
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider border ${statusInfo.color}`}>
+                        {statusInfo.label}
+                    </span>
+                    {statusInfo.sub && (
+                        <span className="text-[10px] text-emerald-400/80 font-medium">
+                            {statusInfo.sub}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-6">
+                <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                    <div>
+                        <span className="text-sm font-semibold text-white">Enable Auto Accept</span>
+                        <p className="text-xs text-white/30 mt-0.5">Toggle this feature ON or OFF.</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setEnabled(!enabled)}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? 'bg-teal-500' : 'bg-slate-700'}`}
+                    >
+                        <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'}`}
+                        />
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">From Date</label>
+                        <input
+                            type="date"
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">To Date</label>
+                        <input
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Reason / Description</label>
+                    <input
+                        type="text"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g. Official Duty / Out of Station / Medical Leave"
+                        className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-teal-500/50 transition-colors"
+                    />
+                </div>
+
+                {error && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-4 text-xs font-medium">
+                        {error}
+                    </div>
+                )}
+
+                {message && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl p-4 text-xs font-medium animate-pulse">
+                        {message}
+                    </div>
+                )}
+
+                <div className="flex justify-end">
+                    <button
+                        type="submit"
+                        disabled={saving || isSaveDisabled}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' : 'bg-teal-500 text-slate-955 hover:bg-teal-400'}`}
+                    >
+                        {saving ? "Saving..." : "Save Settings"}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 /* ── Main Warden Panel ── */
 const Warden = () => {
     const [requests, setRequests]         = useState([]);
@@ -396,6 +596,9 @@ const Warden = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* ── Auto Accept Settings ── */}
+                            <AutoAcceptSettingsCard />
                         </motion.div>
                     ) : (
                         <motion.div

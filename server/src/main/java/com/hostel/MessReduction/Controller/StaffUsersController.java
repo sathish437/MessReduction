@@ -1,6 +1,8 @@
 package com.hostel.MessReduction.Controller;
 
 import com.hostel.MessReduction.DTO.ReqDTO.RejectFormReqDTO;
+import com.hostel.MessReduction.DTO.ReqDTO.AutoAcceptSettingsDTO;
+import com.hostel.MessReduction.Entity.AutoAcceptSettings;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
@@ -189,5 +191,20 @@ public class StaffUsersController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=mess_reduction_report.xlsx")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(excelBytes);
+    }
+
+    @GetMapping("/staff/auto-accept")
+    public ResponseEntity<AutoAcceptSettings> getAutoAcceptSettings(Authentication authentication) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(reductionFormService.getAutoAcceptSettings(username));
+    }
+
+    @PostMapping("/staff/auto-accept")
+    public ResponseEntity<AutoAcceptSettings> saveAutoAcceptSettings(@Valid @RequestBody AutoAcceptSettingsDTO dto, Authentication authentication) {
+        String username = authentication.getName();
+        String roleStr = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_Warden"))
+                ? "WARDEN" : "DEPUTY_WARDEN";
+        return ResponseEntity.ok(reductionFormService.saveAutoAcceptSettings(username, roleStr, dto));
     }
 }

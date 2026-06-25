@@ -56,11 +56,15 @@ public class ActivityLogService {
                 .toList();
     }
 
-    public Page<ActivityLogResponse> getLogsByRoleAndAction(Role role, String action, int page, int size) {
+    public Page<ActivityLogResponse> getLogsByRoleAndAction(Role role, String action, int page, int size, String username) {
         if (role == null || action == null || action.isBlank()) {
             throw new BadRequestException("Role and action are required to fetch activity logs");
         }
         Pageable pageable = PageRequest.of(page, size);
+        if (role == Role.DeputyWarden) {
+            return activityLogRepository.findDeputyWardenLogs(username, action, pageable)
+                    .map(this::mapToResponse);
+        }
         return activityLogRepository.findByStaffRoleAndActionAndIsActiveTrueOrderByTimestampDesc(role, action, pageable)
                 .map(this::mapToResponse);
     }

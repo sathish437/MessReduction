@@ -17,4 +17,10 @@ public class ReductionFormExpiryScheduler {
         reductionFormService.expireReductionForms();
         reductionFormService.cleanUpExpiredRequests();
     }
+
+    @Scheduled(cron = "0 */10 * * * *")
+    public void runAutoAcceptTasks() {
+        reductionFormService.autoDisableExpiredSettings();
+        reductionFormService.autoApplyActiveSettings();
+    }
 }

@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/hostelStaff/staff/auto-accept").hasAnyRole("Warden", "DeputyWarden")
                         .requestMatchers("/api/hostelStaff/staff/warden", "/api/hostelStaff/staff/warden/**").hasRole("Warden")
                         .requestMatchers("/api/hostelStaff/staff/deputyWarden", "/api/hostelStaff/staff/deputyWarden/**").hasRole("DeputyWarden")
                         .requestMatchers("/api/hostelStaff/staff/office", "/api/hostelStaff/staff/office/**").hasRole("Office")

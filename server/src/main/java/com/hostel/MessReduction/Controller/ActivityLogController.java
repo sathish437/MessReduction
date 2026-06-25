@@ -51,7 +51,7 @@ public class ActivityLogController {
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Role authenticatedRole = resolveAuthenticatedRole(authentication);
-        return ResponseEntity.ok(activityLogService.getLogsByRoleAndAction(authenticatedRole, action, page, size));
+        return ResponseEntity.ok(activityLogService.getLogsByRoleAndAction(authenticatedRole, action, page, size, authentication.getName()));
     }
 
     private Role resolveAuthenticatedRole(Authentication authentication) {

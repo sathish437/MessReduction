@@ -1,5 +1,6 @@
+import React, { useState } from "react"
 import { motion } from "framer-motion"
-import { FiUser, FiLock } from "react-icons/fi"
+import { FiUser, FiLock, FiEye, FiEyeOff } from "react-icons/fi"
 import logo from "./assets/1000088399.png"
 
 const text = "LOGIN"
@@ -57,6 +58,7 @@ function AnimatedTitle() {
 }
 
 function Login() {
+  const [showPassword, setShowPassword] = useState(false)
   const inputContainerClass = "flex items-center border-b-2 border-teal-700/50 py-3 focus-within:border-teal-400 transition-colors duration-300"
   const inputClass = "w-full bg-transparent focus:outline-none text-base text-teal-50 placeholder:text-teal-200/40 ml-3"
   const iconClass = "text-teal-400 text-lg"
@@ -81,9 +83,17 @@ function Login() {
             <input className={inputClass} placeholder="Username" type="text" />
           </div>
 
-          <div className={inputContainerClass}>
+          <div className={`${inputContainerClass} relative pr-10`}>
             <FiLock className={iconClass} />
-            <input className={inputClass} placeholder="Password" type="password" />
+            <input className={inputClass} placeholder="Password" type={showPassword ? "text" : "password"} />
+            <button
+              type="button"
+              onClick={() => setShowPassword(prev => !prev)}
+              className="absolute right-0 text-teal-400/60 hover:text-teal-400 transition-colors focus:outline-none flex items-center justify-center"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+            </button>
           </div>
           
           <div className="w-full flex justify-center mt-6">

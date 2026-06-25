@@ -32,20 +32,20 @@ public class ReminderScheduler {
     private final ReductionFormRepo reductionFormRepo;
     private final EmailService emailService;
     private final NotificationService notificationService;
-    private final TelegramNotificationService telegramNotificationService;
+    private final WhatsAppService whatsAppService;
     private final StaffUsersRepo staffUsersRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
 
     public ReminderScheduler(ReductionFormRepo reductionFormRepo,
                              EmailService emailService,
                              NotificationService notificationService,
-                             TelegramNotificationService telegramNotificationService,
+                             WhatsAppService whatsAppService,
                              StaffUsersRepo staffUsersRepo,
                              com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.emailService = emailService;
         this.notificationService = notificationService;
-        this.telegramNotificationService = telegramNotificationService;
+        this.whatsAppService = whatsAppService;
         this.staffUsersRepo = staffUsersRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
     }
@@ -123,7 +123,7 @@ public class ReminderScheduler {
 
             if (role == null || roleForms.isEmpty()) continue;
 
-            // Generate aggregated message for in-app / telegram
+            // Generate aggregated message for in-app / WhatsApp
             StringBuilder messageText = new StringBuilder();
             messageText.append(headerTitle).append(" [").append(role.name()).append("]\n\n");
             messageText.append("Total Pending Requests: ").append(roleForms.size()).append("\n\n");
@@ -132,8 +132,8 @@ public class ReminderScheduler {
             }
             messageText.append("\nPlease review pending requests.");
 
-            // Send Telegram Notification
-            telegramNotificationService.sendAggregatedGroupNotification(roleForms, headerTitle + " [" + role.name() + "]");
+            // Send WhatsApp Notification (async, non-blocking)
+            whatsAppService.sendAggregatedWhatsAppNotification(roleForms, headerTitle + " [" + role.name() + "]");
 
             // Send to respective staff members
             List<StaffUsers> staffList = staffUsersRepo.findByRole(role);

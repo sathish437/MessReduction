@@ -4,6 +4,7 @@ import { FiUser, FiLock, FiArrowRight, FiShield, FiArrowLeft } from "react-icons
 import apiClient from "./api/apiClient"
 import { setStaffAuth, getStaffDashboardRoute } from "./services/authService"
 import image from "./assets/1000088399.png"
+import PasswordInput from "./PasswordInput"
 
 const TITLE = "STAFF LOGIN"
 
@@ -135,7 +136,7 @@ function StaffLogin({ onNavigate }) {
                                 </div>
 
                                 <Field icon={<FiUser size={18} />} type="text" placeholder="Username" value={userName} onChange={(e) => setUserName(e.target.value)} required />
-                                <Field icon={<FiLock size={18} />} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
 
                                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 

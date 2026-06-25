@@ -18,11 +18,47 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
 
     const t = themeColors[themeColor] || themeColors.emerald;
 
+    // ── Display name helpers ──────────────────────────────────────────────
+    const formatActorName = (staffName) => {
+        if (!staffName) return "—";
+        if (staffName === "SYSTEM") return "Auto Accept";
+        // deputyWarden3 → "Deputy Warden"
+        if (/^deputyWarden\d+$/i.test(staffName)) return "Deputy Warden";
+        // warden → "Warden"
+        if (/^warden$/i.test(staffName)) return "Warden";
+        // office → "Office"
+        if (/^office$/i.test(staffName)) return "Office";
+        return staffName;
+    };
+
+    const formatActionBadge = (action, staffName) => {
+        // If performed by SYSTEM, always label it as "Auto Accept"
+        if (staffName === "SYSTEM") return "Auto Accept";
+        return action || "—";
+    };
+    // ─────────────────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        // Reset to first page when modal opens
+        setPage(0);
+        fetchLogs(0);
+
+        // Poll every 15 seconds while modal is open so auto-accept logs appear immediately
+        const interval = setInterval(() => {
+            fetchLogs(page);
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, [isOpen]);
+
+    // Refetch when user navigates pages
     useEffect(() => {
         if (isOpen) {
             fetchLogs(page);
         }
-    }, [isOpen, page]);
+    }, [page]);
 
     const fetchLogs = async (pageNumber) => {
         setLoading(true);
@@ -90,9 +126,16 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1.5">
                                                         <span className="text-white/40 text-xs font-semibold tracking-wider uppercase">Form #{log.formId}</span>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
-                                                            {log.action}
-                                                        </span>
+                                                        {/* Action badge — amber for auto-accept, themed for manual */}
+                                                        {log.staffName === "SYSTEM" ? (
+                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                                                Auto Accept
+                                                            </span>
+                                                        ) : (
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
+                                                                {formatActionBadge(log.action, log.staffName)}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <h4 className="text-sm font-semibold text-white">{log.studentName}</h4>
                                                     <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{log.department}</p>
@@ -100,7 +143,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                                 
                                                 <div className="flex flex-col sm:items-end gap-2 mt-2 sm:mt-0">
                                                     <div className="flex items-center gap-2 text-sm text-white/50 font-medium">
-                                                        <FiUser size={14} /> {log.staffName}
+                                                        <FiUser size={14} /> {formatActorName(log.staffName)}
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs text-white/30 font-semibold uppercase tracking-wider">
                                                         <FiClock size={12} /> {new Date(log.timestamp).toLocaleString()}

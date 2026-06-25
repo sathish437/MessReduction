@@ -40,9 +40,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
+import com.hostel.MessReduction.Entity.AutoAcceptSettings;
+import com.hostel.MessReduction.Repo.AutoAcceptSettingsRepo;
+import com.hostel.MessReduction.DTO.ReqDTO.AutoAcceptSettingsDTO;
+import com.hostel.MessReduction.Entity.AuditLog;
+import com.hostel.MessReduction.Repo.AuditLogRepo;
+import java.time.ZoneId;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class ReductionFormService {
     private static final String ACTION_APPROVE = "Approve";
     private static final String ACTION_REJECT = "Reject";
@@ -54,7 +64,9 @@ public class ReductionFormService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final StaffUsersRepo staffUsersRepo;
-    private final TelegramNotificationService telegramNotificationService;
+    private final WhatsAppService whatsAppService;
+    private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
+    private final AuditLogRepo auditLogRepo;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
@@ -63,7 +75,9 @@ public class ReductionFormService {
                                 NotificationService notificationService,
                                 EmailService emailService,
                                 StaffUsersRepo staffUsersRepo,
-                                TelegramNotificationService telegramNotificationService) {
+                                WhatsAppService whatsAppService,
+                                AutoAcceptSettingsRepo autoAcceptSettingsRepo,
+                                AuditLogRepo auditLogRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -71,23 +85,13 @@ public class ReductionFormService {
         this.notificationService = notificationService;
         this.emailService = emailService;
         this.staffUsersRepo = staffUsersRepo;
-        this.telegramNotificationService = telegramNotificationService;
+        this.whatsAppService = whatsAppService;
+        this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
+        this.auditLogRepo = auditLogRepo;
     }
 
-    private void sendTelegramGroupNotification(ReductionForm form, String status) {
-        String message = String.format("""
-            🍽️ HOSTEL MESS REDUCTION
-            
-            Student: %s
-            Register No: %s
-            Form ID: %d
-            Status: %s""", 
-            form.getStudentDetails().getName(), 
-            form.getStudentDetails().getRegisterNo(), 
-            form.getFormId(), 
-            status);
-            
-        telegramNotificationService.sendGroupNotification(message);
+    private void sendWhatsAppFormStatusNotification(ReductionForm form, String status) {
+        whatsAppService.sendFormStatusNotification(form, status);
     }
 
     public StudentDetails getStudentDetails(Long id) {
@@ -106,12 +110,17 @@ public class ReductionFormService {
         reductionFormRepo.save(reductionForm);
         saveFormHistory(reductionForm, "Student Submitted", null, FormStatus.PendingDeputyWarden, "student", "Initial submission");
         
+        processAutoAcceptIfApplicable(reductionForm);
+        
         handleNewSubmissionNotifications(reductionForm);
         
         return ReductionFormMapper.mapToReductionFormResDTO(reductionForm);
     }
 
     private void handleNewSubmissionNotifications(ReductionForm form) {
+        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
+            return;
+        }
         String deputyUsername = form.getAssignedDeputyWarden();
         if (deputyUsername != null) {
             staffUsersRepo.findByUserName(deputyUsername).ifPresent(dw -> {
@@ -165,6 +174,8 @@ public class ReductionFormService {
 
         reductionFormRepo.save(form);
         saveFormHistory(form, "Student Resubmitted", previousStatus, FormStatus.PendingDeputyWarden, "student", "Request resubmitted after rejection");
+        
+        processAutoAcceptIfApplicable(form);
         
         handleNewSubmissionNotifications(form);
         
@@ -288,6 +299,8 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingWarden, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
+        
+        processAutoAcceptIfApplicable(form);
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -476,6 +489,9 @@ public class ReductionFormService {
         }
 
         reductionFormRepo.saveAll(forms);
+        for (ReductionForm form : forms) {
+            processAutoAcceptIfApplicable(form);
+        }
     }
 
     public void updateOfficePendingBulkStatus(List<Long> formIds, String action, String userName) {
@@ -725,4 +741,240 @@ public class ReductionFormService {
             throw new UnauthorizedUserException("Unauthorized user");
         }
     }
+
+    public AutoAcceptSettings getAutoAcceptSettings(String username) {
+        return autoAcceptSettingsRepo.findByUsername(username)
+                .orElseGet(() -> {
+                    AutoAcceptSettings defaultSettings = new AutoAcceptSettings();
+                    defaultSettings.setUsername(username);
+                    defaultSettings.setRole(username.startsWith("deputy") ? "DEPUTY_WARDEN" : "WARDEN");
+                    defaultSettings.setEnabled(false);
+                    defaultSettings.setFromDate(LocalDate.now());
+                    defaultSettings.setToDate(LocalDate.now());
+                    defaultSettings.setReason("");
+                    return defaultSettings;
+                });
+    }
+
+    public AutoAcceptSettings saveAutoAcceptSettings(String username, String role, AutoAcceptSettingsDTO dto) {
+        AutoAcceptSettings settings = autoAcceptSettingsRepo.findByUsername(username)
+                .orElse(new AutoAcceptSettings());
+        
+        settings.setUsername(username);
+        settings.setRole(role);
+        settings.setEnabled(dto.isEnabled());
+        settings.setFromDate(dto.getFromDate());
+        settings.setToDate(dto.getToDate());
+        settings.setReason(dto.getReason());
+        
+        return autoAcceptSettingsRepo.save(settings);
+    }
+
+    private boolean isWithinDateRange(AutoAcceptSettings settings) {
+        ZoneId systemZone = ZoneId.of("Asia/Kolkata");
+        LocalDate today = LocalDate.now(systemZone);
+        return !today.isBefore(settings.getFromDate()) && !today.isAfter(settings.getToDate());
+    }
+
+    public void processAutoAcceptIfApplicable(ReductionForm form) {
+        if (form == null || !form.isActive()) {
+            return;
+        }
+        
+        boolean processed = true;
+        int loopCount = 0;
+        // Safety guard against infinite loops
+        while (processed && loopCount < 10) {
+            processed = false;
+            loopCount++;
+            
+            if (form.getCurrentStatus() == FormStatus.PendingDeputyWarden) {
+                if (checkAndApplyAutoAcceptForDeputy(form)) {
+                    processed = true;
+                }
+            } else if (form.getCurrentStatus() == FormStatus.PendingWarden) {
+                if (checkAndApplyAutoAcceptForWarden(form)) {
+                    processed = true;
+                }
+            }
+        }
+    }
+
+    private boolean checkAndApplyAutoAcceptForDeputy(ReductionForm form) {
+        String deputyWarden = form.getAssignedDeputyWarden();
+        if (deputyWarden == null) {
+            return false;
+        }
+        
+        Optional<AutoAcceptSettings> settingOpt = autoAcceptSettingsRepo.findByUsername(deputyWarden);
+        if (settingOpt.isEmpty()) {
+            return false;
+        }
+        
+        AutoAcceptSettings settings = settingOpt.get();
+        if (!settings.isEnabled() || !isWithinDateRange(settings)) {
+            return false;
+        }
+        
+        // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
+        if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
+            return false;
+        }
+        
+        // Prevent duplicate auto-accept action for the same transition
+        boolean alreadyTransitioned = reductionFormHistoryRepo.findByReductionFormFormIdOrderByEventTimestampAsc(form.getFormId())
+                .stream()
+                .anyMatch(history -> "AUTO_ACCEPT".equals(history.getEventType()) && history.getFromStatus() == FormStatus.PendingDeputyWarden);
+        if (alreadyTransitioned) {
+            return false;
+        }
+        
+        // Auto Accept and transition!
+        FormStatus previousStatus = form.getCurrentStatus();
+        form.setCurrentStatus(FormStatus.PendingWarden);
+        reductionFormRepo.save(form);
+        
+        log.info("[AUTO_ACCEPT] DeputyWarden auto-accept triggered: user={}, formId={}, previousStatus={}", deputyWarden, form.getFormId(), previousStatus);
+        
+        try {
+            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingWarden, "SYSTEM", "Auto accept enabled for leave/availability period");
+            log.info("[AUTO_ACCEPT] FormHistory saved for formId={}", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save FormHistory for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        try {
+            createActivityLog(form, Role.DeputyWarden, "SYSTEM", "Approved");
+            log.info("[AUTO_ACCEPT] ActivityLog saved for formId={}, role=DeputyWarden, action=Approved", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save ActivityLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        try {
+            saveAuditLog(form.getFormId());
+            log.info("[AUTO_ACCEPT] AuditLog saved for formId={}", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save AuditLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        // Send async WhatsApp notification (non-blocking)
+        try {
+            whatsAppService.sendAutoAcceptNotification(form, "Deputy Warden");
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] WhatsApp notification failed for formId={}: {}", form.getFormId(), e.getMessage());
+        }
+        
+        return true;
+    }
+
+    private boolean checkAndApplyAutoAcceptForWarden(ReductionForm form) {
+        String yearWarden = "warden" + form.getYear();
+        
+        Optional<AutoAcceptSettings> wardenSettingOpt = autoAcceptSettingsRepo.findByUsername(yearWarden);
+        if (wardenSettingOpt.isEmpty() || !wardenSettingOpt.get().isEnabled()) {
+            wardenSettingOpt = autoAcceptSettingsRepo.findByUsername("warden");
+        }
+        
+        if (wardenSettingOpt.isEmpty()) {
+            return false;
+        }
+        
+        AutoAcceptSettings settings = wardenSettingOpt.get();
+        if (!settings.isEnabled() || !isWithinDateRange(settings)) {
+            return false;
+        }
+        
+        // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
+        if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
+            return false;
+        }
+        
+        // Prevent duplicate auto-accept action for the same transition
+        boolean alreadyTransitioned = reductionFormHistoryRepo.findByReductionFormFormIdOrderByEventTimestampAsc(form.getFormId())
+                .stream()
+                .anyMatch(history -> "AUTO_ACCEPT".equals(history.getEventType()) && history.getFromStatus() == FormStatus.PendingWarden);
+        if (alreadyTransitioned) {
+            return false;
+        }
+        
+        // Auto Accept and transition!
+        FormStatus previousStatus = form.getCurrentStatus();
+        form.setCurrentStatus(FormStatus.PendingOffice);
+        reductionFormRepo.save(form);
+        
+        log.info("[AUTO_ACCEPT] Warden auto-accept triggered: user={}, formId={}, previousStatus={}", settings.getUsername(), form.getFormId(), previousStatus);
+        
+        try {
+            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingOffice, "SYSTEM", "Auto accept enabled for leave/availability period");
+            log.info("[AUTO_ACCEPT] FormHistory saved for formId={}", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save FormHistory for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        try {
+            createActivityLog(form, Role.Warden, "SYSTEM", "Approved");
+            log.info("[AUTO_ACCEPT] ActivityLog saved for formId={}, role=Warden, action=Approved", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save ActivityLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        try {
+            saveAuditLog(form.getFormId());
+            log.info("[AUTO_ACCEPT] AuditLog saved for formId={}", form.getFormId());
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] FAILED to save AuditLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
+        }
+        
+        // Send async WhatsApp notification (non-blocking)
+        try {
+            whatsAppService.sendAutoAcceptNotification(form, "Warden");
+        } catch (Exception e) {
+            log.error("[AUTO_ACCEPT] WhatsApp notification failed for formId={}: {}", form.getFormId(), e.getMessage());
+        }
+        
+        return true;
+    }
+
+    private void saveAuditLog(Long formId) {
+        AuditLog auditLog = new AuditLog();
+        auditLog.setEventType("AUTO_ACCEPT");
+        auditLog.setPerformedBy("SYSTEM");
+        auditLog.setPerformedByRole("SYSTEM");
+        auditLog.setFormId(formId);
+        auditLog.setTimestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+        auditLog.setMessage("Auto accepted due to staff availability settings");
+        
+        auditLogRepo.saveAndFlush(auditLog);
+    }
+
+    public void autoApplyActiveSettings() {
+        List<ReductionForm> pendingForms = reductionFormRepo.findByCurrentStatusInAndIsActiveTrue(
+                List.of(FormStatus.PendingDeputyWarden, FormStatus.PendingWarden)
+        );
+        for (ReductionForm form : pendingForms) {
+            try {
+                processAutoAcceptIfApplicable(form);
+            } catch (Exception e) {
+                log.error("Error auto-applying settings for formId={}", form.getFormId(), e);
+            }
+        }
+    }
+
+    public void autoDisableExpiredSettings() {
+        ZoneId systemZone = ZoneId.of("Asia/Kolkata");
+        LocalDate today = LocalDate.now(systemZone);
+        List<AutoAcceptSettings> activeSettings = autoAcceptSettingsRepo.findAll();
+        List<AutoAcceptSettings> updated = new java.util.ArrayList<>();
+        for (AutoAcceptSettings setting : activeSettings) {
+            if (setting.isEnabled() && setting.getToDate().isBefore(today)) {
+                setting.setEnabled(false);
+                updated.add(setting);
+                log.info("Auto-disabled expired auto-accept setting for user: {}", setting.getUsername());
+            }
+        }
+        if (!updated.isEmpty()) {
+            autoAcceptSettingsRepo.saveAll(updated);
+        }
+    }
 }
+

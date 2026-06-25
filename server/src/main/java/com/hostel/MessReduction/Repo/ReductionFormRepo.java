@@ -21,6 +21,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByStudentDetailsStudentId(Long studentId);
     Optional<ReductionForm> findByFormIdAndStudentDetailsStudentId(Long formId, Long studentId);
     List<ReductionForm> findByCurrentStatusIn(List<FormStatus> statuses);
+    List<ReductionForm> findByCurrentStatusInAndIsActiveTrue(List<FormStatus> statuses);
     
     // Testing Mode Methods
     List<ReductionForm> findByCurrentStatusInAndSubmittedAtAfter(List<FormStatus> statuses, java.time.LocalDateTime time);

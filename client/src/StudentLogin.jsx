@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { FiMail, FiCalendar, FiArrowRight, FiArrowLeft } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
+import DobInputComponent from "./DobInputComponent"
 
 const TITLE = "STUDENT LOGIN"
 
@@ -104,17 +105,10 @@ function StudentLogin({ onNavigate }) {
                   />
                 </div>
 
-                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-all">
-                  <span className="text-teal-400/60"><FiCalendar size={18} /></span>
-                  <input
-                    type="date"
-                    placeholder="Date of birth"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    required
-                    className="flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/25"
-                  />
-                </div>
+                <DobInputComponent
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                />
 
                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 

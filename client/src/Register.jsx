@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
+import DobInputComponent from "./DobInputComponent"
 
 const TITLE = "STUDENT REGISTRATION"
 
@@ -200,14 +201,10 @@ function Register({ onNavigate }) {
                     />
                   </Field>
 
-                  <Field icon={<FiCalendar size={15} />}>
-                    <input
-                      type="text" placeholder="Date of birth" name="dob" className={inp}
-                      value={formData.dob} onChange={handleChange} required
-                      onFocus={(e) => (e.target.type = "date")}
-                      onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
-                    />
-                  </Field>
+                  <DobInputComponent
+                    value={formData.dob}
+                    onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })}
+                  />
                 </div>
 
                 <Field icon={<FiBookOpen />}>

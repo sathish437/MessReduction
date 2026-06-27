@@ -15,16 +15,10 @@ class MessReductionApplicationTests {
 
     @Test
     void testStaffAuthentication() {
-        try {
-            System.out.println("TESTING STAFF AUTHENTICATION");
-            UsernamePasswordAuthenticationToken token = 
-                new UsernamePasswordAuthenticationToken("warden", "warden123");
-            Authentication auth = authenticationManager.authenticate(token);
-            System.out.println("Auth success! Principal: " + auth.getPrincipal());
-        } catch (Exception e) {
-            System.out.println("Auth failed! Exception: ");
-            e.printStackTrace();
-        }
+        UsernamePasswordAuthenticationToken token = 
+            new UsernamePasswordAuthenticationToken("warden", "warden123");
+        Authentication auth = authenticationManager.authenticate(token);
+        org.junit.jupiter.api.Assertions.assertNotNull(auth);
     }
 }
 

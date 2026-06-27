@@ -87,9 +87,6 @@ function MessReductionPage() {
 
     const fetchStudentData = async (studentId) => {
         try {
-            console.log('[fetchStudentData] token:', sessionStorage.getItem('token'));
-            console.log('[fetchStudentData] currentUser:', sessionStorage.getItem('currentUser'));
-
             // Use ONLY the Student endpoint which contains student details (and may include reductionForms)
             const studentRes = await apiClient.get(`/api/student-form/Student/${studentId}`);
 

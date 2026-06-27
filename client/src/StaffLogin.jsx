@@ -58,13 +58,10 @@ function StaffLogin({ onNavigate }) {
       // Store auth data
       if (data.token) {
         // Save auth to cookies
-        console.log(`[StaffLogin] Login successful - storing token for ${data.username} with role ${data.role}`);
         setStaffAuth(data.token, data.username, data.role);
-        console.log(`[StaffLogin] Token stored in cookie, navigating to dashboard...`);
 
         // Determine and navigate to correct dashboard
         const redirectRoute = getStaffDashboardRoute(data.role, data.username);
-        console.log(`[StaffLogin] Redirect route determined: ${redirectRoute}`);
 
         if (redirectRoute && onNavigate) {
           onNavigate(redirectRoute);

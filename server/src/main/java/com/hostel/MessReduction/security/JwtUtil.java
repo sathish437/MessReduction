@@ -3,6 +3,8 @@ package com.hostel.MessReduction.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,8 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -85,10 +89,10 @@ public class JwtUtil {
         try {
             final String extractedEmailId = extractEmailId(token);
             boolean isValid = extractedEmailId.equals(emailId) && !isTokenExpired(token);
-            System.out.println("JWT Validation - extractedEmailId: " + extractedEmailId + ", providedEmailId: " + emailId + ", isValid: " + isValid);
+            logger.info("JWT Validation - extractedEmailId: {}, providedEmailId: {}, isValid: {}", extractedEmailId, emailId, isValid);
             return isValid;
         } catch (Exception e) {
-            System.out.println("JWT Validation failed: " + e.getMessage());
+            logger.error("JWT Validation failed: {}", e.getMessage());
             return false;
         }
     }

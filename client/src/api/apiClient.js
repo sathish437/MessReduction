@@ -16,22 +16,11 @@ apiClient.interceptors.request.use((config) => {
                 sessionStorage.getItem('staffToken') ||
                 getCookie('staffToken');
 
-  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-  console.log(`[API Request] Token found: ${token ? 'YES (' + token.substring(0, 20) + '...)' : 'NO'}`);
-
   if (token) {
     const requestPath = config.url || '';
     // Do not attach Authorization header for public registration endpoint
     if (!requestPath.includes('/api/student/reg')) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`[API Request] Authorization header set: Bearer ${token.substring(0, 20)}...`);
-        // Log headers for debugging (non-sensitive partial token only)
-        console.log('[API Request] Outgoing headers:', {
-          Authorization: config.headers.Authorization ? (config.headers.Authorization.substring(0, 20) + '...') : null,
-          'Content-Type': config.headers['Content-Type']
-        });
-    } else {
-      console.log(`[API Request] Skipping Authorization header for ${requestPath}`);
     }
   } else {
     console.warn(`[API Request] No token found - request will be unauthenticated`);
@@ -47,7 +36,6 @@ apiClient.interceptors.request.use((config) => {
 // This prevents fake redirect loops from temporary API failures.
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API Response] ${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {

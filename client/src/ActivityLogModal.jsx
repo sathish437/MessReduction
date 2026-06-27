@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiClock, FiUser, FiActivity, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiX, FiClock, FiUser, FiActivity, FiChevronLeft, FiChevronRight, FiSearch } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 
 export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionType, themeColor = "emerald" }) {
@@ -8,6 +8,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [logSearch, setLogSearch] = useState("");
 
     const themeColors = {
         emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-400" },
@@ -41,8 +42,9 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
     useEffect(() => {
         if (!isOpen) return;
 
-        // Reset to first page when modal opens
+        // Reset to first page and search when modal opens
         setPage(0);
+        setLogSearch("");
         fetchLogs(0);
 
         // Poll every 15 seconds while modal is open so auto-accept logs appear immediately
@@ -92,7 +94,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                         className="relative w-full max-w-4xl bg-[#0f1f38] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+                        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
                             <h3 className={`text-lg font-bold text-white flex items-center gap-2 ${t.text}`}>
                                 <FiActivity size={20} />
                                 {actionTitle} Logs
@@ -105,55 +107,94 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                             </button>
                         </div>
 
+                        {/* Search Box */}
+                        <div className="relative mb-4">
+                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                <FiSearch size={14} className="text-white/30" />
+                            </div>
+                            <input
+                                id="log-search"
+                                type="text"
+                                value={logSearch}
+                                onChange={(e) => setLogSearch(e.target.value)}
+                                placeholder="Search by Student Name or Register Number"
+                                className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-teal-500/40 focus:ring-1 focus:ring-teal-500/10 transition-all"
+                            />
+                            {logSearch && (
+                                <button
+                                    onClick={() => setLogSearch("")}
+                                    className="absolute inset-y-0 right-4 flex items-center text-white/30 hover:text-white/60 transition-colors text-xs font-semibold"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden min-h-[300px]">
-                            {loading ? (
-                                <div className="h-full flex items-center justify-center">
-                                    <div className={`w-12 h-12 border-4 border-t-transparent border-white/20 rounded-full animate-spin`} />
-                                </div>
-                            ) : logs.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center gap-4 text-center text-white/30 p-8">
-                                    <div className={`w-16 h-16 rounded-full ${t.bg} ${t.border} flex items-center justify-center`}>
-                                        <FiClock size={32} className={t.text} />
-                                    </div>
-                                    <p className="font-medium text-sm text-white/50 tracking-wider">No activity logs found.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {logs.map((log) => (
-                                        <div key={log.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5 hover:bg-white/[0.04] transition-all">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-1.5">
-                                                        <span className="text-white/40 text-xs font-semibold tracking-wider uppercase">Form #{log.formId}</span>
-                                                        {/* Action badge — amber for auto-accept, themed for manual */}
-                                                        {log.staffName === "SYSTEM" ? (
-                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                                                Auto Accept
-                                                            </span>
-                                                        ) : (
-                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
-                                                                {formatActionBadge(log.action, log.staffName)}
-                                                            </span>
-                                                        )}
+                            {(() => {
+                                if (loading) {
+                                    return (
+                                        <div className="h-full flex items-center justify-center">
+                                            <div className={`w-12 h-12 border-4 border-t-transparent border-white/20 rounded-full animate-spin`} />
+                                        </div>
+                                    );
+                                }
+                                const q = logSearch.trim().toLowerCase();
+                                const visibleLogs = q
+                                    ? logs.filter(log =>
+                                        log.studentName?.toLowerCase().includes(q) ||
+                                        String(log.studentId ?? "").toLowerCase().includes(q)
+                                      )
+                                    : logs;
+                                if (visibleLogs.length === 0) {
+                                    return (
+                                        <div className="h-full flex flex-col items-center justify-center gap-4 text-center text-white/30 p-8">
+                                            <div className={`w-16 h-16 rounded-full ${t.bg} ${t.border} flex items-center justify-center`}>
+                                                <FiClock size={32} className={t.text} />
+                                            </div>
+                                            <p className="font-medium text-sm text-white/50 tracking-wider">
+                                                {q ? "No logs match your search." : "No activity logs found."}
+                                            </p>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="space-y-4">
+                                        {visibleLogs.map((log) => (
+                                            <div key={log.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5 hover:bg-white/[0.04] transition-all">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <span className="text-white/40 text-xs font-semibold tracking-wider uppercase">Form #{log.formId}</span>
+                                                            {log.staffName === "SYSTEM" ? (
+                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                                                    Auto Accept
+                                                                </span>
+                                                            ) : (
+                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${t.bg} ${t.text} ${t.border} border`}>
+                                                                    {formatActionBadge(log.action, log.staffName)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <h4 className="text-sm font-semibold text-white">{log.studentName}</h4>
+                                                        <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{log.department}</p>
                                                     </div>
-                                                    <h4 className="text-sm font-semibold text-white">{log.studentName}</h4>
-                                                    <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{log.department}</p>
-                                                </div>
-                                                
-                                                <div className="flex flex-col sm:items-end gap-2 mt-2 sm:mt-0">
-                                                    <div className="flex items-center gap-2 text-sm text-white/50 font-medium">
-                                                        <FiUser size={14} /> {formatActorName(log.staffName)}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-xs text-white/30 font-semibold uppercase tracking-wider">
-                                                        <FiClock size={12} /> {new Date(log.timestamp).toLocaleString()}
+                                                    
+                                                    <div className="flex flex-col sm:items-end gap-2 mt-2 sm:mt-0">
+                                                        <div className="flex items-center gap-2 text-sm text-white/50 font-medium">
+                                                            <FiUser size={14} /> {formatActorName(log.staffName)}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs text-white/30 font-semibold uppercase tracking-wider">
+                                                            <FiClock size={12} /> {new Date(log.timestamp).toLocaleString()}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Pagination Footer */}

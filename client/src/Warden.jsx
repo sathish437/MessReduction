@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
     FiCheckCircle, FiClock, FiFileText, FiFilter, FiLogOut,
     FiShield, FiTrendingUp, FiArrowRight, FiCalendar, FiMapPin, FiUsers,
-    FiCheck, FiX, FiHash, FiCheckSquare, FiSquare
+    FiCheck, FiX, FiHash, FiCheckSquare, FiSquare, FiSearch
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
@@ -298,6 +298,7 @@ const Warden = () => {
     // Filter State
     const [genderFilter, setGenderFilter] = useState("ALL");
     const [selectedYear, setSelectedYear] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Rejection Modal State
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -368,7 +369,6 @@ const Warden = () => {
 
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
-        console.log('[Warden Action] Token exists:', !!token);
         if (!token) {
             alert("Authentication token not found. Please login again.");
             handleLogout();
@@ -398,7 +398,6 @@ const Warden = () => {
 
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
-        console.log('[Warden Reject] Token exists:', !!token);
         if (!token) {
             alert("Authentication token not found. Please login again.");
             handleLogout();
@@ -427,7 +426,6 @@ const Warden = () => {
 
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
-        console.log('[Warden Bulk Action] Token exists:', !!token);
         if (!token) {
             alert("Authentication token not found. Please login again.");
             handleLogout();
@@ -461,8 +459,14 @@ const Warden = () => {
 
     const t = { color: "teal", active: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", ring: "bg-teal-500/10", glow: "shadow-sm" };
 
-    // Backend already filters by year and status - use data directly
-    const pendingForms = requests;
+    // Apply client-side search on top of backend-filtered results
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const pendingForms = requests.filter(r => {
+        if (!normalizedSearch) return true;
+        const nameMatch = r.name?.toLowerCase().includes(normalizedSearch);
+        const regNoMatch = r.registerNo?.toLowerCase().includes(normalizedSearch);
+        return nameMatch || regNoMatch;
+    });
 
     if (loading) {
         return (
@@ -645,6 +649,29 @@ const Warden = () => {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Search Box */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <FiSearch size={15} className="text-white/30" />
+                                </div>
+                                <input
+                                    id="warden-search"
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by Student Name or Register Number"
+                                    className="w-full bg-[#0f1f38] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute inset-y-0 right-4 flex items-center text-white/30 hover:text-white/60 transition-colors text-xs font-semibold"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
 
                             <AnimatePresence>

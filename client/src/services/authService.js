@@ -28,10 +28,6 @@ export const clearStaffAuth = () => {
 export const validateStaff = async () => {
   const { token, username, role } = getStaffAuth();
 
-  console.log(`[validateStaff] Token from cookie: ${token ? 'YES (' + token.substring(0, 20) + '...)' : 'NO'}`);
-  console.log(`[validateStaff] Username from cookie: ${username || 'NONE'}`);
-  console.log(`[validateStaff] Role from cookie: ${role || 'NONE'}`);
-
   if (!token) {
     console.warn('[validateStaff] No token found - returning invalid');
     return { valid: false, reason: 'no_token' };
@@ -39,10 +35,7 @@ export const validateStaff = async () => {
 
   try {
     // Call dedicated auth validation endpoint only
-    console.log('[validateStaff] Calling /api/staff/validate...');
     const response = await apiClient.get('/api/staff/validate');
-    console.log('[validateStaff] Response:', response.data);
-    console.log(`[validateStaff] Success - username: ${response.data.username}, role: ${response.data.role}`);
     return {
       valid: true,
       username: response.data.username,

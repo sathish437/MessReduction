@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUsers, FiCheck, FiX, FiPieChart, FiList,
     FiTrendingUp, FiArrowRight, FiBarChart2, FiActivity, FiLogOut,
-    FiCheckSquare, FiSquare
+    FiCheckSquare, FiSquare, FiSearch
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
@@ -67,6 +67,7 @@ function HostelOffice() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
     const [reportData, setReportData] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const handleGenerateReport = async () => {
         try {
@@ -238,7 +239,13 @@ function HostelOffice() {
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
-    const filteredRequests = requests;
+    const normalizedOfficeSearch = searchQuery.trim().toLowerCase();
+    const filteredRequests = requests.filter(r => {
+        if (!normalizedOfficeSearch) return true;
+        const nameMatch = r.name?.toLowerCase().includes(normalizedOfficeSearch);
+        const regNoMatch = r.registerNo?.toLowerCase().includes(normalizedOfficeSearch);
+        return nameMatch || regNoMatch;
+    });
 
     if (isLoading) {
         return (
@@ -453,6 +460,29 @@ function HostelOffice() {
                                     </h2>
                                     <p className="text-xs text-white/40 mt-0.5">Forms awaiting office final approval</p>
                                 </div>
+                            </div>
+
+                            {/* Search Box */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <FiSearch size={15} className="text-white/30" />
+                                </div>
+                                <input
+                                    id="office-search"
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by Student Name or Register Number"
+                                    className="w-full bg-[#0f1f38] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute inset-y-0 right-4 flex items-center text-white/30 hover:text-white/60 transition-colors text-xs font-semibold"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
 
                             <AnimatePresence>

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
     FiUsers, FiCheck, FiX, FiPieChart, FiList, 
     FiCheckSquare, FiSquare, FiTrendingUp, FiArrowRight,
-    FiClock, FiBarChart2, FiActivity, FiLogOut
+    FiClock, FiBarChart2, FiActivity, FiLogOut, FiSearch
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
@@ -304,11 +304,6 @@ function Deputy_warden_side() {
                 return (isGenderMatch && isYearMatch) || isAssigned;
             });
 
-            // TEMP DEBUG LOGS
-            console.log("[DEBUG] Logged-in deputy warden:", { username: currentUsername, gender: currentDeputyDetails?.gender, year: currentDeputyDetails?.year });
-            console.log("[DEBUG] API response before filtering:", response.data);
-            console.log("[DEBUG] Final filtered list count:", filteredData.length);
-
             const data = filteredData.map(r => ({
                 ...r,
                 id: r.formId,
@@ -431,11 +426,13 @@ function Deputy_warden_side() {
 
     const filteredRequests = requests
         .filter(r => selectedYear === "all" ? true : r.year === selectedYear)
-        .filter(r => search === "" ? true :
-            r.name?.toLowerCase().includes(search.toLowerCase()) ||
-            String(r.id)?.toLowerCase().includes(search.toLowerCase()) ||
-            r.dept?.toLowerCase().includes(search.toLowerCase())
-        );
+        .filter(r => {
+            const q = search.trim().toLowerCase();
+            if (!q) return true;
+            const nameMatch = r.name?.toLowerCase().includes(q);
+            const regNoMatch = r.registerNo?.toLowerCase().includes(q);
+            return nameMatch || regNoMatch;
+        });
 
     // Dashboard aggregates
     const totalForms     = requests.length;
@@ -590,7 +587,6 @@ function Deputy_warden_side() {
                             transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
                             className="space-y-6"
                         >
-                            {/* Header row */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 px-1">
                                 <div>
                                     <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -599,6 +595,29 @@ function Deputy_warden_side() {
                                     </h2>
                                     <p className="text-xs text-white/40 mt-0.5">Forms awaiting deputy warden approval</p>
                                 </div>
+                            </div>
+
+                            {/* Search Box */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <FiSearch size={15} className="text-white/30" />
+                                </div>
+                                <input
+                                    id="deputy-search"
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search by Student Name or Register Number"
+                                    className="w-full bg-[#0f1f38] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                />
+                                {search && (
+                                    <button
+                                        onClick={() => setSearch("")}
+                                        className="absolute inset-y-0 right-4 flex items-center text-white/30 hover:text-white/60 transition-colors text-xs font-semibold"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
 
                             <AnimatePresence>

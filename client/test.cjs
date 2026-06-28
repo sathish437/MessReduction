@@ -2,7 +2,7 @@ const axios = require('axios');
 
 async function test() {
   try {
-    const loginRes = await axios.post('http://localhost:8083/api/auth/login', {
+    const loginRes = await axios.post('http://localhost:8080/api/auth/login', {
       emailId: 'test@example.com',
       dob: '2000-01-01'
     });
@@ -11,7 +11,7 @@ async function test() {
     const token = loginRes.data.token;
     const studentId = loginRes.data.studentId;
     
-    const detailsRes = await axios.get(`http://localhost:8083/api/student-form/Student/${studentId}`, {
+    const detailsRes = await axios.get(`http://localhost:8080/api/student-form/Student/${studentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     console.log("Student Details:", JSON.stringify(detailsRes.data, null, 2));

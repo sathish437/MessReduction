@@ -1,0 +1,48 @@
+# ============================
+# Build Stage
+# ============================
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
+WORKDIR /app
+
+# Copy pom first for dependency cache
+COPY pom.xml .
+
+RUN mvn dependency:go-offline -B
+
+# Copy source
+COPY src ./src
+
+# Build application
+RUN mvn clean package -DskipTests -B
+
+
+# ============================
+# Run Stage
+# ============================
+FROM eclipse-temurin:21-jre-jammy
+
+WORKDIR /app
+
+
+# Create non-root user
+RUN groupadd appgroup && \
+    useradd -r -g appgroup appuser
+
+
+# Copy jar
+COPY --from=build /app/target/*.jar app.jar
+
+
+# Permission
+RUN chown appuser:appgroup app.jar
+
+
+USER appuser
+
+
+# Render gives PORT automatically
+EXPOSE 8080
+
+
+ENTRYPOINT ["java","-jar","app.jar"]

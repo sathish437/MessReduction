@@ -22,6 +22,11 @@ public class FirebaseConfig {
 
     @PostConstruct
     public void initialize() {
+        if (firebaseConfigPath == null || !firebaseConfigPath.exists()) {
+            logger.warn("Firebase service account not found. Firebase notifications are disabled.");
+            return;
+        }
+
         try {
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseOptions options = FirebaseOptions.builder()
@@ -32,7 +37,7 @@ public class FirebaseConfig {
                 logger.info("Firebase application has been initialized successfully.");
             }
         } catch (IOException e) {
-            logger.error("Failed to initialize Firebase app", e);
+            logger.error("Failed to initialize Firebase app: {}", e.getMessage());
         }
     }
 }

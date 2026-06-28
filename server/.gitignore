@@ -35,4 +35,3 @@ build/
 
 ### Secrets ###
 firebase-service-account.json
-application.properties

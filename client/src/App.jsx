@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import './App.css'
+import { useNavigate, useLocation } from 'react-router-dom'
 import LandingPage from './LandingPage'
 import StudentLogin from './StudentLogin'
 import StaffLogin from './StaffLogin'
@@ -24,6 +24,7 @@ const ROUTE_CONFIG = {
   '/register':            { screen: 'register', protected: false },
   // Protected student routes
   '/student-dashboard':   { screen: 'student-dashboard', protected: true, type: 'student' },
+  '/dashboard':           { screen: 'student-dashboard', protected: true, type: 'student' },
   // Protected staff routes
   '/deputy':              { screen: 'deputy', protected: true, type: 'staff', role: 'DeputyWarden' },
   '/warden':              { screen: 'warden', protected: true, type: 'staff', role: 'Warden' },
@@ -36,24 +37,13 @@ const getRouteConfig = (pathname) => {
 };
 
 function App() {
-  // Current route state - this drives the entire app routing
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  // Sync with browser history (back/forward buttons)
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  const navigateReactRouter = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   // Navigation function - ONLY place that changes routes
   const navigate = (path) => {
-    if (path !== currentPath) {
-      window.history.pushState({}, '', path);
-      setCurrentPath(path);
-    }
+    navigateReactRouter(path);
   };
 
   // Get current route configuration

@@ -95,9 +95,19 @@ public class ReductionFormService {
     }
 
     public StudentDetails getStudentDetails(Long id) {
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid student ID");
+        }
         autoDeactivateAllExpiredForms();
-        return studentDetailsRepo.findById(id)
+        StudentDetails student = studentDetailsRepo.findById(id)
                 .orElseThrow(() -> new StudentNotFoundException("Student not found"));
+
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(id);
+        if (forms == null) {
+            forms = new ArrayList<>();
+        }
+        student.setReductionForms(forms);
+        return student;
     }
 
     public ReductionFormResDTO formSubmit(ReductionFormReqDTO dto, Long studentId) {

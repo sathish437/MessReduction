@@ -25,9 +25,23 @@ public class ReductionFormController {
     }
 
     @GetMapping("/Student/{studentId}")
-    public StudentDetails fetchStudentData(@PathVariable Long studentId) {
+    public ResponseEntity<?> fetchStudentData(@PathVariable Long studentId) {
         logger.info("Student controller reached: GET /Student/{}", studentId);
-        return reductionFormService.getStudentDetails(studentId);
+        try {
+            if (studentId == null || studentId <= 0) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("message", "Invalid student ID", "statusCode", 400));
+            }
+            StudentDetails studentDetails = reductionFormService.getStudentDetails(studentId);
+            return ResponseEntity.ok(studentDetails);
+        } catch (com.hostel.MessReduction.CustomException.StudentNotFoundException e) {
+            logger.warn("Student not found: {}", studentId);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(java.util.Map.of("message", e.getMessage(), "statusCode", 404));
+        } catch (Exception e) {
+            logger.error("Internal error fetching student data for studentId: {}", studentId, e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("message", "An unexpected error occurred", "statusCode", 500));
+        }
     }
 
     @PostMapping("/StudentForm/{studentId}")

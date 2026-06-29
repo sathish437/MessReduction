@@ -27,13 +27,23 @@ public class ReductionFormMapper {
     }
 
     public static ReductionFormResDTO mapToReductionFormResDTO(ReductionForm reductionForm){
+        if (reductionForm == null) {
+            return null;
+        }
         ReductionFormResDTO reductionFormResDTO=new ReductionFormResDTO();
 
         reductionFormResDTO.setFormId(reductionForm.getFormId());
-        reductionFormResDTO.setStudentId(reductionForm.getStudentDetails().getStudentId());
-        reductionFormResDTO.setName(reductionForm.getStudentDetails().getName());
+
+        StudentDetails studentDetails = reductionForm.getStudentDetails();
+        if (studentDetails != null) {
+            reductionFormResDTO.setStudentId(studentDetails.getStudentId());
+            reductionFormResDTO.setName(studentDetails.getName());
+            reductionFormResDTO.setDepartment(studentDetails.getDepartment());
+            reductionFormResDTO.setRegisterNo(studentDetails.getRegisterNo());
+            reductionFormResDTO.setGender(studentDetails.getGender());
+        }
+
         reductionFormResDTO.setYear(reductionForm.getYear());
-        reductionFormResDTO.setDepartment(reductionForm.getStudentDetails().getDepartment());
         reductionFormResDTO.setRoomNo(reductionForm.getRoomNo());
         reductionFormResDTO.setLeaveDate(reductionForm.getLeaveDate());
         reductionFormResDTO.setLeaveTime(reductionForm.getLeaveTime());
@@ -45,10 +55,6 @@ public class ReductionFormMapper {
         reductionFormResDTO.setReason(reductionForm.getReason());
         reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
         reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
-        if (reductionForm.getStudentDetails() != null) {
-            reductionFormResDTO.setRegisterNo(reductionForm.getStudentDetails().getRegisterNo());
-            reductionFormResDTO.setGender(reductionForm.getStudentDetails().getGender());
-        }
         return reductionFormResDTO;
     }
 }

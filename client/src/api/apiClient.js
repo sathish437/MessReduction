@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getCookie } from '../utils/cookieUtils';
 
 const apiClient = axios.create({
-  baseURL: 'https://messreduction8.onrender.com',
+  baseURL: 'https://messreduction8.onrender.com/',
   headers: {
     'Content-Type': 'application/json'
   }

@@ -548,14 +548,14 @@ const Warden = () => {
                                     <div className={`mt-4 px-2.5 py-1 ${t.ring} border ${t.border} rounded-lg text-xs font-semibold ${t.text} uppercase inline-block w-fit`}>Need Action</div>
                                 </div>
 
-                                {/* Accepted Requests (Warden approved -> PendingDeputyWarden) */}
+                                {/* Accepted Requests (Warden approved -> PendingOffice) */}
                                 <div 
                                     onClick={() => { setLogActionType("Approved"); setLogActionTitle("Warden Approved"); setIsLogModalOpen(true); }}
                                     className="bg-[#0f1f38] border border-emerald-500/20 rounded-xl p-6 flex flex-col justify-between cursor-pointer hover:bg-white/[0.01] transition-colors hover:border-emerald-500/40 shadow-sm"
                                 >
                                     <div>
                                         <p className="text-xs text-emerald-400/70 uppercase font-semibold tracking-wider mb-2">Accepted Requests</p>
-                                        <p className="text-3xl font-bold text-emerald-400">{counts?.pendingDeputyWarden || 0}</p>
+                                        <p className="text-3xl font-bold text-emerald-400">{counts?.pendingOffice || 0}</p>
                                     </div>
                                     <div className="mt-4 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs font-semibold text-emerald-400 uppercase inline-block w-fit">Warden Approved</div>
                                 </div>

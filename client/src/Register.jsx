@@ -51,16 +51,16 @@ function AnimatedTitle() {
   )
 }
 
-function Field({ icon, className = "", children }) {
+function Field({ icon, error, className = "", children }) {
   return (
-    <div className={`flex items-center gap-2 rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors duration-200 ${className}`}>
-      <span className="text-teal-400/60 shrink-0 text-base">{icon}</span>
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'} ${className}`}>
+      <span className={`shrink-0 text-base ${error ? 'text-rose-400' : 'text-teal-400/60'}`}>{icon}</span>
       {children}
     </div>
   )
 }
 
-const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-lg text-white placeholder:text-white/25 font-medium"
+const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 font-medium w-full"
 
 function Register({ onNavigate }) {
   const [formData, setFormData] = useState({
@@ -75,6 +75,7 @@ function Register({ onNavigate }) {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const goToLogin = () => {
     if (onNavigate) {
@@ -99,6 +100,7 @@ function Register({ onNavigate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
 
     const submissionData = {
@@ -119,11 +121,11 @@ function Register({ onNavigate }) {
         setSuccess(true);
         setTimeout(() => goToLogin(), 1500);
       } else {
-        alert("Registration failed. Please try again.");
+        setError("Registration failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Registration error:", error);
-      alert(error.response?.data?.message || "Registration failed. Ensure all fields are unique.");
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError(err.response?.data?.message || "Registration failed. Ensure all fields are unique.");
     } finally {
       setLoading(false);
     }
@@ -170,22 +172,22 @@ function Register({ onNavigate }) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
+            className="w-full rounded-2xl border border-white/10 bg-[#0f1f38] shadow-soft overflow-hidden"
           >
             <div className="h-px bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
             <div className="p-6 sm:p-8">
               <AnimatedTitle />
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field icon={<FiUser />}>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field icon={<FiUser />} error={!!error}>
                     <input
                       type="text" placeholder="Full name" name="name"
                       className={inp} value={formData.name} onChange={handleChange} required
                     />
                   </Field>
 
-                  <Field icon={<FiCreditCard />}>
+                  <Field icon={<FiCreditCard />} error={!!error}>
                     <input
                       type="text" inputMode="numeric" placeholder="Register No" name="regNo"
                       className={inp} onKeyDown={handleNumKey} value={formData.regNo} onChange={handleChange} required
@@ -193,8 +195,8 @@ function Register({ onNavigate }) {
                   </Field>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field icon={<FiHash />}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field icon={<FiHash />} error={!!error}>
                     <input
                       type="text" placeholder="Roll number" name="rollNo"
                       className={inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} required
@@ -204,23 +206,24 @@ function Register({ onNavigate }) {
                   <DobInputComponent
                     value={formData.dob}
                     onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })}
+                    error={!!error}
                   />
                 </div>
 
-                <Field icon={<FiBookOpen />}>
-                  <select
-                    name="dept" value={formData.dept} onChange={handleChange} required
-                    className={`${inp} appearance-none cursor-pointer`}
-                  >
-                    <option value="" className="bg-[#0f1f38] text-white/40">Select Department</option>
-                    {["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => (
-                      <option key={d} value={d} className="bg-[#0f1f38] text-white">{d}</option>
-                    ))}
-                  </select>
-                </Field>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field icon={<FiBookOpen />} error={!!error}>
+                    <select
+                      name="dept" value={formData.dept} onChange={handleChange} required
+                      className={`${inp} appearance-none cursor-pointer`}
+                    >
+                      <option value="" className="bg-[#0f1f38] text-white/40">Select Department</option>
+                      {["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => (
+                        <option key={d} value={d} className="bg-[#0f1f38] text-white">{d}</option>
+                      ))}
+                    </select>
+                  </Field>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field icon={<FiUser />}>
+                  <Field icon={<FiUser />} error={!!error}>
                     <select
                       name="gender"
                       value={formData.gender}
@@ -233,32 +236,40 @@ function Register({ onNavigate }) {
                       <option value="FEMALE" className="bg-[#0f1f38] text-white">Female</option>
                     </select>
                   </Field>
-
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field icon={<FiMail />}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field icon={<FiMail />} error={!!error}>
                     <input
                       type="email" placeholder="Email address" name="email"
                       className={inp} value={formData.email} onChange={handleChange} required
                     />
                   </Field>
 
-                  <Field icon={<FiPhone />}>
+                  <Field icon={<FiPhone />} error={!!error}>
                     <input
                       type="tel" inputMode="numeric" placeholder="Phone number" name="phone"
                       className={inp} onKeyDown={handleNumKey} value={formData.phone} onChange={handleChange} required
                     />
                   </Field>
                 </div>
+                
+                {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   disabled={loading}
-                  className={`mt-3 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all duration-200 tracking-widest ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-3 sm:py-4 text-base sm:text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-soft transition-all duration-200 tracking-widest ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
-                  {loading ? "CREATING..." : "CREATE ACCOUNT"} <FiArrowRight size={18} />
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                      CREATING...
+                    </>
+                  ) : (
+                    <>CREATE ACCOUNT <FiArrowRight size={18} /></>
+                  )}
                 </motion.button>
               </form>
 

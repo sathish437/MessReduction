@@ -17,11 +17,11 @@ const getInitial = () => {
   return { x: pos[0], y: pos[1], rotate: r, opacity: 0, scale: 0.5 }
 }
 
-function Field({ icon, ...props }) {
+function Field({ icon, error, ...props }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 focus-within:border-teal-500/40 focus-within:bg-teal-500/5 transition-colors duration-200">
-      <span className="text-teal-400/60 shrink-0">{icon}</span>
-      <input className="flex-1 bg-transparent focus:outline-none text-sm text-white placeholder:text-white/25 font-medium" {...props} />
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+      <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-amber-400/60'}`}>{icon}</span>
+      <input className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 font-medium w-full" {...props} />
     </div>
   )
 }
@@ -32,6 +32,13 @@ function StaffLogin({ onNavigate }) {
   const [role, setRole] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const getUsernameOptions = () => {
+    if (role === "Office") return ["office"];
+    if (role === "Warden") return ["warden", "warden1", "warden2", "warden3", "warden4"];
+    if (role === "DeputyWarden") return Array.from({ length: 8 }, (_, i) => `deputyWarden${i + 1}`);
+    return [];
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,24 +113,24 @@ function StaffLogin({ onNavigate }) {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
+                        className="w-full rounded-2xl border border-white/10 bg-[#0f1f38] shadow-soft overflow-hidden"
                     >
                         <div className="h-[1px] bg-amber-500/30" />
                         <div className="p-8">
-                            <div className="mb-6">
+                            <div className="mb-6 sm:mb-8">
                                 <p className="text-xs font-semibold tracking-wider text-amber-400/80 uppercase mb-1.5">Restricted Access</p>
-                                <h2 className="text-2xl font-bold text-white tracking-tight">Staff Login</h2>
-                                <p className="text-sm text-white/40 mt-1">Sign in with your staff credentials</p>
+                                <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Staff Login</h2>
+                                <p className="text-sm sm:text-base text-white/40 mt-1">Sign in with your staff credentials</p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-amber-500/40 focus-within:bg-amber-500/5 transition-all">
-                                    <span className="text-amber-400/60"><FiShield size={18} /></span>
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
+                                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error && !role ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+                                    <span className={error && !role ? "text-rose-400" : "text-amber-400/60"}><FiShield size={18} /></span>
                                     <select
                                         value={role}
-                                        onChange={(e) => setRole(e.target.value)}
+                                        onChange={(e) => { setRole(e.target.value); setUserName(""); }}
                                         required
-                                        className="flex-1 bg-transparent focus:outline-none text-sm text-white appearance-none cursor-pointer"
+                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white appearance-none cursor-pointer w-full"
                                     >
                                         <option value="" disabled className="bg-[#0f1f38]">Select Role</option>
                                         <option value="Warden" className="bg-[#0f1f38]">Warden</option>
@@ -132,8 +139,26 @@ function StaffLogin({ onNavigate }) {
                                     </select>
                                 </div>
 
-                                <Field icon={<FiUser size={18} />} type="text" placeholder="Username" value={userName} onChange={(e) => setUserName(e.target.value)} required />
-                                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error && !userName ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+                                    <span className={error && !userName ? "text-rose-400" : "text-amber-400/60"}><FiUser size={18} /></span>
+                                    <select
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        required
+                                        disabled={!role}
+                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white appearance-none cursor-pointer w-full disabled:opacity-50"
+                                    >
+                                        <option value="" disabled className="bg-[#0f1f38]">
+                                            {!role ? "Select Role First" : "Select Username"}
+                                        </option>
+                                        {getUsernameOptions().map((opt) => (
+                                            <option key={opt} value={opt} className="bg-[#0f1f38]">
+                                                {opt}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required error={!!error} />
 
                                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 
@@ -142,9 +167,16 @@ function StaffLogin({ onNavigate }) {
                                     whileTap={{ scale: 0.995 }}
                                     type="submit"
                                     disabled={loading}
-                                    className={`mt-4 flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 transition-colors shadow-md ${loading ? "opacity-50" : ""}`}
+                                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-3 sm:py-4 text-base sm:text-lg font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 transition-colors shadow-soft tracking-wider ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
                                 >
-                                    {loading ? "AUTHENTICATING..." : "SIGN IN"} <FiArrowRight size={18} />
+                                    {loading ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                                            AUTHENTICATING...
+                                        </>
+                                    ) : (
+                                        <>SIGN IN <FiArrowRight size={18} /></>
+                                    )}
                                 </motion.button>
                             </form>
                         </div>

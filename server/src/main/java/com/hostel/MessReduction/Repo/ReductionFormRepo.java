@@ -4,6 +4,8 @@ import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,6 +24,9 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     Optional<ReductionForm> findByFormIdAndStudentDetailsStudentId(Long formId, Long studentId);
     List<ReductionForm> findByCurrentStatusIn(List<FormStatus> statuses);
     List<ReductionForm> findByCurrentStatusInAndIsActiveTrue(List<FormStatus> statuses);
+    
+    @Query("SELECT DISTINCT r FROM ReductionForm r JOIN FETCH r.history WHERE r.currentStatus IN :statuses AND r.isActive = true")
+    List<ReductionForm> findPendingFormsWithHistory(@Param("statuses") List<FormStatus> statuses);
     
     // Testing Mode Methods
     List<ReductionForm> findByCurrentStatusInAndSubmittedAtAfter(List<FormStatus> statuses, java.time.LocalDateTime time);

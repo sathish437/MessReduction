@@ -36,4 +36,16 @@ public class AppNotification {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(length = 20)
+    private String whatsappStatus = "PENDING";
+
+    @Column
+    private Integer retryCount = 0;
+
+    @Column
+    private LocalDateTime sentTime;
+
+    @Column(length = 50)
+    private String recipientRole;
 }

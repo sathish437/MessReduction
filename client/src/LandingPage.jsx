@@ -45,7 +45,7 @@ function LandingPage({ onNavigate }) {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="rounded-3xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
+            className="rounded-3xl border border-white/8 bg-[#0f1f38] shadow-soft overflow-hidden hover:shadow-glow transition-shadow duration-300"
           >
             <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
             <div className="p-8 sm:p-10">
@@ -87,7 +87,7 @@ function LandingPage({ onNavigate }) {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="rounded-3xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
+            className="rounded-3xl border border-white/8 bg-[#0f1f38] shadow-soft overflow-hidden hover:shadow-glow transition-shadow duration-300"
           >
             <div className="h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
             <div className="p-8 sm:p-10">

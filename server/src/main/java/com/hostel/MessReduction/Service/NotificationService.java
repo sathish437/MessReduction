@@ -2,6 +2,7 @@ package com.hostel.MessReduction.Service;
 
 import com.hostel.MessReduction.Entity.AppNotification;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
+import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,10 +20,12 @@ public class NotificationService {
     private Long appStartId = 0L;
     
     private final AppNotificationRepository notificationRepo;
+    private final StaffUsersRepo staffUsersRepo;
     private final ConcurrentHashMap<String, Long> notificationLocks = new ConcurrentHashMap<>();
 
-    public NotificationService(AppNotificationRepository notificationRepo) {
+    public NotificationService(AppNotificationRepository notificationRepo, StaffUsersRepo staffUsersRepo) {
         this.notificationRepo = notificationRepo;
+        this.staffUsersRepo = staffUsersRepo;
     }
 
     @jakarta.annotation.PostConstruct
@@ -55,6 +58,11 @@ public class NotificationService {
             notification.setMessage(message);
             notification.setType(type);
             notification.setRelatedFormId(relatedFormId);
+            
+            staffUsersRepo.findByUserName(recipientUsername).ifPresent(staff -> {
+                notification.setRecipientRole(staff.getRole().name());
+            });
+
             notificationRepo.save(notification);
             logger.info("Notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
         } catch (Exception e) {

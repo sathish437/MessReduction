@@ -49,11 +49,11 @@ function AnimatedTitle() {
   )
 }
 
-function Field({ icon, ...props }) {
+function Field({ icon, error, ...props }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors duration-200">
-      <span className="text-teal-400/60 shrink-0 text-base">{icon}</span>
-      <input className="flex-1 bg-transparent focus:outline-none text-lg text-white placeholder:text-white/25 font-medium" {...props} />
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+      <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-teal-400/60 text-base'}`}>{icon}</span>
+      <input className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 font-medium w-full" {...props} />
     </div>
   )
 }
@@ -62,14 +62,16 @@ function Login({ goToRegister, onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [dob, setDob] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
 
     // Simple validation
     if (!email || !dob) {
-      alert('Please fill both email and date of birth');
+      setError('Please fill both email and date of birth');
       setLoading(false);
       return;
     }
@@ -97,42 +99,51 @@ function Login({ goToRegister, onLoginSuccess }) {
 
         if (onLoginSuccess) onLoginSuccess(userData);
       } else {
-        alert('Login failed. Please check your credentials.');
+        setError('Login failed. Please check your credentials.');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Login failed. Please try again.';
-      alert(errorMsg);
+    } catch (err) {
+      console.error('Login error:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
       <AnimatedTitle />
 
       <Field
-        icon={<FiMail size={15} />}
+        icon={<FiMail size={15} />} error={!!error}
         type="email" placeholder="Email address"
         value={email} onChange={(e) => setEmail(e.target.value)} required
       />
       <Field
-        icon={<FiCalendar size={15} />}
+        icon={<FiCalendar size={15} />} error={!!error}
         type="text" placeholder="Date of birth"
         value={dob} onChange={(e) => setDob(e.target.value)} required
         onFocus={(e) => (e.target.type = "date")}
         onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
       />
+      
+      {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
 
       <motion.button
         whileHover={{ scale: 1.015 }}
         whileTap={{ scale: 0.985 }}
         type="submit"
         disabled={loading}
-        className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all duration-200 tracking-widest ${loading ? "opacity-50" : ""}`}
+        className={`mt-2 flex items-center justify-center gap-3 w-full rounded-xl py-3 sm:py-4 text-base sm:text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-soft transition-all duration-200 tracking-widest ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
       >
-        {loading ? "AUTHENTICATING..." : "SIGN IN"} <FiArrowRight size={18} />
+        {loading ? (
+          <>
+            <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+            AUTHENTICATING...
+          </>
+        ) : (
+          <>SIGN IN <FiArrowRight size={18} /></>
+        )}
       </motion.button>
 
       <p className="text-center text-base mt-2 text-white/30">

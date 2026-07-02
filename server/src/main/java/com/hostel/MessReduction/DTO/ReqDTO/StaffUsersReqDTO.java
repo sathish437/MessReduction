@@ -19,4 +19,5 @@ public class StaffUsersReqDTO {
     private String userName;
     @NotBlank
     private String password;
+    private String phoneNo;
 }

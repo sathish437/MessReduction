@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private ResponseEntity<HashMap<String, Object>> buildErrorResponse(String message, HttpStatus status) {
         HashMap<String, Object> map = new HashMap<>();
@@ -75,11 +79,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<HashMap<String, Object>> handleIllegalArgument(IllegalArgumentException exp) {
+        logger.error("IllegalArgumentException: ", exp);
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<HashMap<String, Object>> handleGeneralException(Exception exp) {
+        logger.error("Unhandled Exception: ", exp);
         return buildErrorResponse(exp.getMessage() != null ? exp.getMessage() : "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

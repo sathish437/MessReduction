@@ -64,9 +64,10 @@ public class ReductionFormService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final StaffUsersRepo staffUsersRepo;
-    private final WhatsAppService whatsAppService;
     private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final AuditLogRepo auditLogRepo;
+    private final WhatsAppService whatsAppService;
+    private final WhatsAppMessageBuilder whatsAppMessageBuilder;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
@@ -75,9 +76,10 @@ public class ReductionFormService {
                                 NotificationService notificationService,
                                 EmailService emailService,
                                 StaffUsersRepo staffUsersRepo,
-                                WhatsAppService whatsAppService,
                                 AutoAcceptSettingsRepo autoAcceptSettingsRepo,
-                                AuditLogRepo auditLogRepo) {
+                                AuditLogRepo auditLogRepo,
+                                WhatsAppService whatsAppService,
+                                WhatsAppMessageBuilder whatsAppMessageBuilder) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -85,13 +87,14 @@ public class ReductionFormService {
         this.notificationService = notificationService;
         this.emailService = emailService;
         this.staffUsersRepo = staffUsersRepo;
-        this.whatsAppService = whatsAppService;
         this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
         this.auditLogRepo = auditLogRepo;
+        this.whatsAppService = whatsAppService;
+        this.whatsAppMessageBuilder = whatsAppMessageBuilder;
     }
 
     private void sendWhatsAppFormStatusNotification(ReductionForm form, String status) {
-        whatsAppService.sendFormStatusNotification(form, status);
+        // Obsolete
     }
 
     public StudentDetails getStudentDetails(Long id) {
@@ -135,6 +138,9 @@ public class ReductionFormService {
         if (deputyUsername != null) {
             staffUsersRepo.findByUserName(deputyUsername).ifPresent(dw -> {
                 notificationService.createNotification(dw.getUserName(), "New Reduction Request Received", "NORMAL_REQUEST", form.getFormId());
+                if (dw.getPhoneNo() != null) {
+                    // WhatsApp message will be sent by batch scheduler
+                }
             });
         }
     }
@@ -292,6 +298,14 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingOffice, userName, null);
         createActivityLog(form, Role.Warden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
+        staffUsersRepo.findByRole(Role.Office).forEach(office -> {
+            if (office.getPhoneNo() != null) {
+                // WhatsApp message will be sent by batch scheduler
+            }
+        });
     }
 
 
@@ -309,6 +323,16 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingWarden, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
+        staffUsersRepo.findByRole(Role.Warden).forEach(warden -> {
+            if ("warden".equals(warden.getUserName()) || ("warden" + form.getYear()).equals(warden.getUserName())) {
+                if (warden.getPhoneNo() != null) {
+                    // WhatsApp message will be sent by batch scheduler
+                }
+            }
+        });
         
         processAutoAcceptIfApplicable(form);
     }
@@ -324,6 +348,9 @@ public class ReductionFormService {
         saveFormHistory(form, "Approved by Office", previousStatus, FormStatus.Approved, userName, null);
         createActivityLog(form, Role.Office, userName, "Approved");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Office Approved Request", "APPROVED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
     }
 
     public void rejectWardenForm(Long formId, String rejectReason, String userName) {
@@ -339,6 +366,9 @@ public class ReductionFormService {
         saveFormHistory(form, "Rejected by Warden", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.Warden, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Warden", "REJECTED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
     }
 
     public void rejectDeputyWardenForm(Long formId, String rejectReason, String userName) {
@@ -354,6 +384,9 @@ public class ReductionFormService {
         saveFormHistory(form, "Rejected by Deputy Warden", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Deputy Warden", "REJECTED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
     }
 
     public void rejectOfficeForm(Long formId, String rejectReason, String userName) {
@@ -368,6 +401,9 @@ public class ReductionFormService {
         saveFormHistory(form, "Rejected by Office", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
         createActivityLog(form, Role.Office, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Office", "REJECTED", form.getFormId());
+        if (form.getStudentDetails().getPhoneNo() != null) {
+            // WhatsApp message will be sent by batch scheduler
+        }
     }
 
     public StaffDashboardCountDTO getDashboardCount() {
@@ -867,12 +903,7 @@ public class ReductionFormService {
             log.error("[AUTO_ACCEPT] FAILED to save AuditLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
         }
         
-        // Send async WhatsApp notification (non-blocking)
-        try {
-            whatsAppService.sendAutoAcceptNotification(form, "Deputy Warden");
-        } catch (Exception e) {
-            log.error("[AUTO_ACCEPT] WhatsApp notification failed for formId={}: {}", form.getFormId(), e.getMessage());
-        }
+        // WhatsApp notification will be sent by batch scheduler
         
         return true;
     }
@@ -935,12 +966,7 @@ public class ReductionFormService {
             log.error("[AUTO_ACCEPT] FAILED to save AuditLog for formId={}: {}", form.getFormId(), e.getMessage(), e);
         }
         
-        // Send async WhatsApp notification (non-blocking)
-        try {
-            whatsAppService.sendAutoAcceptNotification(form, "Warden");
-        } catch (Exception e) {
-            log.error("[AUTO_ACCEPT] WhatsApp notification failed for formId={}: {}", form.getFormId(), e.getMessage());
-        }
+        // WhatsApp notification will be sent by batch scheduler
         
         return true;
     }

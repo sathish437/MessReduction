@@ -51,6 +51,7 @@ public class StaffDataInitializer implements CommandLineRunner {
         staff.setPassword(passwordEncoder.encode(password));
         staff.setRole(role);
         staff.setGmail(gmail);
+        staff.setPhoneNo("+917708988616"); // Added for WhatsApp testing
         staffUsersRepo.save(staff);
         log.info("Created staff: {} with role: {}", username, role);
     }
@@ -61,6 +62,7 @@ public class StaffDataInitializer implements CommandLineRunner {
         staff.setPassword(passwordEncoder.encode("deputy123"));
         staff.setRole(role);
         staff.setGmail(username + "@gmail.com");
+        staff.setPhoneNo("+917708988616"); // Added for WhatsApp testing
         staff.setGender(Gender.valueOf(gender));
         staff.setYear(year);
         staffUsersRepo.save(staff);

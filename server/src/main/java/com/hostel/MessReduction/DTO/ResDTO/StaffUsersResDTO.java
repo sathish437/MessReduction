@@ -26,4 +26,5 @@ public class StaffUsersResDTO {
     @NotBlank
     @Email
     private String gmail;
+    private String phoneNo;
 }

@@ -38,4 +38,7 @@ public class StaffUsers {
     private Gender gender;
 
     private Integer year;
+
+    @Column(length = 15)
+    private String phoneNo;
 }

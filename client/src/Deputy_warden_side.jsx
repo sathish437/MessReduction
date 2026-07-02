@@ -623,27 +623,92 @@ function Deputy_warden_side() {
                             <AnimatePresence>
                                 {selectedIds.length > 0 && (
                                     <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="flex flex-col sm:flex-row items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 gap-4"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 20 }}
+                                        className="fixed bottom-6 left-4 right-4 z-[60] sm:static sm:z-auto shadow-2xl sm:shadow-none bg-[#0f1f38]/95 sm:bg-emerald-500/10 backdrop-blur-xl sm:backdrop-blur-none border border-emerald-500/30 sm:border-emerald-500/20 rounded-2xl sm:rounded-xl p-4 flex flex-row items-center justify-between gap-4"
                                     >
-                                        <span className="text-emerald-400 font-semibold text-xs tracking-wider uppercase">
-                                            {selectedIds.length} Form(s) Selected
+                                        <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-wider uppercase">
+                                            {selectedIds.length} Form{selectedIds.length > 1 ? 's' : ''} Selected
                                         </span>
                                         <button
                                             onClick={() => handleBulkAction("accepted")}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 text-slate-955 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-emerald-400 transition-colors w-full sm:w-auto justify-center shadow-sm"
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none"
                                         >
-                                            <FiCheck size={18} /> Approve Selected
+                                            <FiCheck size={18} /> Approve
                                         </button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            {/* Requests Table */}
+                            {/* Requests Table (Desktop) & Cards (Mobile) */}
                             <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
-                                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                                
+                                {/* 📱 MOBILE CARDS VIEW */}
+                                <div className="block md:hidden p-4 space-y-4">
+                                    {filteredRequests.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-12 px-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-4">
+                                                <FiList size={30} />
+                                            </div>
+                                            <h3 className="text-white text-lg font-bold mb-1">All Caught Up!</h3>
+                                            <p className="text-white/40 text-center text-xs">No pending requests for deputy review.</p>
+                                        </div>
+                                    ) : (
+                                        filteredRequests.map((req, idx) => (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.04 }}
+                                                key={`mob-${req.id}`}
+                                                onClick={() => toggleSelect(req.id)}
+                                                className={`flex flex-col gap-3 p-4 rounded-2xl border transition-colors cursor-pointer ${selectedIds.includes(req.id) ? 'bg-teal-500/10 border-teal-500/30 shadow-glow' : 'bg-white/[0.02] border-white/10 hover:border-white/20'}`}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-teal-500 border-teal-400 text-slate-900' : 'bg-white/5 border-white/20 text-transparent'}`}>
+                                                                <FiCheck size={12} strokeWidth={4} />
+                                                            </div>
+                                                            <h4 className="text-base font-bold text-white leading-tight">{req.name}</h4>
+                                                        </div>
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 text-white/60 ml-7">
+                                                            {req.dept} • {req.roomNo}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <div className="bg-[#0a1628] rounded-xl p-3 border border-white/5">
+                                                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Leave</p>
+                                                        <p className="text-sm font-semibold text-white/80">{req.leaveDate}</p>
+                                                    </div>
+                                                    <div className="bg-[#0a1628] rounded-xl p-3 border border-white/5">
+                                                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Arrival</p>
+                                                        <p className="text-sm font-semibold text-white/80">{req.arrivalDate}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="mt-1">
+                                                    <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Reason</p>
+                                                    <p className="text-xs text-white/60 line-clamp-2">{req.reason}</p>
+                                                </div>
+
+                                                <div className="flex gap-2 mt-2 pt-4 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
+                                                    <button onClick={() => handleAction(req.id, "Approve")} className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 font-bold text-xs uppercase tracking-wider transition-all">
+                                                        <FiCheck size={16} /> Approve
+                                                    </button>
+                                                    <button onClick={() => handleAction(req.id, "Reject")} className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-all">
+                                                        <FiX size={16} /> Reject
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* 💻 DESKTOP TABLE VIEW */}
+                                <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
                                     <table className="w-full text-left border-collapse min-w-[1000px]">
                                         <thead className="sticky top-0 bg-[#0f1f38] z-10">
                                             <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
@@ -664,13 +729,14 @@ function Deputy_warden_side() {
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {filteredRequests.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="8" className="px-6 py-16 text-center">
-                                                        <div className="flex flex-col items-center gap-3">
-                                                            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/20">
-                                                                <FiList size={24} />
+                                                    <td colSpan="8" className="px-6 py-24 text-center">
+                                                        <div className="flex flex-col items-center justify-center gap-3">
+                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-2">
+                                                                <FiList size={32} />
                                                             </div>
-                                                            <p className="text-white/30 font-semibold uppercase tracking-wider text-xs">
-                                                                No pending requests for deputy review
+                                                            <h3 className="text-white text-xl font-bold tracking-tight">All Caught Up!</h3>
+                                                            <p className="text-white/40 font-medium text-sm">
+                                                                No pending requests for deputy review.
                                                             </p>
                                                         </div>
                                                     </td>

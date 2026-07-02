@@ -8,6 +8,7 @@ import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ import org.slf4j.LoggerFactory;
 public class ReminderScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);
+
+    @Value("${whatsapp.meta.to-number:}")
+    private String toNumber;
 
     // Testing Mode configuration
     private static final boolean TESTING_MODE = true;
@@ -132,9 +136,6 @@ public class ReminderScheduler {
             }
             messageText.append("\nPlease review pending requests.");
 
-            // Send WhatsApp Notification (async, non-blocking)
-            whatsAppService.sendAggregatedWhatsAppNotification(roleForms, headerTitle + " [" + role.name() + "]");
-
             // Send to respective staff members
             List<StaffUsers> staffList = staffUsersRepo.findByRole(role);
             for (StaffUsers staff : staffList) {
@@ -148,6 +149,12 @@ public class ReminderScheduler {
                 }
 
                 if (staffSpecificForms.isEmpty()) continue;
+
+                // Send WhatsApp Notification (async, non-blocking)
+                if (staff.getPhoneNo() != null) {
+                    String msg = String.format("Reminder: You have %d pending requests. Please review them in the system.", staffSpecificForms.size());
+                    whatsAppService.sendTextMessage(staff.getPhoneNo(), msg);
+                }
 
                 // Send Email
                 try {

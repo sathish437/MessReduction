@@ -1,30 +1,23 @@
 package com.hostel.MessReduction.Service;
 
-import com.hostel.MessReduction.Entity.ReductionForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * WhatsApp notification service using Meta WhatsApp Cloud API.
- *
- * Configuration required in application.properties:
- *   whatsapp.meta.token=YOUR_WHATSAPP_TOKEN
- *   whatsapp.meta.phone-number-id=YOUR_PHONE_NUMBER_ID
- *   whatsapp.meta.to-number=+91XXXXXXXXXX           (destination test number)
- *
- * All sends are @Async so they never block the main request flow.
- */
 @Service
 public class WhatsAppService {
 
@@ -36,8 +29,8 @@ public class WhatsAppService {
     @Value("${whatsapp.meta.phone-number-id:}")
     private String phoneNumberId;
 
-    @Value("${whatsapp.meta.to-number:}")
-    private String toNumber;
+    @Value("${whatsapp.meta.api-version:v25.0}")
+    private String apiVersion;
 
     private final RestTemplate restTemplate;
 
@@ -46,17 +39,30 @@ public class WhatsAppService {
     }
 
     /**
-     * Send a plain-text WhatsApp message asynchronously.
-     * All errors are caught internally so this call never interrupts the main flow.
+     * Sends a normal WhatsApp text message asynchronously.
+     * Retries up to 3 times on connection errors or 5xx server errors.
+     * Does NOT retry on 4xx client errors (e.g. invalid number or unauthorized).
      */
     @Async
-    public void sendWhatsAppNotification(String number, String message) {
+    @Retryable(
+        retryFor = { HttpServerErrorException.class, ResourceAccessException.class },
+        noRetryFor = { HttpClientErrorException.class },
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 2000, multiplier = 2)
+    )
+    public void sendTextMessage(String phoneNumber, String message) {
         if (!isConfigured()) {
-            logger.warn("[WhatsApp] Meta Cloud API credentials or numbers are not configured. Skipping notification.");
+            logger.warn("[WhatsApp] Meta Cloud API credentials are not configured. Skipping notification.");
             return;
         }
+
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            logger.warn("[WhatsApp] Skipping notification. Recipient phone number is missing.");
+            return;
+        }
+
         try {
-            String url = "https://graph.facebook.com/v19.0/" + phoneNumberId + "/messages";
+            String url = String.format("https://graph.facebook.com/%s/%s/messages", apiVersion, phoneNumberId);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -64,77 +70,30 @@ public class WhatsAppService {
 
             Map<String, Object> body = new HashMap<>();
             body.put("messaging_product", "whatsapp");
-            body.put("to", number);
+            body.put("recipient_type", "individual");
+            body.put("to", phoneNumber);
             body.put("type", "text");
-
+            
             Map<String, String> textObj = new HashMap<>();
+            textObj.put("preview_url", "false");
             textObj.put("body", message);
             body.put("text", textObj);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity(url, request, String.class);
 
-            logger.info("[WhatsApp] Notification sent successfully to {}.", number);
+            logger.info("[WhatsApp] \nRecipient:\n{}\nStatus:\nSUCCESS", phoneNumber);
+        } catch (HttpClientErrorException e) {
+            logger.error("[WhatsApp] \nRecipient:\n{}\nStatus:\nFAILED\nReason:\nClient Error: {}", phoneNumber, e.getResponseBodyAsString());
+            // Do not rethrow, 4xx errors shouldn't be retried or crash app
         } catch (Exception e) {
-            // Non-blocking: log the error but do not rethrow
-            logger.error("[WhatsApp] Failed to send notification: {}", e.getMessage());
+            logger.error("[WhatsApp] \nRecipient:\n{}\nStatus:\nFAILED\nReason:\n{}", phoneNumber, e.getMessage());
+            throw e; // Rethrow to trigger Spring Retry for 5xx and timeouts
         }
-    }
-
-    /**
-     * Sends a grouped summary message for a list of pending forms.
-     */
-    @Async
-    public void sendAggregatedWhatsAppNotification(List<ReductionForm> forms, String headerTitle) {
-        if (forms == null || forms.isEmpty()) return;
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("🍽️ *Hostel Mess Reduction*\n\n");
-        sb.append("*").append(headerTitle).append("*\n");
-        sb.append("Total Pending: ").append(forms.size()).append("\n\n");
-
-        for (ReductionForm form : forms) {
-            sb.append("• Form #").append(form.getFormId())
-              .append(" - ").append(form.getStudentDetails().getName()).append("\n");
-        }
-
-        sb.append("\nPlease log in to review and process pending requests.");
-
-        sendWhatsAppNotification(toNumber, sb.toString());
-    }
-
-    /**
-     * Sends a WhatsApp notification when a form status changes (approve/reject).
-     */
-    @Async
-    public void sendFormStatusNotification(ReductionForm form, String status) {
-        String message = String.format(
-            "🍽️ *Hostel Update*\n\nForm #%d\nStudent: %s\nReg No: %s\nStatus: *%s*\n\nPlease log in for more details.",
-            form.getFormId(),
-            form.getStudentDetails().getName(),
-            form.getStudentDetails().getRegisterNo(),
-            status
-        );
-        sendWhatsAppNotification(toNumber, message);
-    }
-
-    /**
-     * Sends a WhatsApp notification specifically for auto-accept events.
-     */
-    @Async
-    public void sendAutoAcceptNotification(ReductionForm form, String role) {
-        String message = String.format(
-            "🍽️ *Hostel Update*\n\nForm #%d has been *AUTO ACCEPTED* by system.\nStudent: %s\nTriggered by: %s Panel\n\nNo action required.",
-            form.getFormId(),
-            form.getStudentDetails().getName(),
-            role
-        );
-        sendWhatsAppNotification(toNumber, message);
     }
 
     private boolean isConfigured() {
         return whatsappToken != null && !whatsappToken.isBlank()
-                && phoneNumberId != null && !phoneNumberId.isBlank()
-                && toNumber != null && !toNumber.isBlank();
+                && phoneNumberId != null && !phoneNumberId.isBlank();
     }
 }

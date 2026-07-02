@@ -1,12 +1,12 @@
 import React from "react"
 import { FiCalendar } from "react-icons/fi"
 
-function DobInputComponent({ value, onChange }) {
+function DobInputComponent({ value, onChange, error }) {
   const today = new Date().toISOString().split("T")[0]
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-all w-full">
-      <span className="text-teal-400/60 shrink-0"><FiCalendar size={18} /></span>
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all w-full bg-[#0a1628] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+      <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-teal-400/60'}`}><FiCalendar size={18} /></span>
       <input
         type="date"
         placeholder="Date of birth"
@@ -14,7 +14,7 @@ function DobInputComponent({ value, onChange }) {
         onChange={onChange}
         max={today}
         required
-        className="flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/25 font-medium appearance-none w-full"
+        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 font-medium appearance-none w-full"
       />
     </div>
   )

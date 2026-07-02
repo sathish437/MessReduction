@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, 
     FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
-    FiCheckCircle, FiXCircle
+    FiCheckCircle, FiXCircle, FiActivity, FiMapPin
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 
@@ -13,10 +13,10 @@ const TITLE = "MESS REDUCTION";
 
 function Field({ icon, as: Component = "input", readOnly = false, children, ...props }) {
     return (
-        <div className={`flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors duration-200 ${readOnly ? 'opacity-70' : ''}`}>
-            <span className="text-teal-400/60 shrink-0 text-base">{icon}</span>
+        <div className={`flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/40' : ''}`}>
+            <span className="text-teal-400/60 shrink-0 text-base group-focus-within:text-teal-400 transition-colors">{icon}</span>
             <Component
-                className="flex-1 bg-transparent focus:outline-none text-lg text-white placeholder:text-white/25 font-medium appearance-none w-full"
+                className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium appearance-none w-full"
                 readOnly={readOnly}
                 {...props}
             >
@@ -248,8 +248,10 @@ function MessReductionPage() {
     }
 
     return (
-        <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white selection:bg-teal-500/30 relative">
-            <div className="fixed inset-0 bg-[#0a1628] -z-10" />
+        <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white selection:bg-teal-500/30 relative overflow-hidden">
+            <div className="fixed inset-0 bg-[#0a1628] -z-20" />
+            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-teal-600/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
+            <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
             {/* Toast Notification */}
             <AnimatePresence>
@@ -293,84 +295,133 @@ function MessReductionPage() {
             <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-500/50 to-transparent shrink-0" />
 
             {/* Main Content */}
-            <main className="flex-1 w-full flex flex-col items-center px-4 py-6 sm:py-8">
-                <div className="w-full max-w-[600px] space-y-4">
+            <main className="flex-1 w-full flex flex-col items-center px-4 py-8 sm:py-12 z-10">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, staggerChildren: 0.1 }}
+                    className="w-full max-w-[650px] space-y-6"
+                >
 
                     {/* 1. Student Details (Auto-filled) */}
-                    <div className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] p-5 shadow-xl">
-                        <h4 className="text-xs font-black text-teal-400/80 uppercase tracking-widest mb-3">Student Details (Auto-filled)</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden group"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        <div className="flex items-center gap-3 mb-6 relative z-10">
+                            <div className="p-2 bg-teal-500/20 rounded-lg">
+                                <FiUser className="text-teal-400" size={20} />
+                            </div>
+                            <h4 className="text-sm font-black text-white/90 uppercase tracking-widest">Student Profile</h4>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                             <Field icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
                             <Field icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
                             <Field icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
                             <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                         </div>
-                    </div>
+                    </motion.div>
 
                     {/* 2. Active Request Status (only when active request exists) */}
                     {activeRequest && (
-                        <div className="w-full rounded-2xl border border-teal-500/30 bg-[#0f1f38] p-5 shadow-xl">
-                            <h4 className="text-xs font-black text-teal-400 uppercase tracking-widest mb-3">Active Request Status</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Current Status</span>
-                                    <span className={`inline-block mt-1 px-3 py-1 rounded-md text-xs font-bold border ${getStatusColor(activeRequest.currentStatus)}`}>
-                                        {getStatusDisplay(activeRequest.currentStatus)}
-                                    </span>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="w-full rounded-3xl border border-teal-500/30 bg-teal-950/20 backdrop-blur-xl p-6 sm:p-8 shadow-[0_0_40px_0_rgba(20,184,166,0.15)] relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-400" />
+                            <div className="flex items-center justify-between mb-6 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-teal-500/20 rounded-lg">
+                                        <FiActivity className="text-teal-400" size={20} />
+                                    </div>
+                                    <h4 className="text-sm font-black text-teal-400 uppercase tracking-widest">Active Request</h4>
                                 </div>
-                                <div>
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Assigned Deputy Warden</span>
-                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.assignedDeputyWarden || "-"}</span>
+                                <span className={`px-4 py-1.5 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm ${getStatusColor(activeRequest.currentStatus)}`}>
+                                    {getStatusDisplay(activeRequest.currentStatus)}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12}/> Deputy Warden</span>
+                                    <span className="text-base font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
                                 </div>
-                                <div>
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Leave Date</span>
-                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.leaveDate}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12}/> Leave Date</span>
+                                    <span className="text-base font-semibold text-white/90">{activeRequest.leaveDate}</span>
                                 </div>
-                                <div>
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider block">Arrival Date</span>
-                                    <span className="text-sm font-semibold text-white/90 block mt-1">{activeRequest.arrivalDate}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12}/> Arrival Date</span>
+                                    <span className="text-base font-semibold text-white/90">{activeRequest.arrivalDate}</span>
                                 </div>
                             </div>
                             
                             {((activeRequest.currentStatus)?.startsWith('Rejected')) && (
-                                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-4">
-                                    <span className="text-xs font-bold text-rose-400">Request rejected. You can edit and resubmit.</span>
+                                <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 relative z-10">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-3 text-rose-400">
+                                            <FiAlertTriangle size={18} className="shrink-0" />
+                                            <span className="text-sm font-bold">Request rejected. You can edit and resubmit.</span>
+                                        </div>
+                                        {activeRequest.rejectReason && (
+                                            <div className="pl-[30px] text-sm font-medium text-rose-300/80">
+                                                <span className="text-rose-400/70 font-bold uppercase tracking-wider text-xs">Reason: </span>
+                                                {activeRequest.rejectReason}
+                                            </div>
+                                        )}
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => handleEditRequest(activeRequest)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-slate-900 rounded-md text-xs font-bold transition-colors"
+                                        className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
                                     >
-                                        <FiEdit3 size={14} /> Edit & Resubmit
+                                        <FiEdit3 size={16} /> Edit Details
                                     </button>
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     )}
 
                     {/* 3. New Request Form */}
-                    <div id="form-section" className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-xl overflow-hidden scroll-mt-24">
-                        <div className="p-4 sm:p-6 border-b border-white/5 bg-white/[0.02]">
-                            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                                {editingFormId ? "EDIT & RESUBMIT REQUEST" : "SUBMIT NEW REQUEST"}
-                            </h3>
-                            <p className="text-sm text-white/40 mt-1">
-                                {editingFormId ? "Update your details and resubmit." : "Fill in your leave details below"}
-                            </p>
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        id="form-section" 
+                        className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl overflow-hidden scroll-mt-24 relative"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] via-transparent to-white/[0.01] pointer-events-none" />
+                        <div className="p-6 sm:p-8 border-b border-white/5 bg-white/[0.01] relative z-10">
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.3)] text-slate-900">
+                                    {editingFormId ? <FiEdit3 size={24} /> : <FiFileText size={24} />}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                        {editingFormId ? "EDIT REQUEST" : "NEW REQUEST"}
+                                    </h3>
+                                    <p className="text-sm text-white/50 font-medium">
+                                        {editingFormId ? "Update details and resubmit." : "Fill in your leave details below"}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div className="p-4 sm:p-6">
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="p-6 sm:p-8 relative z-10">
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                                 
                                 {/* Editable Leave Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors relative">
-                                        <span className="text-teal-400/60 shrink-0"><FiCalendar size={18} /></span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group">
+                                        <span className="text-teal-400/60 shrink-0 group-focus-within:text-teal-400 transition-colors"><FiCalendar size={18} /></span>
                                         <select
                                             name="year"
                                             value={formData.year}
                                             onChange={handleChange}
                                             required
-                                            className="flex-1 bg-transparent focus:outline-none text-base text-white font-medium appearance-none w-full cursor-pointer"
+                                            className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white font-medium appearance-none w-full cursor-pointer"
                                         >
                                             <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Year</option>
                                             {["1st", "2nd", "3rd", "4th"].map(y => (
@@ -378,14 +429,14 @@ function MessReductionPage() {
                                             ))}
                                         </select>
                                         <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                            <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                         </div>
                                     </div>
-                                    <Field icon={<FiHome />} type="text" placeholder="Room No" name="room" value={formData.room} onChange={handleChange} required />
+                                    <Field icon={<FiMapPin />} type="text" placeholder="Room No" name="room" value={formData.room} onChange={handleChange} required />
                                 </div>
 
                                 {/* Leave Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Field
                                         icon={<FiCalendar />}
                                         type="text"
@@ -411,7 +462,7 @@ function MessReductionPage() {
                                 </div>
 
                                 {/* Arrival Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Field
                                         icon={<FiCalendar />}
                                         type="text"
@@ -437,14 +488,14 @@ function MessReductionPage() {
                                 </div>
 
                                 {/* Reason */}
-                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-colors relative">
-                                    <span className="text-teal-400/60 shrink-0"><FiInfo size={18} /></span>
+                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group">
+                                    <span className="text-teal-400/60 shrink-0 group-focus-within:text-teal-400 transition-colors"><FiInfo size={18} /></span>
                                     <select
                                         name="reason"
                                         value={formData.reason}
                                         onChange={handleChange}
                                         required
-                                        className="flex-1 bg-transparent focus:outline-none text-base text-white font-medium appearance-none w-full cursor-pointer"
+                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white font-medium appearance-none w-full cursor-pointer"
                                     >
                                         <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Reason</option>
                                         <option value="Study Holidays" className="bg-[#0f1f38]">Study Holidays</option>
@@ -452,7 +503,7 @@ function MessReductionPage() {
                                         <option value="other" className="bg-[#0f1f38]">Other Reason</option>
                                     </select>
                                     <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                        <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </div>
                                 </div>
 
@@ -490,19 +541,19 @@ function MessReductionPage() {
 
                                 {/* Submit Button */}
                                 <motion.button
-                                    whileHover={isSubmitBlocked ? {} : { scale: 1.01 }}
-                                    whileTap={isSubmitBlocked ? {} : { scale: 0.99 }}
-                                    className={`mt-2 flex items-center justify-center gap-3 w-full rounded-xl py-3.5 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all duration-200 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    whileHover={isSubmitBlocked ? {} : { scale: 1.02, y: -2 }}
+                                    whileTap={isSubmitBlocked ? {} : { scale: 0.98 }}
+                                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_rgba(45,212,191,0.5)] transition-all duration-500 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
                                     type="submit"
                                     disabled={isSubmitting || isSubmitBlocked}
                                 >
-                                    {isSubmitting ? "SUBMITTING..." : (editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST")} <FiArrowRight size={16} />
+                                    {isSubmitting ? "PROCESSING..." : (editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST")} <FiArrowRight size={18} className={isSubmitting ? "animate-pulse" : ""} />
                                 </motion.button>
                             </form>
                         </div>
-                    </div>
+                    </motion.div>
 
-                </div>
+                </motion.div>
             </main>
 
             {/* Footer */}

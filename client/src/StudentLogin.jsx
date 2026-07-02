@@ -82,32 +82,33 @@ function StudentLogin({ onNavigate }) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-2xl overflow-hidden"
+            className="w-full rounded-2xl border border-white/8 bg-[#0f1f38] shadow-soft overflow-hidden"
           >
             <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
             <div className="p-8">
               <div className="mb-8">
                 <p className="text-xs font-black tracking-[0.3em] text-teal-400/70 uppercase mb-2">Student Portal</p>
-                <h2 className="text-4xl font-black text-white tracking-tight">STUDENT LOGIN</h2>
-                <p className="text-base text-white/30 mt-2">Sign in with your student credentials</p>
+                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">STUDENT LOGIN</h2>
+                <p className="text-sm sm:text-base text-white/30 mt-2">Sign in with your student credentials</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/4 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 transition-all">
-                  <span className="text-teal-400/60"><FiMail size={18} /></span>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
+                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
+                  <span className={error ? "text-rose-400" : "text-teal-400/60"}><FiMail size={18} /></span>
                   <input
                     type="email"
                     placeholder="Email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/25"
+                    className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 w-full"
                   />
                 </div>
 
                 <DobInputComponent
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
+                  error={!!error}
                 />
 
                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}
@@ -117,9 +118,16 @@ function StudentLogin({ onNavigate }) {
                   whileTap={{ scale: 0.99 }}
                   type="submit"
                   disabled={loading}
-                  className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-teal-900/30 transition-all tracking-widest ${loading ? "opacity-50" : ""}`}
+                  className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-3 sm:py-4 text-base sm:text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-soft transition-all tracking-widest ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
-                  {loading ? "AUTHENTICATING..." : "SIGN IN"} <FiArrowRight size={18} />
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                      AUTHENTICATING...
+                    </>
+                  ) : (
+                    <>SIGN IN <FiArrowRight size={18} /></>
+                  )}
                 </motion.button>
               </form>
 

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class ReductionFormReqDTO {
     @Max(4)
     private Integer year;
     @NotNull
+    @Positive
     private Long roomNo;
     @NotNull
     @Schema(type = "string", example = "2026-04-27")

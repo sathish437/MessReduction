@@ -224,6 +224,7 @@ function HostelOffice() {
 
     const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
+    const normalizedOfficeSearch = searchQuery.trim().toLowerCase();
     const filteredRequests = requests.filter(req => {
         let matchGender = true;
         let matchYear = true;
@@ -234,6 +235,11 @@ function HostelOffice() {
         if (selectedYear && selectedYear !== "all") {
             matchYear = req.year === selectedYear;
         }
+        if (normalizedOfficeSearch) {
+            const nameMatch = req.name?.toLowerCase().includes(normalizedOfficeSearch);
+            const regNoMatch = req.registerNo?.toLowerCase().includes(normalizedOfficeSearch);
+            if (!nameMatch && !regNoMatch) return false;
+        }
 
         return matchGender && matchYear;
     });
@@ -243,13 +249,6 @@ function HostelOffice() {
         setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
     };
 
-    const normalizedOfficeSearch = searchQuery.trim().toLowerCase();
-    const filteredRequests = requests.filter(r => {
-        if (!normalizedOfficeSearch) return true;
-        const nameMatch = r.name?.toLowerCase().includes(normalizedOfficeSearch);
-        const regNoMatch = r.registerNo?.toLowerCase().includes(normalizedOfficeSearch);
-        return nameMatch || regNoMatch;
-    });
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
@@ -714,7 +713,7 @@ function HostelOffice() {
                                         <thead className="sticky top-0 bg-[#0f1f38] z-10">
                                             <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
                                                 <th className="px-6 py-4 text-white/40">Student Name</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Register No</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Reg / Roll No</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Gender</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Year</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Department</th>

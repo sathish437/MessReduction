@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-    FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, 
+    FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
     FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
     FiCheckCircle, FiXCircle, FiActivity, FiMapPin
 } from "react-icons/fi";
@@ -24,6 +24,204 @@ function Field({ icon, as: Component = "input", readOnly = false, children, ...p
             </Component>
         </div>
     )
+}
+
+function RequestTimeline({ tracking }) {
+    if (!tracking) return null;
+
+    const stages = [
+        { id: "SUBMITTED", label: "Submitted" },
+        { id: "DEPUTY_WARDEN", label: "Deputy Warden" },
+        { id: "WARDEN", label: "Warden" },
+        { id: "OFFICE", label: "Office" },
+        { id: "COMPLETED", label: "Completed" }
+    ];
+
+    const currentStageIndex = stages.findIndex(s => s.id === tracking.currentStage);
+    const isRejected = tracking.currentStage === "REJECTED";
+
+    // Format date beautifully
+    const formatDate = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return {
+            date: date.toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: date.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })
+        };
+    };
+
+    const getStageState = (index) => {
+        if (isRejected) {
+            // Find which stage rejected
+            let rejectedIndex = 1; // Default deputy
+            if (tracking.rejectedBy === "Warden") rejectedIndex = 2;
+            if (tracking.rejectedBy === "Office") rejectedIndex = 3;
+
+            if (index < rejectedIndex) return "completed";
+            if (index === rejectedIndex) return "rejected";
+            return "pending";
+        }
+
+        if (currentStageIndex === -1 && tracking.currentStatus === "Approved") {
+             return "completed";
+        }
+
+        if (index < currentStageIndex) return "completed";
+        if (index === currentStageIndex) return "current";
+        // If it's completed, everything is completed
+        if (tracking.currentStage === "COMPLETED") return "completed";
+        
+        return "pending";
+    };
+
+    const getStageDetails = (stageId) => {
+        if (stageId === "SUBMITTED") {
+            const time = formatDate(tracking.submittedTime);
+            return time ? (
+                <div className="mt-2 text-center text-xs">
+                    <div className="text-white/80 font-medium">{time.date}</div>
+                    <div className="text-white/50">{time.time}</div>
+                </div>
+            ) : null;
+        }
+        if (stageId === "DEPUTY_WARDEN") {
+            if (isRejected && tracking.rejectedBy === "DeputyWarden") {
+                const time = formatDate(tracking.rejectedTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+            if (tracking.deputyApprovalTime) {
+                const time = formatDate(tracking.deputyApprovalTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.deputyWardenName}>{tracking.deputyWardenName}</div>
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+        }
+        if (stageId === "WARDEN") {
+            if (isRejected && tracking.rejectedBy === "Warden") {
+                const time = formatDate(tracking.rejectedTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+            if (tracking.wardenApprovalTime) {
+                const time = formatDate(tracking.wardenApprovalTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.wardenName}>{tracking.wardenName}</div>
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+        }
+        if (stageId === "OFFICE") {
+            if (isRejected && tracking.rejectedBy === "Office") {
+                const time = formatDate(tracking.rejectedTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+            if (tracking.officeApprovalTime) {
+                const time = formatDate(tracking.officeApprovalTime);
+                return (
+                    <div className="mt-2 text-center text-xs">
+                        {tracking.isAutoAccepted ? (
+                            <div className="text-emerald-400/80 italic font-medium mb-1">Auto Accepted</div>
+                        ) : (
+                            <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.officeName}>{tracking.officeName}</div>
+                        )}
+                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                    </div>
+                );
+            }
+        }
+        
+        return null;
+    };
+
+    return (
+        <div className="w-full mt-2 mb-6">
+            <div className="overflow-x-auto pb-4 scrollbar-hide">
+                <div className="min-w-[500px] px-4">
+                    <div className="flex items-center justify-between relative">
+                        {/* Connecting Lines Background */}
+                        <div className="absolute top-4 left-0 w-full h-1 bg-white/10 -z-10 rounded-full"></div>
+                        
+                        {/* Active Line */}
+                        <div 
+                            className="absolute top-4 left-0 h-1 bg-gradient-to-r from-teal-400 to-emerald-400 -z-10 transition-all duration-700 ease-in-out rounded-full"
+                            style={{ 
+                                width: isRejected 
+                                    ? `${(stages.findIndex(s => s.label.replace(' ', '') === tracking.rejectedBy) || 1) * 25}%` 
+                                    : (tracking.currentStage === "COMPLETED" ? '100%' : `${currentStageIndex * 25}%`) 
+                            }}
+                        ></div>
+
+                        {stages.map((stage, index) => {
+                            const state = getStageState(index);
+                            
+                            // Colors
+                            let bgColor = "bg-[#0a1628]";
+                            let borderColor = "border-white/20";
+                            let iconColor = "text-white/30";
+                            let titleColor = "text-white/40";
+                            
+                            if (state === "completed") {
+                                bgColor = "bg-emerald-500";
+                                borderColor = "border-emerald-500";
+                                iconColor = "text-white";
+                                titleColor = "text-emerald-400 font-bold";
+                            } else if (state === "current") {
+                                bgColor = "bg-[#0a1628]";
+                                borderColor = "border-amber-400";
+                                iconColor = "text-amber-400";
+                                titleColor = "text-amber-400 font-bold";
+                            } else if (state === "rejected") {
+                                bgColor = "bg-rose-500";
+                                borderColor = "border-rose-500";
+                                iconColor = "text-white";
+                                titleColor = "text-rose-400 font-bold";
+                            }
+
+                            return (
+                                <div key={stage.id} className="flex flex-col items-center relative z-10 w-24">
+                                    <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-colors duration-500 ${bgColor} ${borderColor} shadow-lg shadow-black/50`}>
+                                        {state === "completed" && <FiCheckCircle size={18} className={iconColor} />}
+                                        {state === "current" && <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>}
+                                        {state === "pending" && <div className="w-2.5 h-2.5 bg-white/20 rounded-full"></div>}
+                                        {state === "rejected" && <FiXCircle size={18} className={iconColor} />}
+                                    </div>
+                                    <div className={`mt-3 text-[11px] uppercase tracking-wider text-center ${titleColor}`}>
+                                        {stage.label}
+                                    </div>
+                                    {getStageDetails(stage.id)}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+            
+            {isRejected && tracking.rejectionReason && (
+                <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
+                    <span className="font-bold">Rejection Reason:</span> {tracking.rejectionReason}
+                </div>
+            )}
+        </div>
+    );
 }
 
 function MessReductionPage() {
@@ -50,6 +248,7 @@ function MessReductionPage() {
     const [loading, setLoading] = useState(true)
     const [editingFormId, setEditingFormId] = useState(null)
     const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
+    const [trackingDetails, setTrackingDetails] = useState(null)
 
     const activeRequest = Array.isArray(studentForm)
         ? studentForm.find(form => form.active === true || form.isActive === true)
@@ -97,6 +296,7 @@ function MessReductionPage() {
                     ...prev,
                     name: currentStudent.name || "",
                     id: currentStudent.registerNo || "",
+                    rollNo: currentStudent.rollNo || "",
                     dept: currentStudent.department || "",
                     mobile: currentStudent.phoneNo || ""
                 }));
@@ -115,6 +315,22 @@ function MessReductionPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (activeRequest && activeRequest.formId) {
+            const fetchTracking = async () => {
+                try {
+                    const res = await apiClient.get(`/api/student-form/StudentForm/${studentId}/${activeRequest.formId}/tracking`);
+                    setTrackingDetails(res.data);
+                } catch (error) {
+                    console.error("Error fetching tracking details:", error);
+                }
+            };
+            fetchTracking();
+        } else {
+            setTrackingDetails(null);
+        }
+    }, [activeRequest?.formId, studentId]);
 
     const getStatusDisplay = (status) => {
         const statusMap = {
@@ -319,6 +535,7 @@ function MessReductionPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                             <Field icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
                             <Field icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
+                            <Field icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo || ""} readOnly />
                             <Field icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
                             <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                         </div>
@@ -343,6 +560,8 @@ function MessReductionPage() {
                                     {getStatusDisplay(activeRequest.currentStatus)}
                                 </span>
                             </div>
+
+                            <RequestTimeline tracking={trackingDetails} />
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
                                 <div className="flex flex-col gap-1">
@@ -378,7 +597,7 @@ function MessReductionPage() {
                                         onClick={() => handleEditRequest(activeRequest)}
                                         className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
                                     >
-                                        <FiEdit3 size={16} /> Edit Details
+                                        <FiEdit3 size={16} /> Edit and Resubmit
                                     </button>
                                 </div>
                             )}
@@ -432,7 +651,7 @@ function MessReductionPage() {
                                             <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                         </div>
                                     </div>
-                                    <Field icon={<FiMapPin />} type="text" placeholder="Room No" name="room" value={formData.room} onChange={handleChange} required />
+                                    <Field icon={<FiMapPin />} type="number" placeholder="Room No" name="room" value={formData.room} onChange={handleChange} min="1" required />
                                 </div>
 
                                 {/* Leave Date & Time */}
@@ -444,6 +663,7 @@ function MessReductionPage() {
                                         name="leaveDate"
                                         value={formData.leaveDate}
                                         onChange={handleChange}
+                                        min={new Date().toISOString().split('T')[0]}
                                         onFocus={(e) => (e.target.type = "date")}
                                         onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required
@@ -470,6 +690,7 @@ function MessReductionPage() {
                                         name="arrivalDate"
                                         value={formData.arrivalDate}
                                         onChange={handleChange}
+                                        min={formData.leaveDate || new Date().toISOString().split('T')[0]}
                                         onFocus={(e) => (e.target.type = "date")}
                                         onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required

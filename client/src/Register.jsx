@@ -189,8 +189,8 @@ function Register({ onNavigate }) {
 
                   <Field icon={<FiCreditCard />} error={!!error}>
                     <input
-                      type="text" inputMode="numeric" placeholder="Register No" name="regNo"
-                      className={inp} onKeyDown={handleNumKey} value={formData.regNo} onChange={handleChange} required
+                      type="text" placeholder="Register No / Roll No" name="regNo"
+                      className={inp} value={formData.regNo} onChange={handleChange} required
                     />
                   </Field>
                 </div>

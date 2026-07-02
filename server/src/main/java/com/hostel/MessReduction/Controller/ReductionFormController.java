@@ -3,6 +3,7 @@ package com.hostel.MessReduction.Controller;
 import com.hostel.MessReduction.DTO.ReqDTO.ReductionFormReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormHistoryResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
+import com.hostel.MessReduction.DTO.ResDTO.RequestTrackingResDTO;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Service.ReductionFormService;
 
@@ -77,6 +78,13 @@ public class ReductionFormController {
             @PathVariable Long studentId,
             @PathVariable Long formId) {
         return ResponseEntity.ok(reductionFormService.getFormHistory(formId, studentId));
+    }
+
+    @GetMapping("/StudentForm/{studentId}/{formId}/tracking")
+    public ResponseEntity<RequestTrackingResDTO> getRequestTracking(
+            @PathVariable Long studentId,
+            @PathVariable Long formId) {
+        return ResponseEntity.ok(reductionFormService.getTrackingDetails(formId));
     }
 }
 

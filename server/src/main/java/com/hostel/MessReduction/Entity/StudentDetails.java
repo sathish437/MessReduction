@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.hostel.MessReduction.Entity.Gender;
 import jakarta.persistence.*;
@@ -20,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class StudentDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,10 +30,10 @@ public class StudentDetails {
     @Column(nullable = false)
     private String name;
     @NotBlank
-    @Column(nullable = false,unique = true,length = 14)
+    @Column(nullable = false, unique = true, length = 20)
     private String registerNo;
     @NotBlank
-    @Column(nullable = false,unique = true,length = 10)
+    @Column(nullable = false, unique = true, length = 20)
     private String rollNo;
     @Enumerated(EnumType.STRING)
     @NotNull

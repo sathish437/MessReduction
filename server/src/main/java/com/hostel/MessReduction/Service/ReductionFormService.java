@@ -16,6 +16,7 @@ import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormHistoryResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
+import com.hostel.MessReduction.DTO.ResDTO.RequestTrackingResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
@@ -1011,6 +1012,69 @@ public class ReductionFormService {
         if (!updated.isEmpty()) {
             autoAcceptSettingsRepo.saveAll(updated);
         }
+    }
+
+    public RequestTrackingResDTO getTrackingDetails(Long formId) {
+        ReductionForm form = reductionFormRepo.findById(formId)
+                .orElseThrow(() -> new ReductionFormNotFoundException("Form not found"));
+
+        RequestTrackingResDTO tracking = new RequestTrackingResDTO();
+        tracking.setCurrentStatus(form.getCurrentStatus().name());
+        tracking.setSubmittedTime(form.getSubmittedAt());
+
+        // Map status to current stage
+        String currentStage;
+        if (form.getCurrentStatus() == FormStatus.Approved) {
+            currentStage = "COMPLETED";
+        } else if (form.getCurrentStatus().name().startsWith("Rejected")) {
+            currentStage = "REJECTED";
+        } else if (form.getCurrentStatus() == FormStatus.PendingOffice) {
+            currentStage = "OFFICE";
+        } else if (form.getCurrentStatus() == FormStatus.PendingWarden) {
+            currentStage = "WARDEN";
+        } else if (form.getCurrentStatus() == FormStatus.PendingDeputyWarden) {
+            currentStage = "DEPUTY_WARDEN";
+        } else {
+            currentStage = "SUBMITTED";
+        }
+        tracking.setCurrentStage(currentStage);
+
+        // Fetch history to populate approval times and actors
+        List<ReductionFormHistory> history = form.getHistory();
+        if (history != null) {
+            for (ReductionFormHistory h : history) {
+                // Tracking who rejected
+                if (h.getToStatus().name().startsWith("Rejected")) {
+                    tracking.setRejectedBy(h.getToStatus().name().replace("Rejected", ""));
+                    tracking.setRejectionReason(form.getRejectReason() != null ? form.getRejectReason() : h.getComment());
+                    tracking.setRejectedTime(h.getEventTimestamp());
+                }
+
+                // If it moved TO PendingWarden, it means DeputyWarden approved it
+                if (h.getToStatus() == FormStatus.PendingWarden) {
+                    tracking.setDeputyApprovalTime(h.getEventTimestamp());
+                    tracking.setDeputyWardenName(h.getPerformedBy());
+                }
+
+                // If it moved TO PendingOffice, it means Warden approved it
+                if (h.getToStatus() == FormStatus.PendingOffice) {
+                    tracking.setWardenApprovalTime(h.getEventTimestamp());
+                    tracking.setWardenName(h.getPerformedBy());
+                }
+
+                // If it moved TO Approved, it means Office approved it
+                if (h.getToStatus() == FormStatus.Approved) {
+                    tracking.setOfficeApprovalTime(h.getEventTimestamp());
+                    tracking.setOfficeName(h.getPerformedBy());
+                    
+                    if ("SYSTEM".equalsIgnoreCase(h.getPerformedBy())) {
+                        tracking.setAutoAccepted(true);
+                    }
+                }
+            }
+        }
+
+        return tracking;
     }
 }
 

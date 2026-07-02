@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ public class WhatsAppBatchScheduler {
     }
 
     @Scheduled(cron = "0 */30 * * * *")
+    @Transactional(readOnly = true)
     public void processBatchNotifications() {
         logger.info("[BATCH SCHEDULER] Started processing pending notifications.");
         long startTime = System.currentTimeMillis();

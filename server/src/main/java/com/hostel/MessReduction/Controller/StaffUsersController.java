@@ -6,6 +6,8 @@ import com.hostel.MessReduction.Entity.AutoAcceptSettings;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
+import com.hostel.MessReduction.DTO.ReqDTO.BulkRejectReqDTO;
+import com.hostel.MessReduction.DTO.ResDTO.BulkRejectSummaryDTO;
 import com.hostel.MessReduction.Service.ReductionFormService;
 import com.hostel.MessReduction.utils.ExcelReportHelper;
 import jakarta.validation.Valid;
@@ -175,6 +177,33 @@ public class StaffUsersController {
         String userName = authentication.getName();
         reductionFormService.updateOfficePendingBulkStatus(formIds, action, userName);
         return ResponseEntity.ok("Forms approved by office successfully");
+    }
+
+    @PatchMapping("/staff/warden/bulk-reject")
+    public ResponseEntity<BulkRejectSummaryDTO> rejectWardenBulk(
+                                                   @Valid @RequestBody BulkRejectReqDTO request,
+                                                   Authentication authentication) {
+        String userName = authentication.getName();
+        BulkRejectSummaryDTO summary = reductionFormService.rejectWardenBulk(request.getFormIds(), request.getRejectReason(), userName);
+        return ResponseEntity.ok(summary);
+    }
+
+    @PatchMapping("/staff/deputyWarden/bulk-reject")
+    public ResponseEntity<BulkRejectSummaryDTO> rejectDeputyWardenBulk(
+                                                   @Valid @RequestBody BulkRejectReqDTO request,
+                                                   Authentication authentication) {
+        String userName = authentication.getName();
+        BulkRejectSummaryDTO summary = reductionFormService.rejectDeputyWardenBulk(request.getFormIds(), request.getRejectReason(), userName);
+        return ResponseEntity.ok(summary);
+    }
+
+    @PatchMapping("/staff/office/bulk-reject")
+    public ResponseEntity<BulkRejectSummaryDTO> rejectOfficeBulk(
+                                                   @Valid @RequestBody BulkRejectReqDTO request,
+                                                   Authentication authentication) {
+        String userName = authentication.getName();
+        BulkRejectSummaryDTO summary = reductionFormService.rejectOfficeBulk(request.getFormIds(), request.getRejectReason(), userName);
+        return ResponseEntity.ok(summary);
     }
 
     @GetMapping("/staff/office/report-data")

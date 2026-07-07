@@ -22,19 +22,17 @@ public class WhatsAppReminderScheduler {
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppReminderScheduler.class);
 
     private final WhatsAppService whatsAppService;
-    private final WhatsAppMessageBuilder messageBuilder;
     private final ReductionFormRepo reductionFormRepo;
     private final StaffUsersRepo staffUsersRepo;
 
-    public WhatsAppReminderScheduler(WhatsAppService whatsAppService, WhatsAppMessageBuilder messageBuilder,
+    public WhatsAppReminderScheduler(WhatsAppService whatsAppService,
                                      ReductionFormRepo reductionFormRepo, StaffUsersRepo staffUsersRepo) {
         this.whatsAppService = whatsAppService;
-        this.messageBuilder = messageBuilder;
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
     }
 
-    @Scheduled(cron = "0 0 */3 * * *")
+    @Scheduled(cron = "0 */10 * * * *")
     @Transactional
     public void processReminders() {
         logger.info("[REMINDER SCHEDULER] Started processing pending reminders.");
@@ -54,10 +52,10 @@ public class WhatsAppReminderScheduler {
         List<ReductionForm> formsUpdatedWithTimestamp = new ArrayList<>();
 
         for (ReductionForm form : pendingForms) {
-            // Filter 1: Has a reminder been sent within the last 3 hours?
+            // Filter 1: Has a reminder been sent within the last 10 minutes?
             if (form.getLastReminderSentAt() != null) {
-                long hoursSinceLastReminder = ChronoUnit.HOURS.between(form.getLastReminderSentAt(), now);
-                if (hoursSinceLastReminder < 3) {
+                long minutesSinceLastReminder = ChronoUnit.MINUTES.between(form.getLastReminderSentAt(), now);
+                if (minutesSinceLastReminder < 10) {
                     continue; // Skip, already reminded recently
                 }
             }
@@ -102,8 +100,13 @@ public class WhatsAppReminderScheduler {
             }
 
             try {
-                String payload = messageBuilder.buildReminderSummaryMessage(forms);
-                whatsAppService.sendTextMessage(phoneNo, payload);
+                // Construct a neatly formatted string for the template variable
+                String messageBody = WhatsAppMessageBuilder.buildReminderMessage(recipientUsername, forms);
+                if (messageBody == null) {
+                    continue;
+                }
+                        
+                whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.REMINDER, java.util.Collections.singletonList(messageBody));
                 logger.info("[REMINDER SCHEDULER] Successfully sent reminder for {} requests to {}", forms.size(), recipientUsername);
             } catch (Exception e) {
                 logger.error("[REMINDER SCHEDULER] Failed to send reminder to {}: {}", recipientUsername, e.getMessage());

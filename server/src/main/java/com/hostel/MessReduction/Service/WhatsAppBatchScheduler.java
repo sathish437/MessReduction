@@ -21,23 +21,21 @@ public class WhatsAppBatchScheduler {
 
     private final NotificationQueueService queueService;
     private final WhatsAppService whatsAppService;
-    private final WhatsAppMessageBuilder messageBuilder;
     private final ReductionFormRepo reductionFormRepo;
     private final StaffUsersRepo staffUsersRepo;
     private final StudentDetailsRepo studentDetailsRepo;
 
     public WhatsAppBatchScheduler(NotificationQueueService queueService, WhatsAppService whatsAppService,
-                                  WhatsAppMessageBuilder messageBuilder, ReductionFormRepo reductionFormRepo, StaffUsersRepo staffUsersRepo, StudentDetailsRepo studentDetailsRepo) {
+                                  ReductionFormRepo reductionFormRepo, StaffUsersRepo staffUsersRepo, StudentDetailsRepo studentDetailsRepo) {
         this.queueService = queueService;
         this.whatsAppService = whatsAppService;
-        this.messageBuilder = messageBuilder;
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.studentDetailsRepo = studentDetailsRepo;
     }
 
-    @Scheduled(cron = "0 */30 * * * *")
-    @Transactional(readOnly = true)
+    @Scheduled(cron = "0 */5 * * * *")
+    @Transactional
     public void processBatchNotifications() {
         logger.info("[BATCH SCHEDULER] Started processing pending notifications.");
         long startTime = System.currentTimeMillis();
@@ -47,6 +45,8 @@ public class WhatsAppBatchScheduler {
             logger.info("[BATCH SCHEDULER] No pending notifications to process.");
             return;
         }
+        
+        logger.info("[Queue Count] Found {} pending notifications.", pendingNotifications.size());
 
         // Group by Recipient
         Map<String, List<AppNotification>> groupedNotifications = pendingNotifications.stream()
@@ -55,6 +55,8 @@ public class WhatsAppBatchScheduler {
         for (Map.Entry<String, List<AppNotification>> entry : groupedNotifications.entrySet()) {
             String recipientUsername = entry.getKey();
             List<AppNotification> userNotifications = entry.getValue();
+
+            logger.info("[Recipient] Processing batch for recipient: {}", recipientUsername);
 
             // Fetch recipient's phone number
             String phoneNo = getPhoneNoByUsername(recipientUsername);
@@ -79,8 +81,9 @@ public class WhatsAppBatchScheduler {
                     String role = userNotifications.get(0).getRecipientRole();
                     if ("Student".equalsIgnoreCase(role)) {
                         List<String> messages = userNotifications.stream().map(AppNotification::getMessage).distinct().collect(Collectors.toList());
-                        String msgPayload = messageBuilder.buildStudentBatchMessage(messages);
-                        whatsAppService.sendTextMessage(phoneNo, msgPayload);
+                        // Using a single parameter for the batch update message string
+                        String updatesStr = String.join("\n- ", messages);
+                        whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.STUDENT_UPDATE, java.util.Collections.singletonList("- " + updatesStr));
                     } else {
                         // Staff but no form ID? Just mark sent if it's aggregated or something.
                         continue;
@@ -90,20 +93,27 @@ public class WhatsAppBatchScheduler {
                     List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
                     if (forms.isEmpty()) continue;
 
-                    String messagePayload = messageBuilder.buildBatchSummaryMessage(forms, forms.size());
-                    whatsAppService.sendTextMessage(phoneNo, messagePayload);
+                    String messageBody = WhatsAppMessageBuilder.buildBatchSummaryMessage(recipientUsername, forms);
+                    if (messageBody == null) {
+                        logger.info("No pending notifications to send for {}.", recipientUsername);
+                        continue;
+                    }
+                            
+                    whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.BATCH_SUMMARY, java.util.Collections.singletonList(messageBody));
                 }
 
                 // If success, update to SENT
                 List<Long> sentIds = userNotifications.stream().map(AppNotification::getId).collect(Collectors.toList());
                 queueService.markAsSent(sentIds);
-                logger.info("[BATCH SCHEDULER] Successfully processed {} requests for {}", userNotifications.size(), recipientUsername);
+                logger.info("[Database Updated] Marked {} notifications as SENT in database.", sentIds.size());
+                logger.info("[Notification Sent] Successfully processed {} requests for {}", userNotifications.size(), recipientUsername);
 
             } catch (Exception e) {
-                logger.error("[BATCH SCHEDULER] Failed to process batch for {}: {}", recipientUsername, e.getMessage());
+                logger.error("[Notification Failed] Failed to process batch for {}: {}", recipientUsername, e.getMessage());
                 // Increment retry count
                 List<Long> failedIds = userNotifications.stream().map(AppNotification::getId).collect(Collectors.toList());
                 queueService.incrementRetryCount(failedIds);
+                logger.info("[Database Updated] Incremented retry count for {} notifications.", failedIds.size());
             }
         }
 

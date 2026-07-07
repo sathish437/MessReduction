@@ -19,6 +19,7 @@ import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.RequestTrackingResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
+import com.hostel.MessReduction.DTO.ResDTO.BulkRejectSummaryDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.ReductionForm;
@@ -68,7 +69,6 @@ public class ReductionFormService {
     private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final AuditLogRepo auditLogRepo;
     private final WhatsAppService whatsAppService;
-    private final WhatsAppMessageBuilder whatsAppMessageBuilder;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
@@ -79,8 +79,7 @@ public class ReductionFormService {
                                 StaffUsersRepo staffUsersRepo,
                                 AutoAcceptSettingsRepo autoAcceptSettingsRepo,
                                 AuditLogRepo auditLogRepo,
-                                WhatsAppService whatsAppService,
-                                WhatsAppMessageBuilder whatsAppMessageBuilder) {
+                                WhatsAppService whatsAppService) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -91,7 +90,6 @@ public class ReductionFormService {
         this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
         this.auditLogRepo = auditLogRepo;
         this.whatsAppService = whatsAppService;
-        this.whatsAppMessageBuilder = whatsAppMessageBuilder;
     }
 
     private void sendWhatsAppFormStatusNotification(ReductionForm form, String status) {
@@ -185,12 +183,20 @@ public class ReductionFormService {
         form.setReason(dto.getReason());
         form.setPresentDate(LocalDate.now());
         form.setTotalHolidays(calculateTotalLeaves(dto));
-        form.setCurrentStatus(FormStatus.PendingDeputyWarden);
+        
+        FormStatus newStatus = FormStatus.PendingDeputyWarden;
+        if (previousStatus == FormStatus.RejectedWarden) {
+            newStatus = FormStatus.PendingWarden;
+        } else if (previousStatus == FormStatus.RejectedOffice) {
+            newStatus = FormStatus.PendingOffice;
+        }
+        form.setCurrentStatus(newStatus);
+        
         form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(form.getStudentDetails().getGender(), form.getYear()));
         form.setRejectReason(null);
 
         reductionFormRepo.save(form);
-        saveFormHistory(form, "Student Resubmitted", previousStatus, FormStatus.PendingDeputyWarden, "student", "Request resubmitted after rejection");
+        saveFormHistory(form, "Student Resubmitted", previousStatus, newStatus, "student", "Request resubmitted after rejection");
         
         processAutoAcceptIfApplicable(form);
         
@@ -569,6 +575,149 @@ public class ReductionFormService {
         }
 
         reductionFormRepo.saveAll(forms);
+    }
+
+    public BulkRejectSummaryDTO rejectWardenBulk(List<Long> formIds, String rejectReason, String userName) {
+        validateBulkRequest(formIds);
+        validateRejectReason(rejectReason);
+        Integer year = resolveWardenYear(userName);
+
+        int selected = formIds.size();
+        int rejected = 0;
+        int failed = 0;
+
+        for (Long formId : formIds) {
+            if (formId == null) {
+                failed++;
+                continue;
+            }
+            try {
+                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
+                if (form == null || !form.isActive()) {
+                    failed++;
+                    continue;
+                }
+                if (form.getCurrentStatus() != FormStatus.PendingWarden) {
+                    failed++;
+                    continue;
+                }
+                if (year != null && !Objects.equals(form.getYear(), year)) {
+                    failed++;
+                    continue;
+                }
+
+                FormStatus previousStatus = form.getCurrentStatus();
+                form.setCurrentStatus(FormStatus.RejectedWarden);
+                form.setRejectReason(rejectReason.trim());
+                reductionFormRepo.save(form);
+                
+                saveFormHistory(form, "Rejected by Warden (Bulk)", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
+                createActivityLog(form, Role.Warden, userName, "Rejected");
+                
+                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
+                
+                rejected++;
+            } catch (Exception e) {
+                log.error("Failed to reject form ID " + formId + " by warden " + userName, e);
+                failed++;
+            }
+        }
+        return new BulkRejectSummaryDTO(selected, rejected, failed);
+    }
+
+    public BulkRejectSummaryDTO rejectDeputyWardenBulk(List<Long> formIds, String rejectReason, String userName) {
+        validateBulkRequest(formIds);
+        validateRejectReason(rejectReason);
+        validateDeputyWardenUser(userName);
+
+        int selected = formIds.size();
+        int rejected = 0;
+        int failed = 0;
+
+        for (Long formId : formIds) {
+            if (formId == null) {
+                failed++;
+                continue;
+            }
+            try {
+                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
+                if (form == null || !form.isActive()) {
+                    failed++;
+                    continue;
+                }
+                if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
+                    failed++;
+                    continue;
+                }
+                if (!Objects.equals(form.getAssignedDeputyWarden(), userName)) {
+                    failed++;
+                    continue;
+                }
+
+                FormStatus previousStatus = form.getCurrentStatus();
+                form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
+                form.setRejectReason(rejectReason.trim());
+                reductionFormRepo.save(form);
+                
+                saveFormHistory(form, "Rejected by Deputy Warden (Bulk)", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
+                createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
+                
+                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
+                
+                rejected++;
+            } catch (Exception e) {
+                log.error("Failed to reject form ID " + formId + " by deputy warden " + userName, e);
+                failed++;
+            }
+        }
+        return new BulkRejectSummaryDTO(selected, rejected, failed);
+    }
+
+    public BulkRejectSummaryDTO rejectOfficeBulk(List<Long> formIds, String rejectReason, String userName) {
+        validateBulkRequest(formIds);
+        validateRejectReason(rejectReason);
+        validateOfficeUser(userName);
+
+        int selected = formIds.size();
+        int rejected = 0;
+        int failed = 0;
+
+        for (Long formId : formIds) {
+            if (formId == null) {
+                failed++;
+                continue;
+            }
+            try {
+                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
+                if (form == null || !form.isActive()) {
+                    failed++;
+                    continue;
+                }
+                if (form.getCurrentStatus() != FormStatus.PendingOffice) {
+                    failed++;
+                    continue;
+                }
+
+                FormStatus previousStatus = form.getCurrentStatus();
+                form.setCurrentStatus(FormStatus.RejectedOffice);
+                form.setRejectReason(rejectReason.trim());
+                reductionFormRepo.save(form);
+                
+                saveFormHistory(form, "Rejected by Office (Bulk)", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
+                createActivityLog(form, Role.Office, userName, "Rejected");
+                
+                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
+                
+                rejected++;
+            } catch (Exception e) {
+                log.error("Failed to reject form ID " + formId + " by office " + userName, e);
+                failed++;
+            }
+        }
+        return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 
     private void saveFormHistory(ReductionForm form, String eventType, FormStatus fromStatus, FormStatus toStatus, String performedBy, String comment) {
@@ -1051,13 +1200,13 @@ public class ReductionFormService {
                 }
 
                 // If it moved TO PendingWarden, it means DeputyWarden approved it
-                if (h.getToStatus() == FormStatus.PendingWarden) {
+                if (h.getToStatus() == FormStatus.PendingWarden && h.getFromStatus() == FormStatus.PendingDeputyWarden) {
                     tracking.setDeputyApprovalTime(h.getEventTimestamp());
                     tracking.setDeputyWardenName(h.getPerformedBy());
                 }
 
                 // If it moved TO PendingOffice, it means Warden approved it
-                if (h.getToStatus() == FormStatus.PendingOffice) {
+                if (h.getToStatus() == FormStatus.PendingOffice && h.getFromStatus() == FormStatus.PendingWarden) {
                     tracking.setWardenApprovalTime(h.getEventTimestamp());
                     tracking.setWardenName(h.getPerformedBy());
                 }

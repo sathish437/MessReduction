@@ -64,7 +64,8 @@ public class NotificationService {
             });
 
             notificationRepo.save(notification);
-            logger.info("Notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
+            logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
+            logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
@@ -92,7 +93,8 @@ public class NotificationService {
             notification.setType(type);
             notification.setRelatedFormId(-1L); // Use -1 for aggregated notifications
             notificationRepo.save(notification);
-            logger.info("Aggregated Notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
+            logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
+            logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
         } catch (Exception e) {
             logger.error("Failed to create aggregated notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }

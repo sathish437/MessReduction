@@ -36,20 +36,17 @@ public class ReminderScheduler {
     private final ReductionFormRepo reductionFormRepo;
     private final EmailService emailService;
     private final NotificationService notificationService;
-    private final WhatsAppService whatsAppService;
     private final StaffUsersRepo staffUsersRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
 
     public ReminderScheduler(ReductionFormRepo reductionFormRepo,
                              EmailService emailService,
                              NotificationService notificationService,
-                             WhatsAppService whatsAppService,
                              StaffUsersRepo staffUsersRepo,
                              com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.emailService = emailService;
         this.notificationService = notificationService;
-        this.whatsAppService = whatsAppService;
         this.staffUsersRepo = staffUsersRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
     }
@@ -150,11 +147,7 @@ public class ReminderScheduler {
 
                 if (staffSpecificForms.isEmpty()) continue;
 
-                // Send WhatsApp Notification (async, non-blocking)
-                if (staff.getPhoneNo() != null) {
-                    String msg = String.format("Reminder: You have %d pending requests. Please review them in the system.", staffSpecificForms.size());
-                    whatsAppService.sendTextMessage(staff.getPhoneNo(), msg);
-                }
+                // WhatsApp Notification handled by WhatsAppReminderScheduler
 
                 // Send Email
                 try {

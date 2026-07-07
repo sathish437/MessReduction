@@ -21,6 +21,7 @@ public interface AppNotificationRepository extends JpaRepository<AppNotification
     long countByRecipientUsernameAndIsReadFalseAndIdGreaterThan(String recipientUsername, Long id);
 
     List<AppNotification> findByWhatsappStatusOrderByCreatedAtAsc(String whatsappStatus);
+    AppNotification findFirstByRecipientUsernameAndWhatsappStatusOrderBySentTimeDesc(String recipientUsername, String whatsappStatus);
 
     @Modifying
     @Query("UPDATE AppNotification a SET a.whatsappStatus = :status, a.sentTime = :sentTime WHERE a.id IN :ids")

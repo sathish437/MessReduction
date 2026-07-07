@@ -34,4 +34,9 @@ public class NotificationQueueService {
             notificationRepo.incrementRetryCountByIdIn(notificationIds);
         }
     }
+
+    public LocalDateTime getLastSentTimestamp(String username) {
+        AppNotification lastSent = notificationRepo.findFirstByRecipientUsernameAndWhatsappStatusOrderBySentTimeDesc(username, "SENT");
+        return lastSent != null ? lastSent.getSentTime() : null;
+    }
 }

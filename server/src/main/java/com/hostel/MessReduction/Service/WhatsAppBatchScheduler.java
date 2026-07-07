@@ -4,13 +4,16 @@ import com.hostel.MessReduction.Entity.AppNotification;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
-import com.hostel.MessReduction.Repo.StudentDetailsRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,20 +26,35 @@ public class WhatsAppBatchScheduler {
     private final WhatsAppService whatsAppService;
     private final ReductionFormRepo reductionFormRepo;
     private final StaffUsersRepo staffUsersRepo;
-    private final StudentDetailsRepo studentDetailsRepo;
 
     public WhatsAppBatchScheduler(NotificationQueueService queueService, WhatsAppService whatsAppService,
-                                  ReductionFormRepo reductionFormRepo, StaffUsersRepo staffUsersRepo, StudentDetailsRepo studentDetailsRepo) {
+                                  ReductionFormRepo reductionFormRepo, StaffUsersRepo staffUsersRepo) {
         this.queueService = queueService;
         this.whatsAppService = whatsAppService;
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
-        this.studentDetailsRepo = studentDetailsRepo;
     }
 
-    @Scheduled(cron = "0 */5 * * * *")
+    private boolean isWorkingHours() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            return false;
+        }
+        LocalTime time = now.toLocalTime();
+        LocalTime startTime = LocalTime.of(9, 0);
+        LocalTime endTime = LocalTime.of(16, 30);
+        return !time.isBefore(startTime) && !time.isAfter(endTime);
+    }
+
+    @Scheduled(fixedRate = 60000) // TESTING MODE: 1 minute
     @Transactional
     public void processBatchNotifications() {
+        // TESTING MODE: Bypass working hours
+        // if (!isWorkingHours()) {
+        //     logger.info("[BATCH SCHEDULER] Outside working hours (Mon-Sat, 9 AM - 4:30 PM) or Sunday. Skipping.");
+        //     return;
+        // }
+
         logger.info("[BATCH SCHEDULER] Started processing pending notifications.");
         long startTime = System.currentTimeMillis();
 
@@ -48,7 +66,6 @@ public class WhatsAppBatchScheduler {
         
         logger.info("[Queue Count] Found {} pending notifications.", pendingNotifications.size());
 
-        // Group by Recipient
         Map<String, List<AppNotification>> groupedNotifications = pendingNotifications.stream()
                 .collect(Collectors.groupingBy(AppNotification::getRecipientUsername));
 
@@ -56,79 +73,68 @@ public class WhatsAppBatchScheduler {
             String recipientUsername = entry.getKey();
             List<AppNotification> userNotifications = entry.getValue();
 
-            logger.info("[Recipient] Processing batch for recipient: {}", recipientUsername);
-
-            // Fetch recipient's phone number
-            String phoneNo = getPhoneNoByUsername(recipientUsername);
+            // Only process Staff
+            String phoneNo = getStaffPhoneNoByUsername(recipientUsername);
             if (phoneNo == null) {
-                logger.warn("[BATCH SCHEDULER] No phone number found for user {}. Skipping.", recipientUsername);
-                // We keep it pending. Eventually it could be cleaned up or marked failed if retry counts exceed limit, but instructions say keep pending.
+                logger.warn("[BATCH SCHEDULER] No staff phone number found for user {}. Skipping.", recipientUsername);
                 continue;
             }
 
             try {
-                // Deduplicate requests by Form ID
                 Set<Long> formIds = userNotifications.stream()
                         .map(AppNotification::getRelatedFormId)
                         .filter(id -> id != null && id > 0)
                         .collect(Collectors.toSet());
 
                 if (formIds.isEmpty()) {
-                    // It's possible the notification doesn't relate to a form (e.g. system alert)
-                    // But instructions specifically requested Mess Reduction Requests summary.
-                    // If it's for students, they might get standard notification strings.
-                    // Let's check role.
-                    String role = userNotifications.get(0).getRecipientRole();
-                    if ("Student".equalsIgnoreCase(role)) {
-                        List<String> messages = userNotifications.stream().map(AppNotification::getMessage).distinct().collect(Collectors.toList());
-                        // Using a single parameter for the batch update message string
-                        String updatesStr = String.join("\n- ", messages);
-                        whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.STUDENT_UPDATE, java.util.Collections.singletonList("- " + updatesStr));
-                    } else {
-                        // Staff but no form ID? Just mark sent if it's aggregated or something.
-                        continue;
-                    }
-                } else {
-                    // Staff receiving batch of form requests
-                    List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
-                    if (forms.isEmpty()) continue;
-
-                    String messageBody = WhatsAppMessageBuilder.buildBatchSummaryMessage(recipientUsername, forms);
-                    if (messageBody == null) {
-                        logger.info("No pending notifications to send for {}.", recipientUsername);
-                        continue;
-                    }
-                            
-                    whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.BATCH_SUMMARY, java.util.Collections.singletonList(messageBody));
+                    continue; // Do not send empty batches
                 }
 
-                // If success, update to SENT
+                List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+                if (forms.isEmpty()) continue;
+
+                // Smart Notification Rules
+                long uniqueCount = forms.stream().map(ReductionForm::getFormId).distinct().count();
+                boolean condition1 = uniqueCount >= 5;
+                
+                LocalDateTime lastSent = queueService.getLastSentTimestamp(recipientUsername);
+                boolean condition2 = (lastSent == null) || ChronoUnit.HOURS.between(lastSent, LocalDateTime.now()) > 2;
+                
+                boolean condition3 = forms.stream().anyMatch(f -> 
+                        f.getSubmittedAt() != null && ChronoUnit.HOURS.between(f.getSubmittedAt(), LocalDateTime.now()) > 3);
+
+                // TESTING MODE: Bypass smart rules
+                // if (!condition1 && !condition2 && !condition3) {
+                //     logger.info("[Smart Rule] Skipping notification for {}. Count: {}, LastSent: {}, Urgent: {}", 
+                //                 recipientUsername, uniqueCount, lastSent, condition3);
+                //     continue; // Skip sending, keep PENDING
+                // }
+
+                String messageBody = WhatsAppMessageBuilder.buildBatchSummaryMessage(recipientUsername, forms);
+                if (messageBody == null) {
+                    continue;
+                }
+                        
+                whatsAppService.sendTemplateMessage(phoneNo, WhatsAppTemplates.BATCH_SUMMARY, java.util.Collections.singletonList(messageBody));
+
                 List<Long> sentIds = userNotifications.stream().map(AppNotification::getId).collect(Collectors.toList());
                 queueService.markAsSent(sentIds);
-                logger.info("[Database Updated] Marked {} notifications as SENT in database.", sentIds.size());
-                logger.info("[Notification Sent] Successfully processed {} requests for {}", userNotifications.size(), recipientUsername);
+                logger.info("[Notification Sent] Processed {} requests for {}", uniqueCount, recipientUsername);
 
             } catch (Exception e) {
                 logger.error("[Notification Failed] Failed to process batch for {}: {}", recipientUsername, e.getMessage());
-                // Increment retry count
                 List<Long> failedIds = userNotifications.stream().map(AppNotification::getId).collect(Collectors.toList());
                 queueService.incrementRetryCount(failedIds);
-                logger.info("[Database Updated] Incremented retry count for {} notifications.", failedIds.size());
             }
         }
 
         logger.info("[BATCH SCHEDULER] Completed processing in {} ms.", (System.currentTimeMillis() - startTime));
     }
 
-    private String getPhoneNoByUsername(String username) {
+    private String getStaffPhoneNoByUsername(String username) {
         if (username == null) return null;
-        
-        // Is it a staff user?
         return staffUsersRepo.findByUserName(username)
                 .map(staff -> staff.getPhoneNo())
-                .orElseGet(() -> {
-                    var student = studentDetailsRepo.findByEmailId(username);
-                    return student != null ? student.getPhoneNo() : null;
-                });
+                .orElse(null);
     }
 }

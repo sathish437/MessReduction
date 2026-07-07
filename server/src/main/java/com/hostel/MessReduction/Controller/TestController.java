@@ -6,6 +6,7 @@ import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
+import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
 import com.hostel.MessReduction.Service.WhatsAppBatchScheduler;
 import com.hostel.MessReduction.Service.WhatsAppReminderScheduler;
@@ -26,14 +27,16 @@ public class TestController {
     private final ReductionFormRepo formRepo;
     private final StudentDetailsRepo studentRepo;
     private final AppNotificationRepository notifRepo;
+    private final StaffUsersRepo staffUsersRepo;
 
     public TestController(WhatsAppBatchScheduler batchScheduler, WhatsAppReminderScheduler reminderScheduler, 
-                          ReductionFormRepo formRepo, StudentDetailsRepo studentRepo, AppNotificationRepository notifRepo) {
+                          ReductionFormRepo formRepo, StudentDetailsRepo studentRepo, AppNotificationRepository notifRepo, StaffUsersRepo staffUsersRepo) {
         this.batchScheduler = batchScheduler;
         this.reminderScheduler = reminderScheduler;
         this.formRepo = formRepo;
         this.studentRepo = studentRepo;
         this.notifRepo = notifRepo;
+        this.staffUsersRepo = staffUsersRepo;
     }
 
     @GetMapping("/mock-deputywarden4")
@@ -68,6 +71,18 @@ public class TestController {
         notifRepo.save(notif);
 
         return "Created mock request ID " + form.getFormId() + " for deputywarden4! Run /api/test/batch to send notification.";
+    }
+
+    @GetMapping("/update-phone")
+    public String updatePhone() {
+        var staffOpt = staffUsersRepo.findByUserName("deputywarden4");
+        if (staffOpt.isPresent()) {
+            var staff = staffOpt.get();
+            staff.setPhoneNo("917708988616");
+            staffUsersRepo.save(staff);
+            return "Updated phone for deputywarden4 to 917708988616";
+        }
+        return "Staff not found";
     }
 
     @GetMapping("/batch")

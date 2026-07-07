@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
     FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
     FiCheckCircle, FiXCircle, FiActivity, FiMapPin
@@ -63,14 +63,15 @@ function RequestTimeline({ tracking }) {
         }
 
         if (currentStageIndex === -1 && tracking.currentStatus === "Approved") {
-             return "completed";
+            return "completed";
         }
+
+        // If it's completed, everything is completed (green)
+        if (tracking.currentStage === "COMPLETED") return "completed";
 
         if (index < currentStageIndex) return "completed";
         if (index === currentStageIndex) return "current";
-        // If it's completed, everything is completed
-        if (tracking.currentStage === "COMPLETED") return "completed";
-        
+
         return "pending";
     };
 
@@ -148,73 +149,44 @@ function RequestTimeline({ tracking }) {
                 );
             }
         }
-        
+
         return null;
     };
 
     return (
         <div className="w-full mt-2 mb-6">
-            <div className="overflow-x-auto pb-4 scrollbar-hide">
-                <div className="min-w-[500px] px-4">
-                    <div className="flex items-center justify-between relative">
-                        {/* Connecting Lines Background */}
-                        <div className="absolute top-4 left-0 w-full h-1 bg-white/10 -z-10 rounded-full"></div>
-                        
-                        {/* Active Line */}
-                        <div 
-                            className="absolute top-4 left-0 h-1 bg-gradient-to-r from-teal-400 to-emerald-400 -z-10 transition-all duration-700 ease-in-out rounded-full"
-                            style={{ 
-                                width: isRejected 
-                                    ? `${(stages.findIndex(s => s.label.replace(' ', '') === tracking.rejectedBy) || 1) * 25}%` 
-                                    : (tracking.currentStage === "COMPLETED" ? '100%' : `${currentStageIndex * 25}%`) 
-                            }}
-                        ></div>
+            <div className="tracking-container scrollbar-hide">
+                {stages.map((stage, index) => {
+                    const state = getStageState(index);
 
-                        {stages.map((stage, index) => {
-                            const state = getStageState(index);
-                            
-                            // Colors
-                            let bgColor = "bg-[#0a1628]";
-                            let borderColor = "border-white/20";
-                            let iconColor = "text-white/30";
-                            let titleColor = "text-white/40";
-                            
-                            if (state === "completed") {
-                                bgColor = "bg-emerald-500";
-                                borderColor = "border-emerald-500";
-                                iconColor = "text-white";
-                                titleColor = "text-emerald-400 font-bold";
-                            } else if (state === "current") {
-                                bgColor = "bg-[#0a1628]";
-                                borderColor = "border-amber-400";
-                                iconColor = "text-amber-400";
-                                titleColor = "text-amber-400 font-bold";
-                            } else if (state === "rejected") {
-                                bgColor = "bg-rose-500";
-                                borderColor = "border-rose-500";
-                                iconColor = "text-white";
-                                titleColor = "text-rose-400 font-bold";
-                            }
+                    let circleContent = state === "completed" ? "✓" : (index + 1);
+                    if (state === "rejected") circleContent = "✕";
 
-                            return (
-                                <div key={stage.id} className="flex flex-col items-center relative z-10 w-24">
-                                    <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-colors duration-500 ${bgColor} ${borderColor} shadow-lg shadow-black/50`}>
-                                        {state === "completed" && <FiCheckCircle size={18} className={iconColor} />}
-                                        {state === "current" && <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>}
-                                        {state === "pending" && <div className="w-2.5 h-2.5 bg-white/20 rounded-full"></div>}
-                                        {state === "rejected" && <FiXCircle size={18} className={iconColor} />}
-                                    </div>
-                                    <div className={`mt-3 text-[11px] uppercase tracking-wider text-center ${titleColor}`}>
-                                        {stage.label}
-                                    </div>
-                                    {getStageDetails(stage.id)}
+                    let nextState = "pending";
+                    if (index < stages.length - 1) {
+                        nextState = getStageState(index + 1);
+                    }
+
+                    return (
+                        <React.Fragment key={stage.id}>
+                            <div className="step">
+                                <div className={`circle ${state}`}>
+                                    {circleContent}
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                                <div className={`mt-1 text-[11px] font-bold uppercase tracking-wider ${state === 'rejected' ? 'text-rose-400' : (state === 'completed' ? 'text-emerald-400' : (state === 'current' ? 'text-amber-400' : 'text-white/40'))}`}>
+                                    {stage.label}
+                                </div>
+                                {getStageDetails(stage.id)}
+                            </div>
+
+                            {index < stages.length - 1 && (
+                                <div className={`line ${nextState}`}></div>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
             </div>
-            
+
             {isRejected && tracking.rejectionReason && (
                 <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
                     <span className="font-bold">Rejection Reason:</span> {tracking.rejectionReason}
@@ -310,7 +282,7 @@ function MessReductionPage() {
             }
         } catch (error) {
             console.error("Error fetching student data:", error);
-            try { console.error('Failed request headers:', error.config?.headers); } catch (e) {}
+            try { console.error('Failed request headers:', error.config?.headers); } catch (e) { }
         } finally {
             setLoading(false);
         }
@@ -354,18 +326,18 @@ function MessReductionPage() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({ 
-            ...prev, 
-            [name]: type === 'checkbox' ? checked : value 
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
         }));
     };
 
     const handleEditRequest = (req) => {
         setEditingFormId(req.formId);
-        
+
         const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
         const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
-        
+
         setFormData(prev => ({
             ...prev,
             year: yearStrMap[req.year] || "1st",
@@ -378,14 +350,14 @@ function MessReductionPage() {
             otherReason: isStandardReason ? "" : req.reason,
             isEmergency: req.isEmergency || false
         }));
-        
+
         // Scroll to form smoothly
         document.getElementById("form-section")?.scrollIntoView({ behavior: "smooth" });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (isSubmitBlocked) {
             showToast("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.", 'error');
             return;
@@ -402,7 +374,7 @@ function MessReductionPage() {
 
         // Map year string to number
         const yearMap = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4 };
-        
+
         const submissionData = {
             year: yearMap[formData.year] || 1,
             roomNo: parseInt(formData.room) || 0,
@@ -478,11 +450,11 @@ function MessReductionPage() {
                         exit={{ opacity: 0, y: -60 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border max-w-md w-full
-                            ${toast.type === 'success' 
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+                            ${toast.type === 'success'
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                                 : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}
                     >
-                        {toast.type === 'success' 
+                        {toast.type === 'success'
                             ? <FiCheckCircle size={22} className="shrink-0 text-emerald-400" />
                             : <FiXCircle size={22} className="shrink-0 text-rose-400" />}
                         <p className="font-bold text-sm">{toast.message}</p>
@@ -512,7 +484,7 @@ function MessReductionPage() {
 
             {/* Main Content */}
             <main className="flex-1 w-full flex flex-col items-center px-4 py-8 sm:py-12 z-10">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, staggerChildren: 0.1 }}
@@ -520,7 +492,7 @@ function MessReductionPage() {
                 >
 
                     {/* 1. Student Details (Auto-filled) */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden group"
@@ -543,7 +515,7 @@ function MessReductionPage() {
 
                     {/* 2. Active Request Status (only when active request exists) */}
                     {activeRequest && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="w-full rounded-3xl border border-teal-500/30 bg-teal-950/20 backdrop-blur-xl p-6 sm:p-8 shadow-[0_0_40px_0_rgba(20,184,166,0.15)] relative overflow-hidden"
@@ -565,19 +537,19 @@ function MessReductionPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12}/> Deputy Warden</span>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12} /> Deputy Warden</span>
                                     <span className="text-base font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12}/> Leave Date</span>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Leave Date</span>
                                     <span className="text-base font-semibold text-white/90">{activeRequest.leaveDate}</span>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12}/> Arrival Date</span>
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Arrival Date</span>
                                     <span className="text-base font-semibold text-white/90">{activeRequest.arrivalDate}</span>
                                 </div>
                             </div>
-                            
+
                             {((activeRequest.currentStatus)?.startsWith('Rejected')) && (
                                 <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 relative z-10">
                                     <div className="flex flex-col gap-1.5">
@@ -605,10 +577,10 @@ function MessReductionPage() {
                     )}
 
                     {/* 3. New Request Form */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        id="form-section" 
+                        id="form-section"
                         className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl overflow-hidden scroll-mt-24 relative"
                     >
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] via-transparent to-white/[0.01] pointer-events-none" />
@@ -627,10 +599,10 @@ function MessReductionPage() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="p-6 sm:p-8 relative z-10">
                             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                                
+
                                 {/* Editable Leave Details */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group">
@@ -658,25 +630,19 @@ function MessReductionPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Field
                                         icon={<FiCalendar />}
-                                        type="text"
-                                        placeholder="Leave Date"
+                                        type="date"
                                         name="leaveDate"
                                         value={formData.leaveDate}
                                         onChange={handleChange}
                                         min={new Date().toISOString().split('T')[0]}
-                                        onFocus={(e) => (e.target.type = "date")}
-                                        onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required
                                     />
                                     <Field
                                         icon={<FiClock />}
-                                        type="text"
-                                        placeholder="Leave Time"
+                                        type="time"
                                         name="leaveTime"
                                         value={formData.leaveTime}
                                         onChange={handleChange}
-                                        onFocus={(e) => (e.target.type = "time")}
-                                        onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required
                                     />
                                 </div>
@@ -685,25 +651,19 @@ function MessReductionPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Field
                                         icon={<FiCalendar />}
-                                        type="text"
-                                        placeholder="Arrival Date"
+                                        type="date"
                                         name="arrivalDate"
                                         value={formData.arrivalDate}
                                         onChange={handleChange}
                                         min={formData.leaveDate || new Date().toISOString().split('T')[0]}
-                                        onFocus={(e) => (e.target.type = "date")}
-                                        onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required
                                     />
                                     <Field
                                         icon={<FiClock />}
-                                        type="text"
-                                        placeholder="Arrival Time"
+                                        type="time"
                                         name="arrivalTime"
                                         value={formData.arrivalTime}
                                         onChange={handleChange}
-                                        onFocus={(e) => (e.target.type = "time")}
-                                        onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
                                         required
                                     />
                                 </div>
@@ -762,13 +722,25 @@ function MessReductionPage() {
 
                                 {/* Submit Button */}
                                 <motion.button
-                                    whileHover={isSubmitBlocked ? {} : { scale: 1.02, y: -2 }}
-                                    whileTap={isSubmitBlocked ? {} : { scale: 0.98 }}
+                                    whileHover={isSubmitBlocked || isSubmitting ? {} : { scale: 1.02, y: -2 }}
+                                    whileTap={isSubmitBlocked || isSubmitting ? {} : { scale: 0.98 }}
                                     className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_rgba(45,212,191,0.5)] transition-all duration-500 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
                                     type="submit"
                                     disabled={isSubmitting || isSubmitBlocked}
                                 >
-                                    {isSubmitting ? "PROCESSING..." : (editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST")} <FiArrowRight size={18} className={isSubmitting ? "animate-pulse" : ""} />
+                                    {isSubmitting ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            PROCESSING...
+                                        </>
+                                    ) : (
+                                        <>
+                                            {editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST"} <FiArrowRight size={18} />
+                                        </>
+                                    )}
                                 </motion.button>
                             </form>
                         </div>

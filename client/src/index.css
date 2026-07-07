@@ -96,3 +96,70 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Tracking UI Styles */
+.tracking-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  z-index: 2;
+}
+
+.circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+  transition: all 0.4s ease;
+  flex-shrink: 0;
+}
+
+.line {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  min-width: 10px;
+  margin: 17px 0 0 0;
+  transition: all 0.4s ease;
+  z-index: 1;
+}
+
+.completed .circle,
+.line.completed,
+.circle.completed {
+  background: #16a34a;
+}
+
+.current .circle,
+.line.current,
+.circle.current {
+  background: #eab308;
+}
+
+.pending .circle,
+.line.pending,
+.circle.pending {
+  background: #9ca3af;
+}
+
+.rejected .circle,
+.line.rejected,
+.circle.rejected {
+  background: #dc2626;
+}

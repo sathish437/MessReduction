@@ -4,16 +4,14 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- bean definitions here -->
-    <bean id = "t1" class = "org.example.Teacher">
+    <bean id = "std1" class = "org.example.student">
+        <property  value="30" name="age"> </property>
 
     </bean>
-    <bean id = "t2" class = "org.example.Teacher">
-    </bean>
-    <bean id="p1" class="org.example.pen">
-    </bean>
-    <bean id="pc1" class="org.example.pencil">
+    <bean id=" t1" class ="org.example.Teacher">
+
     </bean>
 
 </beans>
+
 

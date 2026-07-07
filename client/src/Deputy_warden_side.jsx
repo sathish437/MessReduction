@@ -208,8 +208,9 @@ function AutoAcceptSettingsCard() {
                     </div>
                     <button
                         type="button"
+                        disabled={saving}
                         onClick={() => setEnabled(!enabled)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? 'bg-teal-500' : 'bg-slate-700'}`}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${enabled ? 'bg-teal-500' : 'bg-slate-700'}`}
                     >
                         <span
                             className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'}`}
@@ -360,6 +361,12 @@ function Deputy_warden_side() {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
+    const [isBulkReject, setIsBulkReject] = useState(false);
+
+    // Processing State for Action Locking
+    const [processingIds, setProcessingIds] = useState(new Set());
+    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
 
     // Activity Log Modal State
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -367,44 +374,80 @@ function Deputy_warden_side() {
     const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     const handleAction = async (id, actionType) => {
+        if (processingIds.has(id) || isBulkProcessing) return; // Prevent duplicate clicks
+
         // Normalize action to 'Approve' or 'Reject' for backend
         const action = actionType === "Approve" || actionType === "accepted" ? "Approve" : "Reject";
         
         if (action === "Reject") {
             setRejectFormId(id);
             setRejectReason("");
+            setIsBulkReject(false);
             setIsRejectModalOpen(true);
             return;
         }
+
+        // Add to processing set
+        setProcessingIds(prev => {
+            const newSet = new Set(prev);
+            newSet.add(id);
+            return newSet;
+        });
 
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${id}?action=${action}`);
             // Refresh data after action
             await refreshData();
+            // Note: Not removing from processingIds on success so it stays locked until row is gone
         } catch (err) {
             console.error("Action error:", err);
             alert("Failed to update status.");
+            // Remove from processing set on failure to allow retry
+            setProcessingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
     };
 
     const handleRejectSubmit = async () => {
+        if (isRejecting) return;
+
         if (!rejectReason.trim()) {
             alert("Please enter a reason for rejection.");
             return;
         }
+
+        setIsRejecting(true);
         try {
-            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
+            if (isBulkReject) {
+                const res = await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk-reject`, {
+                    formIds: selectedIds,
+                    rejectReason
+                });
+                alert(`Bulk Reject Summary:\nSelected: ${res.data.selected}\nRejected: ${res.data.rejected}\nFailed: ${res.data.failed}`);
+                setSelectedIds([]);
+            } else {
+                await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
+            }
             setIsRejectModalOpen(false);
             setRejectFormId(null);
+            setIsBulkReject(false);
             setRejectReason("");
             await refreshData();
         } catch (err) {
             console.error("Deputy Warden reject error:", err);
             alert("Failed to reject request.");
+        } finally {
+            setIsRejecting(false); // Enable retry on failure
         }
     };
 
     const handleBulkAction = async (newStatus) => {
+        if (selectedIds.length === 0 || isBulkProcessing) return;
+
+        setIsBulkProcessing(true);
         const action = newStatus === "accepted" ? "Approve" : "Reject";
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=${action}`, selectedIds);
@@ -414,6 +457,8 @@ function Deputy_warden_side() {
         } catch (err) {
             console.error("Bulk action error:", err);
             alert("Failed to perform bulk action.");
+        } finally {
+            setIsBulkProcessing(false); // Enable retry on failure
         }
     };
 
@@ -633,9 +678,23 @@ function Deputy_warden_side() {
                                         </span>
                                         <button
                                             onClick={() => handleBulkAction("accepted")}
-                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none"
+                                            disabled={isBulkProcessing}
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
-                                            <FiCheck size={18} /> Approve
+                                            {isBulkProcessing ? (
+                                                <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
+                                            ) : (
+                                                <FiCheck size={18} />
+                                            )}
+                                            {isBulkProcessing ? 'Processing...' : 'Approve'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setIsBulkReject(true); setRejectReason(""); setIsRejectModalOpen(true); }}
+                                            disabled={isBulkProcessing}
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-rose-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-rose-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                        >
+                                            <FiX size={18} />
+                                            Reject
                                         </button>
                                     </motion.div>
                                 )}
@@ -695,10 +754,23 @@ function Deputy_warden_side() {
                                                 </div>
 
                                                 <div className="flex gap-2 mt-2 pt-4 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
-                                                    <button onClick={() => handleAction(req.id, "Approve")} className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 font-bold text-xs uppercase tracking-wider transition-all">
-                                                        <FiCheck size={16} /> Approve
+                                                    <button 
+                                                        disabled={processingIds.has(req.id) || isBulkProcessing}
+                                                        onClick={() => handleAction(req.id, "Approve")} 
+                                                        className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {processingIds.has(req.id) ? (
+                                                            <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <FiCheck size={16} /> 
+                                                        )}
+                                                        {processingIds.has(req.id) ? 'Processing' : 'Approve'}
                                                     </button>
-                                                    <button onClick={() => handleAction(req.id, "Reject")} className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-all">
+                                                    <button 
+                                                        disabled={processingIds.has(req.id) || isBulkProcessing}
+                                                        onClick={() => handleAction(req.id, "Reject")} 
+                                                        className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
                                                         <FiX size={16} /> Reject
                                                     </button>
                                                 </div>
@@ -713,7 +785,11 @@ function Deputy_warden_side() {
                                         <thead className="sticky top-0 bg-[#0f1f38] z-10">
                                             <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
                                                 <th className="px-6 py-4 text-white/40 w-16 text-center">
-                                                    <button onClick={toggleSelectAll} className="text-white/40 hover:text-white transition-colors">
+                                                    <button 
+                                                        disabled={isBulkProcessing || processingIds.size > 0} 
+                                                        onClick={toggleSelectAll} 
+                                                        className="text-white/40 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
                                                         {filteredRequests.length > 0 && selectedIds.length === filteredRequests.length ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
@@ -744,16 +820,17 @@ function Deputy_warden_side() {
                                             ) : filteredRequests.map((req, idx) => (
                                                 <motion.tr
                                                     layout
-                                                    key={req.id}
+                                                    key={`desk-${req.id}`}
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
-                                                    className={`group hover:bg-white/[0.02] transition-colors ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''}`}
+                                                    onClick={() => !processingIds.has(req.id) && !isBulkProcessing && toggleSelect(req.id)}
+                                                    className={`hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] cursor-pointer ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
                                                 >
                                                     <td className="px-6 py-4 text-center">
-                                                        <button onClick={() => toggleSelect(req.id)} className={`${selectedIds.includes(req.id) ? 'text-teal-400' : 'text-white/20 hover:text-white/60'} transition-colors mt-1`}>
-                                                            {selectedIds.includes(req.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
-                                                        </button>
+                                                        <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-teal-500 border-teal-400 text-slate-900' : 'bg-white/5 border-white/20 text-transparent'}`}>
+                                                            <FiCheck size={12} strokeWidth={4} />
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
@@ -776,19 +853,30 @@ function Deputy_warden_side() {
                                                         <p title={req.reason} className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
                                                     </td>
                                                     <td className="px-6 py-3 text-right">
-                                                        <div className="flex justify-end gap-1.5">
-                                                            <button
-                                                                onClick={() => handleAction(req.id, "Approve")}
-                                                                className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10"
-                                                            >
-                                                                <FiCheck size={16} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleAction(req.id, "Reject")}
-                                                                className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10"
-                                                            >
-                                                                <FiX size={16} />
-                                                            </button>
+                                                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                            {processingIds.has(req.id) ? (
+                                                                <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2">
+                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
+                                                                    <span className="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Processing</span>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        disabled={isBulkProcessing}
+                                                                        onClick={() => handleAction(req.id, "Approve")}
+                                                                        className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        <FiCheck size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={isBulkProcessing}
+                                                                        onClick={() => handleAction(req.id, "Reject")}
+                                                                        className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    >
+                                                                        <FiX size={16} />
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </motion.tr>
@@ -845,16 +933,21 @@ function Deputy_warden_side() {
 
                             <div className="flex items-center justify-end gap-3 mt-6">
                                 <button
-                                    onClick={() => setIsRejectModalOpen(false)}
-                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-white/40 hover:text-white transition-colors"
+                                    disabled={isRejecting}
+                                    onClick={() => !isRejecting && setIsRejectModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-white/40 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    disabled={isRejecting}
                                     onClick={handleRejectSubmit}
-                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    Reject
+                                    {isRejecting ? (
+                                        <div className="w-4 h-4 border-2 border-rose-400/30 border-t-rose-400 rounded-full animate-spin"></div>
+                                    ) : null}
+                                    {isRejecting ? 'Rejecting...' : 'Reject'}
                                 </button>
                             </div>
                         </motion.div>

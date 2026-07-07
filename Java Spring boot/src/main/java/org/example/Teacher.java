@@ -1,4 +1,11 @@
 package org.example;
 
-public class Teachere {
+import lombok.Data;
+
+@Data
+public class Teacher{
+    private int age;
+    private int rno;
+    private String name;
+
 }

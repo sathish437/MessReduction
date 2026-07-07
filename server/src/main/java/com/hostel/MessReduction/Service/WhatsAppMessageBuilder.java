@@ -25,7 +25,7 @@ public class WhatsAppMessageBuilder {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("📋 Mess Reduction System\n\n");
+        sb.append("📋 Mess Reduction System (").append(recipientUsername).append(")\n\n");
         
         if (uniqueCount == 1) {
             sb.append("You have 1 pending request.\n\n");
@@ -54,7 +54,7 @@ public class WhatsAppMessageBuilder {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("⏰ Reminder\n\n");
+        sb.append("⏰ Reminder for ").append(recipientUsername).append("\n\n");
         
         if (uniqueCount == 1) {
             sb.append("You have 1 pending request.\n\n");
@@ -83,13 +83,13 @@ public class WhatsAppMessageBuilder {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("⚠ Escalation\n\n");
+        sb.append("⚠ Urgent Attention Required (").append(recipientUsername).append(")\n\n");
         
         if (uniqueCount == 1) {
-            sb.append("1 request is still pending.\n\n");
+            sb.append("1 request is overdue and still pending.\n\n");
             sb.append("Please review immediately.");
         } else {
-            sb.append(uniqueCount).append(" requests are still pending.\n\n");
+            sb.append(uniqueCount).append(" requests are overdue and still pending.\n\n");
             sb.append("Please review immediately.");
         }
 

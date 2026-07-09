@@ -33,12 +33,6 @@ function StaffLogin({ onNavigate }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const getUsernameOptions = () => {
-    if (role === "Office") return ["office"];
-    if (role === "Warden") return ["warden", "warden1", "warden2", "warden3", "warden4"];
-    if (role === "DeputyWarden") return Array.from({ length: 8 }, (_, i) => `deputyWarden${i + 1}`);
-    return [];
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -138,26 +132,16 @@ function StaffLogin({ onNavigate }) {
                                         <option value="Office" className="bg-[#0f1f38]">Hostel Office</option>
                                     </select>
                                 </div>
-
-                                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error && !userName ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
-                                    <span className={error && !userName ? "text-rose-400" : "text-amber-400/60"}><FiUser size={18} /></span>
-                                    <select
-                                        value={userName}
-                                        onChange={(e) => setUserName(e.target.value)}
-                                        required
-                                        disabled={!role}
-                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white appearance-none cursor-pointer w-full disabled:opacity-50"
-                                    >
-                                        <option value="" disabled className="bg-[#0f1f38]">
-                                            {!role ? "Select Role First" : "Select Username"}
-                                        </option>
-                                        {getUsernameOptions().map((opt) => (
-                                            <option key={opt} value={opt} className="bg-[#0f1f38]">
-                                                {opt}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <Field
+                                    icon={<FiUser size={18} />}
+                                    type="text"
+                                    placeholder={!role ? "Select Role First" : "Enter Username"}
+                                    value={userName}
+                                    onChange={(e) => setUserName(e.target.value)}
+                                    required
+                                    disabled={!role}
+                                    error={error && !userName}
+                                />
                                 <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required error={!!error} />
 
                                 {error && <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 font-medium">{error}</p>}

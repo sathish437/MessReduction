@@ -4,6 +4,7 @@ import { FiMail, FiCalendar, FiArrowRight, FiArrowLeft } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
 import DobInputComponent from "./DobInputComponent"
+import { setStudentAuth } from "./services/authService"
 
 const TITLE = "STUDENT LOGIN"
 
@@ -34,14 +35,13 @@ function StudentLogin({ onNavigate }) {
       const data = response.data
 
       if (data.token) {
-        sessionStorage.setItem('token', data.token)
         const userData = {
           name: data.name,
           studentId: data.studentId,
           email: email,
           token: data.token
         }
-        sessionStorage.setItem('currentUser', JSON.stringify(userData))
+        setStudentAuth(data.token, userData)
         if (onNavigate) {
           onNavigate('/student-dashboard')
         }

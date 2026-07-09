@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import './App.css'
 import { useNavigate, useLocation } from 'react-router-dom'
 import LandingPage from './LandingPage'
@@ -9,6 +10,8 @@ import Deputy_warden_side from './Deputy_warden_side'
 import Warden from './Warden'
 import HostelOffice from './Hostel_office'
 import ProtectedRoute from './ProtectedRoute'
+import { isTokenExpired, getStaffDashboardRoute, logout } from './services/authService'
+import { setCookie, deleteCookie } from './utils/cookieUtils'
 
 // ============================================
 // ROOT ROUTER CONFIGURATION
@@ -41,6 +44,78 @@ function App() {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  // Startup session checks & redirection
+  useEffect(() => {
+    const userType = localStorage.getItem('user_type');
+    const token = localStorage.getItem('auth_token');
+
+    if (userType === 'STUDENT') {
+      if (token && !isTokenExpired(token)) {
+        // Restore session
+        const studentData = localStorage.getItem('student_data');
+        if (studentData) {
+          sessionStorage.setItem('token', token);
+          sessionStorage.setItem('currentUser', studentData);
+        }
+        
+        // Skip login page and redirect to /student-dashboard
+        if (['/', '/student-login', '/staff-login', '/register'].includes(currentPath)) {
+          navigate('/student-dashboard');
+        }
+      } else {
+        // Clear student auth from localStorage & sessionStorage
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_type');
+        localStorage.removeItem('student_data');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('currentUser');
+        
+        // Redirect to student login page
+        if (['/student-dashboard', '/dashboard'].includes(currentPath)) {
+          navigate('/student-login');
+        }
+      }
+    } else if (userType === 'STAFF') {
+      if (token && !isTokenExpired(token)) {
+        // Restore staff cookies
+        const staffRole = localStorage.getItem('staff_role');
+        const staffDataStr = localStorage.getItem('staff_data');
+        let staffUsername = '';
+        if (staffDataStr) {
+          try {
+            const staffData = JSON.parse(staffDataStr);
+            staffUsername = staffData.username;
+          } catch(e) {}
+        }
+        if (token) setCookie('staffToken', token, 7);
+        if (staffUsername) setCookie('staffUsername', staffUsername, 7);
+        if (staffRole) setCookie('staffRole', staffRole, 7);
+
+        // Skip login page and redirect to role-based dashboard
+        if (['/', '/student-login', '/staff-login', '/register'].includes(currentPath)) {
+          const correctRoute = getStaffDashboardRoute(staffRole, staffUsername);
+          if (correctRoute) {
+            navigate(correctRoute);
+          }
+        }
+      } else {
+        // Clear staff auth
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_type');
+        localStorage.removeItem('staff_role');
+        localStorage.removeItem('staff_data');
+        deleteCookie('staffToken');
+        deleteCookie('staffUsername');
+        deleteCookie('staffRole');
+
+        // Redirect to staff login
+        if (['/warden', '/deputy', '/office'].includes(currentPath)) {
+          navigate('/staff-login');
+        }
+      }
+    }
+  }, [currentPath]);
+
   // Navigation function - ONLY place that changes routes
   const navigate = (path) => {
     navigateReactRouter(path);
@@ -71,9 +146,7 @@ function App() {
               <MessReductionPage />
               <button
                 onClick={() => {
-                  sessionStorage.removeItem("token");
-                  sessionStorage.removeItem("currentUser");
-                  navigate('/');
+                  logout();
                 }}
                 className="fixed bottom-6 left-6 px-6 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 font-bold uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all z-[100]"
               >

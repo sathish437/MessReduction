@@ -9,13 +9,11 @@ import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
+import { logout } from "./services/authService";
 
 
 const handleLogout = () => {
-    deleteCookie('staffToken');
-    deleteCookie('staffUsername');
-    deleteCookie('staffRole');
-    window.location.href = '/staff-login';
+  logout();
 };
 
 const YEARS = ["1st", "2nd", "3rd", "4th"];
@@ -68,6 +66,16 @@ function HostelOffice() {
     const [selectedIds, setSelectedIds] = useState([]);
     const [reportData, setReportData] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Pagination & Expand Reason Modal States
+    const [currentPage, setCurrentPage]   = useState(1);
+    const itemsPerPage                    = 15;
+    const [selectedReason, setSelectedReason] = useState(null);
+
+    // Reset pagination on search change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedYear, genderFilter]);
 
     const handleGenerateReport = async () => {
         try {
@@ -287,9 +295,19 @@ function HostelOffice() {
         return matchGender && matchYear;
     });
 
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    const paginatedForms = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     const toggleSelectAll = () => {
-        const pendingIds = filteredRequests.map(r => r.id);
-        setSelectedIds(selectedIds.length === pendingIds.length && pendingIds.length > 0 ? [] : pendingIds);
+        const paginatedIds = paginatedForms.map(r => r.id);
+        const allSelectedOnPage = paginatedIds.every(id => selectedIds.includes(id));
+        setSelectedIds(prev => {
+            if (allSelectedOnPage) {
+                return prev.filter(id => !paginatedIds.includes(id));
+            } else {
+                return Array.from(new Set([...prev, ...paginatedIds]));
+            }
+        });
     };
 
     if (isLoading) {
@@ -297,7 +315,7 @@ function HostelOffice() {
             <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
-                    <p className="text-teal-400 font-black tracking-widest uppercase text-sm">Loading Panel...</p>
+                    <p className="text-teal-400 font-black tracking-widest uppercase text-sm">Loading requests...</p>
                 </div>
             </div>
         );
@@ -533,34 +551,36 @@ function HostelOffice() {
                             <AnimatePresence>
                                 {selectedIds.length > 0 && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
+                                        initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 20 }}
-                                        className="fixed bottom-6 left-4 right-4 z-[60] sm:static sm:z-auto shadow-2xl sm:shadow-none bg-[#0f1f38]/95 sm:bg-emerald-500/10 backdrop-blur-xl sm:backdrop-blur-none border border-emerald-500/30 sm:border-emerald-500/20 rounded-2xl sm:rounded-xl p-4 flex flex-row items-center justify-between gap-4"
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="relative z-20 shadow-2xl sm:shadow-none bg-[#0f1f38]/95 sm:bg-emerald-500/10 backdrop-blur-xl sm:backdrop-blur-none border border-emerald-500/30 sm:border-emerald-500/20 rounded-2xl sm:rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4"
                                     >
-                                        <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-wider uppercase">
+                                        <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-wider uppercase text-center sm:text-left">
                                             {selectedIds.length} Form{selectedIds.length > 1 ? 's' : ''} Selected
                                         </span>
-                                        <button
-                                            onClick={handleBulkAction}
-                                            disabled={isBulkProcessing}
-                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
-                                        >
-                                            {isBulkProcessing ? (
-                                                <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
-                                            ) : (
-                                                <FiCheck size={18} />
-                                            )}
-                                            {isBulkProcessing ? 'Processing...' : 'Approve'}
-                                        </button>
-                                        <button
-                                            onClick={() => { setIsBulkReject(true); setRejectReason(""); setIsRejectModalOpen(true); }}
-                                            disabled={isBulkProcessing}
-                                            className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-rose-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-rose-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
-                                        >
-                                            <FiX size={18} />
-                                            Reject
-                                        </button>
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <button
+                                                onClick={handleBulkAction}
+                                                disabled={isBulkProcessing}
+                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                            >
+                                                {isBulkProcessing ? (
+                                                    <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <FiCheck size={18} />
+                                                )}
+                                                {isBulkProcessing ? 'Processing...' : 'Approve'}
+                                            </button>
+                                            <button
+                                                onClick={() => { setIsBulkReject(true); setRejectReason(""); setIsRejectModalOpen(true); }}
+                                                disabled={isBulkProcessing}
+                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-rose-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-rose-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                            >
+                                                <FiX size={18} />
+                                                Reject
+                                            </button>
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -568,85 +588,15 @@ function HostelOffice() {
                             {/* Requests Table (Desktop) & Cards (Mobile) */}
                             <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
                                 
-                                {/* 📱 MOBILE CARDS VIEW */}
-                                <div className="block md:hidden p-4 space-y-4">
-                                    {filteredRequests.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-12 px-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-4">
-                                                <FiList size={30} />
-                                            </div>
-                                            <h3 className="text-white text-lg font-bold mb-1">All Caught Up!</h3>
-                                            <p className="text-white/40 text-center text-xs">No pending requests for office review.</p>
-                                        </div>
-                                    ) : (
-                                        filteredRequests.map((req, idx) => (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: idx * 0.04 }}
-                                                key={`mob-${req.id}`}
-                                                onClick={() => toggleSelect(req.id)}
-                                                className={`flex flex-col gap-3 p-4 rounded-2xl border transition-colors cursor-pointer ${selectedIds.includes(req.id) ? 'bg-amber-500/10 border-amber-500/30 shadow-glow' : 'bg-white/[0.02] border-white/10 hover:border-white/20'}`}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-amber-500 border-amber-400 text-slate-900' : 'bg-white/5 border-white/20 text-transparent'}`}>
-                                                                <FiCheck size={12} strokeWidth={4} />
-                                                            </div>
-                                                            <h4 className="text-base font-bold text-white leading-tight">{req.name}</h4>
-                                                        </div>
-                                                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 text-white/60 ml-7">
-                                                            {req.dept} • {req.year} • {req.roomNo}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                                    <div className="bg-[#0a1628] rounded-xl p-3 border border-white/5">
-                                                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Leave</p>
-                                                        <p className="text-sm font-semibold text-white/80">{req.leaveDate}</p>
-                                                    </div>
-                                                    <div className="bg-[#0a1628] rounded-xl p-3 border border-white/5">
-                                                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Arrival</p>
-                                                        <p className="text-sm font-semibold text-white/80">{req.arrivalDate}</p>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="mt-1">
-                                                    <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold mb-1">Reason</p>
-                                                    <p className="text-xs text-white/60 line-clamp-2">{req.reason}</p>
-                                                </div>
-
-                                                <div className="flex gap-2 mt-2 pt-4 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
-                                                    <button 
-                                                        disabled={processingIds.has(req.id) || isBulkProcessing}
-                                                        onClick={() => handleAction(req.id, "Approve")} 
-                                                        className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {processingIds.has(req.id) ? (
-                                                            <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
-                                                        ) : (
-                                                            <FiCheck size={16} /> 
-                                                        )}
-                                                        {processingIds.has(req.id) ? 'Processing' : 'Approve'}
-                                                    </button>
-                                                    <button 
-                                                        disabled={processingIds.has(req.id) || isBulkProcessing}
-                                                        onClick={() => handleAction(req.id, "Reject")} 
-                                                        className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        <FiX size={16} /> Reject
-                                                    </button>
-                                                </div>
-                                            </motion.div>
-                                        ))
-                                    )}
-                                </div>
-
-                                {/* 💻 DESKTOP TABLE VIEW */}
-                                <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
-                                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                                {/* 💻 TABLE VIEW */}
+                                <div 
+                                    className="overflow-x-auto max-h-[600px] overflow-y-auto"
+                                    style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
+                                >
+                                    <table 
+                                        className="w-full text-left border-collapse"
+                                        style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
+                                    >
                                         <thead className="sticky top-0 bg-[#0f1f38] z-10">
                                             <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
                                                 <th className="px-6 py-4 text-white/40 w-16 text-center">
@@ -655,7 +605,7 @@ function HostelOffice() {
                                                         onClick={toggleSelectAll} 
                                                         className="text-white/40 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
-                                                        {filteredRequests.length > 0 && selectedIds.length === filteredRequests.length ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                                                        {paginatedForms.length > 0 && paginatedForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
                                                 <th className="px-6 py-4 text-white/40">Student Name</th>
@@ -668,21 +618,18 @@ function HostelOffice() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
-                                            {filteredRequests.length === 0 ? (
+                                            {paginatedForms.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="8" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-3">
                                                             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-2">
                                                                 <FiList size={32} />
                                                             </div>
-                                                            <h3 className="text-white text-xl font-bold tracking-tight">All Caught Up!</h3>
-                                                            <p className="text-white/40 font-medium text-sm">
-                                                                No pending office requests.
-                                                            </p>
+                                                            <h3 className="text-white text-xl font-bold tracking-tight">No records found</h3>
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            ) : filteredRequests.map((req, idx) => (
+                                            ) : paginatedForms.map((req, idx) => (
                                                 <motion.tr
                                                     layout
                                                     key={`desk-${req.id}`}
@@ -697,27 +644,33 @@ function HostelOffice() {
                                                             <FiCheck size={12} strokeWidth={4} />
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors">{req.name}</p>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center gap-4 max-w-[150px]">
+                                                            <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors truncate">{req.name}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider">{req.dept}</span>
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider block truncate max-w-[120px]">{req.dept}</span>
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-sm font-semibold text-white/80">{req.roomNo}</span>
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-medium text-white/50">{req.leaveDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-medium text-white/50">{req.arrivalDate}</span>
                                                     </td>
-                                                    <td className="px-4 py-4">
-                                                        <p title={req.reason} className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer">{req.reason}</p>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                        <p 
+                                                            title={req.reason} 
+                                                            onClick={(e) => { e.stopPropagation(); setSelectedReason(req.reason); }}
+                                                            className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer hover:text-white transition-colors"
+                                                        >
+                                                            {req.reason && req.reason.length > 35 ? req.reason.substring(0, 35) + "..." : req.reason}
+                                                        </p>
                                                     </td>
-                                                    <td className="px-6 py-3 text-right">
+                                                    <td className="px-6 py-3 text-right whitespace-nowrap">
                                                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                             {processingIds.has(req.id) ? (
                                                                 <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2">
@@ -749,6 +702,38 @@ function HostelOffice() {
                                         </tbody>
                                     </table>
                                 </div>
+                                {totalPages > 1 && (
+                                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-t border-white/5 bg-white/[0.01]">
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                        >
+                                            Previous
+                                        </button>
+                                        
+                                        <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-md [&::-webkit-scrollbar]:hidden">
+                                            {Array.from({ length: totalPages }, (_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setCurrentPage(idx + 1)}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+                                                    style={currentPage === idx + 1 ? { backgroundColor: '#f59e0b', color: '#0f1f38' } : {}}
+                                                >
+                                                    {idx + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
@@ -946,7 +931,7 @@ function HostelOffice() {
                 )}
             </AnimatePresence>
 
-            {/* Activity Log Modal */}
+             {/* Activity Log Modal */}
             <ActivityLogModal
                 isOpen={isLogModalOpen}
                 onClose={() => setIsLogModalOpen(false)}
@@ -954,6 +939,43 @@ function HostelOffice() {
                 actionTitle={logActionTitle}
                 themeColor="violet"
             />
+
+            {/* Reason Modal */}
+            <AnimatePresence>
+                {selectedReason && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedReason(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-md min-h-[320px] flex flex-col bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden"
+                        >
+                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 text-teal-400">
+                                <span className="w-1.5 h-5 bg-teal-500 rounded-full" />
+                                Request Reason
+                            </h3>
+                            <div className="flex-1 text-sm text-white/70 leading-relaxed font-normal bg-black/20 border border-white/10 rounded-xl p-4 max-h-[60vh] overflow-y-auto">
+                                {selectedReason}
+                            </div>
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setSelectedReason(null)}
+                                    className="px-4 py-2 rounded-xl bg-teal-500 text-slate-950 text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

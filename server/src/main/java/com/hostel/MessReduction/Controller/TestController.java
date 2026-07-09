@@ -4,6 +4,8 @@ import com.hostel.MessReduction.Entity.AppNotification;
 import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.StudentDetails;
+import com.hostel.MessReduction.Entity.Department;
+import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
@@ -71,6 +73,58 @@ public class TestController {
         notifRepo.save(notif);
 
         return "Created mock request ID " + form.getFormId() + " for deputywarden4! Run /api/test/batch to send notification.";
+    }
+
+    @GetMapping("/mock-deputywarden2-ten")
+    public String createTenMockRequests() {
+        StudentDetails student = studentRepo.findAll().stream().findFirst().orElse(null);
+        if (student == null) {
+            student = new StudentDetails();
+            student.setName("Mock Student Year 2");
+            student.setRegisterNo("REG_Y2_001");
+            student.setRollNo("ROLL_Y2_001");
+            student.setDepartment(Department.CSE);
+            student.setGender(Gender.MALE);
+            student.setDob(LocalDate.of(2005, 5, 15));
+            student.setEmailId("student_y2@example.com");
+            student.setPhoneNo("917708988616");
+            student = studentRepo.save(student);
+        }
+
+        StringBuilder responseMsg = new StringBuilder();
+        responseMsg.append("Created 10 mock requests for deputyWarden2:\n");
+
+        for (int i = 1; i <= 10; i++) {
+            ReductionForm form = new ReductionForm();
+            form.setStudentDetails(student);
+            form.setYear(2); // deputyWarden2 handles year 2
+            form.setRoomNo(200L + i);
+            form.setLeaveDate(LocalDate.now().plusDays(i));
+            form.setLeaveTime(LocalTime.of(9, 0));
+            form.setArrivalDate(LocalDate.now().plusDays(i + 2));
+            form.setArrivalTime(LocalTime.of(17, 0));
+            form.setPresentDate(LocalDate.now());
+            form.setTotalHolidays(2L);
+            form.setReason("Mock request #" + i + " for testing Deputy Warden 2 dashboard");
+            form.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            form.setAssignedDeputyWarden("deputyWarden2");
+            form.setActive(true);
+            form.setSubmittedAt(LocalDateTime.now().minusMinutes(i * 10));
+            form = formRepo.save(form);
+
+            AppNotification notif = new AppNotification();
+            notif.setRecipientUsername("deputyWarden2");
+            notif.setMessage("New Reduction Request #" + i + " Received");
+            notif.setType("NORMAL_REQUEST");
+            notif.setRelatedFormId(form.getFormId());
+            notif.setWhatsappStatus("PENDING");
+            notif.setRecipientRole("DeputyWarden");
+            notifRepo.save(notif);
+
+            responseMsg.append("- Form ID: ").append(form.getFormId()).append(", Room: ").append(form.getRoomNo()).append("\n");
+        }
+
+        return responseMsg.toString();
     }
 
     @GetMapping("/update-phone")

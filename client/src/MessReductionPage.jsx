@@ -358,6 +358,14 @@ function MessReductionPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Room number validation (Starts with 4, second digit is 0,1,2, or 3, length is 4, 5, or 6 digits)
+        const roomVal = formData.room ? formData.room.toString().trim() : "";
+        const roomRegex = /^4[0-3]\d{2,4}$/;
+        if (!roomRegex.test(roomVal)) {
+            showToast("Room number must start with 4, second digit must be 0, 1, 2, or 3, and contain 4 to 6 digits.", 'error');
+            return;
+        }
+
         if (isSubmitBlocked) {
             showToast("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.", 'error');
             return;
@@ -429,7 +437,7 @@ function MessReductionPage() {
             <div className="min-h-screen w-full flex items-center justify-center bg-[#0a1628] text-white">
                 <div className="text-center">
                     <div className="w-12 h-12 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white/40 text-sm font-bold tracking-widest">LOADING...</p>
+                    <p className="text-white/40 text-sm font-bold tracking-widest">Fetching data...</p>
                 </div>
             </div>
         );
@@ -518,7 +526,7 @@ function MessReductionPage() {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="w-full rounded-3xl border border-teal-500/30 bg-teal-950/20 backdrop-blur-xl p-6 sm:p-8 shadow-[0_0_40px_0_rgba(20,184,166,0.15)] relative overflow-hidden"
+                            className="w-full rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6 sm:p-8 shadow-sm relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-400" />
                             <div className="flex items-center justify-between mb-6 relative z-10">
@@ -586,7 +594,7 @@ function MessReductionPage() {
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] via-transparent to-white/[0.01] pointer-events-none" />
                         <div className="p-6 sm:p-8 border-b border-white/5 bg-white/[0.01] relative z-10">
                             <div className="flex items-center gap-4 mb-2">
-                                <div className="p-3 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.3)] text-slate-900">
+                                <div className="p-3 bg-teal-500 text-slate-950 rounded-xl border border-teal-400/20 shadow-sm">
                                     {editingFormId ? <FiEdit3 size={24} /> : <FiFileText size={24} />}
                                 </div>
                                 <div>

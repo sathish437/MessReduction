@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getCookie } from '../utils/cookieUtils';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/',
+  baseURL: 'https://messreduction8.onrender.com',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -11,7 +11,8 @@ const apiClient = axios.create({
 // Request interceptor to add the JWT token to headers
 apiClient.interceptors.request.use((config) => {
   // Check for both student and staff tokens (sessionStorage, localStorage, cookies)
-  const token = sessionStorage.getItem('token') ||
+  const token = localStorage.getItem('auth_token') ||
+                sessionStorage.getItem('token') ||
                 localStorage.getItem('staffToken') ||
                 sessionStorage.getItem('staffToken') ||
                 getCookie('staffToken');

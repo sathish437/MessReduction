@@ -65,7 +65,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
     const fetchLogs = async (pageNumber) => {
         setLoading(true);
         try {
-            const res = await apiClient.get(`/api/logs/role?action=${actionType}&page=${pageNumber}&size=5`);
+            const res = await apiClient.get(`/api/logs/role?action=${actionType}&page=${pageNumber}&size=15`);
             setLogs(res.data.content || []);
             setTotalPages(res.data.totalPages || 0);
         } catch (err) {
@@ -135,8 +135,9 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                             {(() => {
                                 if (loading) {
                                     return (
-                                        <div className="h-full flex items-center justify-center">
+                                        <div className="h-full flex flex-col items-center justify-center gap-4 text-center">
                                             <div className={`w-12 h-12 border-4 border-t-transparent border-white/20 rounded-full animate-spin`} />
+                                            <p className="text-white/40 text-sm font-bold tracking-widest uppercase">Fetching data...</p>
                                         </div>
                                     );
                                 }
@@ -154,7 +155,7 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                                 <FiClock size={32} className={t.text} />
                                             </div>
                                             <p className="font-medium text-sm text-white/50 tracking-wider">
-                                                {q ? "No logs match your search." : "No activity logs found."}
+                                                No records found
                                             </p>
                                         </div>
                                     );
@@ -199,23 +200,37 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
 
                         {/* Pagination Footer */}
                         {!loading && totalPages > 1 && (
-                            <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+                            <div className="mt-6 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
                                 <button
                                     disabled={page === 0}
                                     onClick={() => setPage(p => Math.max(0, p - 1))}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
                                 >
-                                    <FiChevronLeft /> Prev
+                                    Previous
                                 </button>
-                                <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
-                                    Page {page + 1} of {totalPages}
-                                </span>
+                                
+                                <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-md [&::-webkit-scrollbar]:hidden">
+                                    {Array.from({ length: totalPages }, (_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setPage(idx)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                page === idx
+                                                    ? `${t.bg} ${t.text} border ${t.border} shadow-sm`
+                                                    : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
+                                            }`}
+                                        >
+                                            {idx + 1}
+                                        </button>
+                                    ))}
+                                </div>
+
                                 <button
                                     disabled={page >= totalPages - 1}
                                     onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
                                 >
-                                    Next <FiChevronRight />
+                                    Next
                                 </button>
                             </div>
                         )}

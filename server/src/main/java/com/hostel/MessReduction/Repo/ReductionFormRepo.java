@@ -44,6 +44,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus status, String assignedDeputyWarden);
     Long countByCurrentStatusAndIsActiveTrue(FormStatus status);
     Long countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus status, String assignedDeputyWarden);
+    Long countByAssignedDeputyWardenAndIsActiveTrue(String assignedDeputyWarden);
     Long countByCurrentStatusAndYearAndIsActiveTrue(FormStatus status, Integer year);
     List<ReductionForm> findByStudentDetailsStudentIdAndIsActiveTrue(Long studentId);
     Optional<ReductionForm> findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(Long formId, Long studentId);

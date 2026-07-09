@@ -458,10 +458,10 @@ public class ReductionFormService {
         validateDeputyWardenUser(userName);
         int assignedYear = resolveDeputyWardenYear(userName);
         return new YearWiseCountDTO(
-                assignedYear == 1 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
-                assignedYear == 2 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
-                assignedYear == 3 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L,
-                assignedYear == 4 ? reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName) : 0L
+                assignedYear == 1 ? reductionFormRepo.countByAssignedDeputyWardenAndIsActiveTrue(userName) : 0L,
+                assignedYear == 2 ? reductionFormRepo.countByAssignedDeputyWardenAndIsActiveTrue(userName) : 0L,
+                assignedYear == 3 ? reductionFormRepo.countByAssignedDeputyWardenAndIsActiveTrue(userName) : 0L,
+                assignedYear == 4 ? reductionFormRepo.countByAssignedDeputyWardenAndIsActiveTrue(userName) : 0L
         );
     }
 

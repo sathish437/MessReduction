@@ -18,15 +18,16 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final StudentDetailsRepo studentDetailsRepo;
 
     @Override
-    public UserDetails loadUserByUsername(String emailId) throws UsernameNotFoundException {
-        logger.debug("Loading student user details for emailId: {}", emailId);
-        StudentDetails student = studentDetailsRepo.findByEmailId(emailId);
-        if (student == null) {
-            logger.error("Student not found with email: {}", emailId);
-            throw new UsernameNotFoundException("Student not found with email: " + emailId);
-        }
-        logger.debug("Student found: studentId={}, name={}, emailId={}", 
-            student.getStudentId(), student.getName(), student.getEmailId());
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        logger.debug("Loading student user details for identifier: {}", username);
+        StudentDetails student = studentDetailsRepo.findByRegisterNo(username)
+                .or(() -> studentDetailsRepo.findByRollNo(username))
+                .orElseThrow(() -> {
+                    logger.error("Student not found with identifier: {}", username);
+                    return new UsernameNotFoundException("Student not found with identifier: " + username);
+                });
+        logger.debug("Student found: studentId={}, name={}, registerNo={}, rollNo={}", 
+            student.getStudentId(), student.getName(), student.getRegisterNo(), student.getRollNo());
         CustomUserDetails userDetails = new CustomUserDetails(student);
         logger.debug("CustomUserDetails created with authorities: {}", userDetails.getAuthorities());
         return userDetails;

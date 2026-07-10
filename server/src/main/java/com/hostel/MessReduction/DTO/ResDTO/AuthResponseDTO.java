@@ -13,4 +13,6 @@ public class AuthResponseDTO {
     private String token;
     private Long studentId;
     private String name;
+    private String registerNo;
+    private String rollNo;
 }

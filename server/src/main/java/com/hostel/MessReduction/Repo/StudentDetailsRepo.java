@@ -14,4 +14,7 @@ public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long> {
     Boolean existsByEmailId(String email);
     StudentDetails findByEmailId(String emailId);
     Optional<StudentDetails> findByEmailIdAndDob(String emailId, LocalDate dob);
+    Optional<StudentDetails> findByRegisterNo(String registerNo);
+    Optional<StudentDetails> findByRegisterNoAndDob(String registerNo, LocalDate dob);
+    Optional<StudentDetails> findByRollNo(String rollNo);
 }

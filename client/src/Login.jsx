@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { motion } from "framer-motion"
-import { FiMail, FiCalendar, FiArrowRight } from "react-icons/fi"
+import { FiUser, FiCalendar, FiArrowRight } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 
 const TITLE = "LOGIN"
@@ -59,7 +59,7 @@ function Field({ icon, error, ...props }) {
 }
 
 function Login({ goToRegister, onLoginSuccess }) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [dob, setDob] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,8 +70,8 @@ function Login({ goToRegister, onLoginSuccess }) {
     setLoading(true);
 
     // Simple validation
-    if (!email || !dob) {
-      setError('Please fill both email and date of birth');
+    if (!identifier || !dob) {
+      setError('Please fill both Register Number / Roll Number and Date of Birth');
       setLoading(false);
       return;
     }
@@ -79,7 +79,7 @@ function Login({ goToRegister, onLoginSuccess }) {
     try {
       // Call student login API
       const requestBody = {
-        emailId: email,
+        identifier: identifier,
         dob: dob
       };
 
@@ -92,7 +92,8 @@ function Login({ goToRegister, onLoginSuccess }) {
         const userData = {
           name: data.name,
           studentId: data.studentId,
-          email: email,
+          registerNo: data.registerNo,
+          rollNo: data.rollNo,
           token: data.token
         };
         sessionStorage.setItem('currentUser', JSON.stringify(userData));
@@ -115,9 +116,9 @@ function Login({ goToRegister, onLoginSuccess }) {
       <AnimatedTitle />
 
       <Field
-        icon={<FiMail size={15} />} error={!!error}
-        type="email" placeholder="Email address"
-        value={email} onChange={(e) => setEmail(e.target.value)} required
+        icon={<FiUser size={15} />} error={!!error}
+        type="text" placeholder="Enter your Register Number or Roll Number"
+        value={identifier} onChange={(e) => setIdentifier(e.target.value)} required
       />
       <Field
         icon={<FiCalendar size={15} />} error={!!error}

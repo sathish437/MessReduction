@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { motion } from "framer-motion"
-import { FiMail, FiCalendar, FiArrowRight, FiArrowLeft } from "react-icons/fi"
+import { FiUser, FiArrowRight, FiArrowLeft } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
 import DobInputComponent from "./DobInputComponent"
@@ -9,7 +9,7 @@ import { setStudentAuth } from "./services/authService"
 const TITLE = "STUDENT LOGIN"
 
 function StudentLogin({ onNavigate }) {
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [dob, setDob] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -19,15 +19,15 @@ function StudentLogin({ onNavigate }) {
     setError("")
     setLoading(true)
 
-    if (!email || !dob) {
-      setError("Please fill both email and date of birth")
+    if (!identifier || !dob) {
+      setError("Please fill both Register Number / Roll Number and Date of Birth")
       setLoading(false)
       return
     }
 
     try {
       const requestBody = {
-        emailId: email,
+        identifier: identifier,
         dob: dob
       }
 
@@ -38,7 +38,8 @@ function StudentLogin({ onNavigate }) {
         const userData = {
           name: data.name,
           studentId: data.studentId,
-          email: email,
+          registerNo: data.registerNo,
+          rollNo: data.rollNo,
           token: data.token
         }
         setStudentAuth(data.token, userData)
@@ -94,17 +95,17 @@ function StudentLogin({ onNavigate }) {
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5 w-full text-left">
-                  <label htmlFor="email-input" className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
-                    Email Address
+                  <label htmlFor="identifier-input" className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
+                    Register Number / Roll Number
                   </label>
                   <div className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all bg-[#0a1628] w-full focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.15)] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/8'}`}>
-                    <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}><FiMail size={18} /></span>
+                    <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}><FiUser size={18} /></span>
                     <input
-                      id="email-input"
-                      type="email"
-                      placeholder="Email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="identifier-input"
+                      type="text"
+                      placeholder="Enter your Register Number or Roll Number"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                       required
                       className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium appearance-none w-full"
                     />

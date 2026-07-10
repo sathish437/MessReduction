@@ -60,7 +60,7 @@ function LandingPage({ onNavigate }) {
               </div>
 
               <p className="text-white/40 mb-8">
-                Login with your registered email and date of birth to access your mess reduction dashboard.
+                Login with your Register Number or Roll Number and Date of Birth to access your mess reduction dashboard.
               </p>
 
               <button

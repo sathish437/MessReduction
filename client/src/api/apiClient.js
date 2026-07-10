@@ -2,7 +2,8 @@ import axios from 'axios';
 import { getCookie } from '../utils/cookieUtils';
 
 const apiClient = axios.create({
-  baseURL: 'https://messreduction8.onrender.com',
+  //baseURL: 'https://messreduction8.onrender.com',
+  baseURL: 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,10 +13,10 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   // Check for both student and staff tokens (sessionStorage, localStorage, cookies)
   const token = localStorage.getItem('auth_token') ||
-                sessionStorage.getItem('token') ||
-                localStorage.getItem('staffToken') ||
-                sessionStorage.getItem('staffToken') ||
-                getCookie('staffToken');
+    sessionStorage.getItem('token') ||
+    localStorage.getItem('staffToken') ||
+    sessionStorage.getItem('staffToken') ||
+    getCookie('staffToken');
 
   if (token) {
     const requestPath = config.url || '';

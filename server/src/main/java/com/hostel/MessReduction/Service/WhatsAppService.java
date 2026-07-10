@@ -22,6 +22,9 @@ public class WhatsAppService {
 
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppService.class);
 
+    @Value("${whatsapp.enabled:false}")
+    private boolean whatsappEnabled;
+
     @Value("${whatsapp.meta.token:}")
     private String whatsappToken;
 
@@ -53,6 +56,11 @@ public class WhatsAppService {
         backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     public void sendTextMessage(String phoneNumber, String message) {
+        if (!whatsappEnabled) {
+            logger.info("[WhatsApp] WhatsApp service is disabled. Skipping text message.");
+            return;
+        }
+
         if (!isConfigured()) {
             logger.warn("[WhatsApp] Meta Cloud API credentials are not configured. Skipping notification.");
             return;
@@ -145,6 +153,11 @@ public class WhatsAppService {
         backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     public void sendTemplateMessage(String phoneNumber, String templateName, java.util.List<String> parameters) {
+        if (!whatsappEnabled) {
+            logger.info("[WhatsApp] WhatsApp service is disabled. Skipping template message.");
+            return;
+        }
+
         if (!isConfigured()) {
             logger.warn("[WhatsApp] Meta Cloud API credentials are not configured. Skipping template notification.");
             return;

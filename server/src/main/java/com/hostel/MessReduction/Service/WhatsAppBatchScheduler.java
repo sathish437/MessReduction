@@ -6,6 +6,7 @@ import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ import java.util.stream.Collectors;
 public class WhatsAppBatchScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppBatchScheduler.class);
+
+    @Value("${whatsapp.enabled:false}")
+    private boolean whatsappEnabled;
 
     private final NotificationQueueService queueService;
     private final WhatsAppService whatsAppService;
@@ -49,6 +53,11 @@ public class WhatsAppBatchScheduler {
     @Scheduled(fixedRate = 60000) // TESTING MODE: 1 minute
     @Transactional
     public void processBatchNotifications() {
+        if (!whatsappEnabled) {
+            logger.info("[BATCH SCHEDULER] WhatsApp service is disabled. Skipping execution.");
+            return;
+        }
+
         // TESTING MODE: Bypass working hours
         // if (!isWorkingHours()) {
         //     logger.info("[BATCH SCHEDULER] Outside working hours (Mon-Sat, 9 AM - 4:30 PM) or Sunday. Skipping.");

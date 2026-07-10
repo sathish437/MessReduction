@@ -77,6 +77,20 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(StudentVerificationFailedException.class)
+    public ResponseEntity<HashMap<String, Object>> handleStudentVerificationFailed(StudentVerificationFailedException exp) {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("message", exp.getMessage());
+        return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(StudentVerificationServiceUnavailableException.class)
+    public ResponseEntity<HashMap<String, Object>> handleStudentVerificationServiceUnavailable(StudentVerificationServiceUnavailableException exp) {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("message", exp.getMessage());
+        return new ResponseEntity<>(map, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<HashMap<String, Object>> handleIllegalArgument(IllegalArgumentException exp) {
         logger.error("IllegalArgumentException: ", exp);

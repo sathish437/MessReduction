@@ -19,11 +19,11 @@ const getInitial = () => {
 function AnimatedTitle() {
   return (
     <div className="text-center mb-8 flex flex-col items-center">
-      <p className="text-xs sm:text-sm font-bold tracking-[0.3em] text-[#00e699] uppercase mb-3">
+      <p className="text-xs font-semibold tracking-[0.2em] text-[#00e699]/80 uppercase mb-2">
         Student Portal
       </p>
       <motion.h2
-        className="font-bold text-2xl sm:text-3xl lg:text-4xl text-white tracking-wider flex flex-wrap justify-center gap-x-1 sm:gap-x-2 gap-y-1 select-none"
+        className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex flex-wrap justify-center gap-x-1 sm:gap-x-2 gap-y-1 select-none"
         initial="hidden"
         animate="visible"
         variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.03 } } }}
@@ -52,7 +52,7 @@ function AnimatedTitle() {
           )
         })}
       </motion.h2>
-      <p className="text-sm sm:text-base text-white/60 mt-3 font-medium tracking-wide">
+      <p className="text-sm text-white/30 mt-2 font-medium">
         Create your mess account
       </p>
       <div className="mt-4 w-24 h-0.5 bg-gradient-to-r from-transparent via-[#00e699]/50 to-transparent" />
@@ -199,7 +199,7 @@ function Register({ onNavigate }) {
           <img src={image} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
           <div className="flex flex-col leading-tight">
             <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-[#00e699]/90 uppercase">Government College of Engineering</span>
-            <span className="text-lg sm:text-xl font-bold text-white tracking-widest">SRIRANGAM</span>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">SRIRANGAM</span>
           </div>
         </div>
         <button
@@ -312,7 +312,7 @@ function Register({ onNavigate }) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   disabled={loading}
-                  className={`mt-4 flex items-center justify-center gap-2.5 w-full rounded-xl py-3.5 sm:py-4 text-base font-bold text-[#0a192f] bg-[#00e699] hover:bg-[#1affb2] hover:shadow-[0_0_25px_rgba(0,230,153,0.4)] transition-all duration-300 tracking-widest group cursor-pointer ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+                  className={`mt-4 flex items-center justify-center gap-2.5 w-full rounded-xl py-3.5 text-base font-semibold text-[#0a192f] bg-[#00e699] hover:bg-[#1affb2] hover:shadow-[0_0_25px_rgba(0,230,153,0.4)] transition-all duration-300 tracking-wide group cursor-pointer ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
                   {loading ? (
                     <span className="flex items-center gap-2 justify-center">

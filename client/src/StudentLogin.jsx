@@ -67,7 +67,7 @@ function StudentLogin({ onNavigate }) {
           <img src={image} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
           <div className="flex flex-col leading-tight">
             <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-teal-400/80 uppercase">Government College of Engineering</span>
-            <span className="text-lg sm:text-xl font-black text-white tracking-widest">SRIRANGAM</span>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">SRIRANGAM</span>
           </div>
         </div>
         <button
@@ -88,14 +88,14 @@ function StudentLogin({ onNavigate }) {
             <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-400/70 to-transparent" />
             <div className="p-8">
               <div className="mb-8">
-                <p className="text-xs font-black tracking-[0.3em] text-teal-400/70 uppercase mb-2">Student Portal</p>
-                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">STUDENT LOGIN</h2>
+                <p className="text-xs font-semibold tracking-[0.2em] text-teal-400/80 uppercase mb-2">Student Portal</p>
+                <h2 className="text-3xl font-bold text-white tracking-tight">STUDENT LOGIN</h2>
                 <p className="text-sm sm:text-base text-white/30 mt-2">Sign in with your student credentials</p>
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5 w-full text-left">
-                  <label htmlFor="identifier-input" className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
+                  <label htmlFor="identifier-input" className="text-sm font-semibold tracking-wide text-white/80 select-none">
                     Register Number / Roll Number
                   </label>
                   <div className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all bg-[#0a1628] w-full focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.15)] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/8'}`}>
@@ -107,7 +107,7 @@ function StudentLogin({ onNavigate }) {
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       required
-                      className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium appearance-none w-full"
+                      className="flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium appearance-none w-full"
                     />
                   </div>
                 </div>
@@ -125,7 +125,7 @@ function StudentLogin({ onNavigate }) {
                   whileTap={{ scale: 0.99 }}
                   type="submit"
                   disabled={loading}
-                  className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-3 sm:py-4 text-base sm:text-lg font-black text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-soft transition-all tracking-widest ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+                  className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-3.5 text-base font-semibold text-slate-900 bg-gradient-to-r from-teal-400 to-emerald-400 hover:brightness-110 shadow-soft transition-all tracking-wide ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
                   {loading ? (
                     <>

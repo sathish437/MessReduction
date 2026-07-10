@@ -17,7 +17,7 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
     return (
         <div className="flex flex-col gap-1.5 w-full text-left">
             {label && (
-                <label htmlFor={id} className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
+                <label htmlFor={id} className="text-sm font-semibold tracking-wide text-white/80 select-none">
                     {label}
                 </label>
             )}
@@ -27,7 +27,7 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
                 {icon && <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}>{icon}</span>}
                 <Component
                     id={id}
-                    className={`flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
+                    className={`flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
                     readOnly={readOnly}
                     {...props}
                 >
@@ -48,7 +48,7 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
     )
 }
 
-function RequestTimeline({ tracking }) {
+function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
     if (!tracking) return null;
 
     const stages = [
@@ -177,40 +177,165 @@ function RequestTimeline({ tracking }) {
 
     return (
         <div className="w-full mt-2 mb-6">
-            <div className="tracking-container scrollbar-hide">
+            {/* Desktop and Tablet Horizontal Workflow (screens >= 768px) */}
+            <div className="hidden md:block">
+                <div className="tracking-container scrollbar-hide">
+                    {stages.map((stage, index) => {
+                        const state = getStageState(index);
+
+                        let circleContent = state === "completed" ? "✓" : (index + 1);
+                        if (state === "rejected") circleContent = "✕";
+
+                        let nextState = "pending";
+                        if (index < stages.length - 1) {
+                            nextState = getStageState(index + 1);
+                        }
+
+                        return (
+                            <React.Fragment key={stage.id}>
+                                <div className="step">
+                                    <div className={`circle ${state}`}>
+                                        {circleContent}
+                                    </div>
+                                    <div className={`mt-1 text-[11px] font-bold uppercase tracking-wider ${state === 'rejected' ? 'text-rose-400' : (state === 'completed' ? 'text-emerald-400' : (state === 'current' ? 'text-amber-400' : 'text-white/40'))}`}>
+                                        {stage.label}
+                                    </div>
+                                    {getStageDetails(stage.id)}
+                                </div>
+
+                                {index < stages.length - 1 && (
+                                    <div className={`line ${nextState}`}></div>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Mobile Vertical Timeline (screens < 768px) */}
+            <div className="block md:hidden space-y-6 pl-2">
                 {stages.map((stage, index) => {
                     const state = getStageState(index);
+                    const isCompleted = state === "completed";
+                    const isCurrent = state === "current";
+                    const isRejectedState = state === "rejected";
 
-                    let circleContent = state === "completed" ? "✓" : (index + 1);
-                    if (state === "rejected") circleContent = "✕";
+                    let dotColorClass = "bg-white/10 text-white/30 border-white/5";
+                    let checkIcon = null;
 
-                    let nextState = "pending";
-                    if (index < stages.length - 1) {
-                        nextState = getStageState(index + 1);
+                    if (isCompleted) {
+                        dotColorClass = "bg-emerald-500 text-white border-emerald-400";
+                        checkIcon = "✓";
+                    } else if (isRejectedState) {
+                        dotColorClass = "bg-rose-500 text-white border-rose-400";
+                        checkIcon = "✕";
+                    } else if (isCurrent) {
+                        dotColorClass = "bg-amber-500 text-slate-900 border-amber-400 font-bold";
+                        checkIcon = "⏳";
+                    } else {
+                        checkIcon = index + 1;
+                    }
+
+                    let staffName = "";
+                    let dateTimeObj = null;
+
+                    if (stage.id === "SUBMITTED") {
+                        dateTimeObj = formatDate(tracking.submittedTime);
+                        staffName = "SYSTEM";
+                    } else if (stage.id === "DEPUTY_WARDEN") {
+                        if (isRejectedState && tracking.rejectedBy === "DeputyWarden") {
+                            dateTimeObj = formatDate(tracking.rejectedTime);
+                            staffName = tracking.deputyWardenName || "Deputy Warden";
+                        } else if (tracking.deputyApprovalTime) {
+                            dateTimeObj = formatDate(tracking.deputyApprovalTime);
+                            staffName = tracking.deputyWardenName || "Deputy Warden";
+                        }
+                    } else if (stage.id === "WARDEN") {
+                        if (isRejectedState && tracking.rejectedBy === "Warden") {
+                            dateTimeObj = formatDate(tracking.rejectedTime);
+                            staffName = tracking.wardenName || "Warden";
+                        } else if (tracking.wardenApprovalTime) {
+                            dateTimeObj = formatDate(tracking.wardenApprovalTime);
+                            staffName = tracking.wardenName || "Warden";
+                        }
+                    } else if (stage.id === "OFFICE") {
+                        if (isRejectedState && tracking.rejectedBy === "Office") {
+                            dateTimeObj = formatDate(tracking.rejectedTime);
+                            staffName = tracking.officeName || "Office";
+                        } else if (tracking.officeApprovalTime) {
+                            dateTimeObj = formatDate(tracking.officeApprovalTime);
+                            staffName = tracking.isAutoAccepted ? "SYSTEM" : (tracking.officeName || "Office");
+                        }
                     }
 
                     return (
-                        <React.Fragment key={stage.id}>
-                            <div className="step">
-                                <div className={`circle ${state}`}>
-                                    {circleContent}
-                                </div>
-                                <div className={`mt-1 text-[11px] font-bold uppercase tracking-wider ${state === 'rejected' ? 'text-rose-400' : (state === 'completed' ? 'text-emerald-400' : (state === 'current' ? 'text-amber-400' : 'text-white/40'))}`}>
-                                    {stage.label}
-                                </div>
-                                {getStageDetails(stage.id)}
+                        <div key={stage.id} className="flex gap-4 items-start relative">
+                            {/* Connector Line behind the dot */}
+                            {index < stages.length - 1 && (
+                                <div 
+                                    className="absolute left-[11px] top-6 w-0.5 transition-all"
+                                    style={{ 
+                                        height: 'calc(100% + 12px)',
+                                        background: getStageState(index + 1) === "completed" 
+                                            ? "#10b981" 
+                                            : (getStageState(index + 1) === "current" ? "#f59e0b" : "rgba(255, 255, 255, 0.1)")
+                                    }}
+                                />
+                            )}
+                            
+                            {/* Dot */}
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors z-10 flex-shrink-0 ${dotColorClass}`}>
+                                {checkIcon}
                             </div>
 
-                            {index < stages.length - 1 && (
-                                <div className={`line ${nextState}`}></div>
-                            )}
-                        </React.Fragment>
+                            {/* Right text layout directly next to the dot (no border boxes) */}
+                            <div className="flex-1 min-w-0 pt-0.5 text-left">
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center flex-wrap gap-2">
+                                        <span className={`text-sm font-semibold tracking-wide ${isRejectedState ? 'text-rose-400' : (isCompleted ? 'text-emerald-400' : (isCurrent ? 'text-amber-400' : 'text-white/40'))}`}>
+                                            {stage.label}
+                                        </span>
+                                        {staffName && (
+                                            <span className="text-xs text-white/40 font-normal">
+                                                • {staffName}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {dateTimeObj && (
+                                        <div className="text-[11px] text-white/30 flex gap-2">
+                                            <span>{dateTimeObj.date}</span>
+                                            <span>{dateTimeObj.time}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isRejectedState && (
+                                    <div className="mt-2 max-w-sm">
+                                        {tracking.rejectionReason && (
+                                            <div className="text-xs text-rose-300 bg-rose-500/5 border border-rose-500/10 rounded-xl p-3">
+                                                <span className="font-bold text-rose-400/80 uppercase tracking-wider text-[10px] block mb-1">Reason:</span>
+                                                {tracking.rejectionReason}
+                                            </div>
+                                        )}
+                                        {onEditRequest && activeRequest && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onEditRequest(activeRequest)}
+                                                className="mt-2 flex items-center justify-center gap-1.5 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                            >
+                                                <FiEdit3 size={13} /> Edit and Resubmit
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     );
                 })}
             </div>
 
             {isRejected && tracking.rejectionReason && (
-                <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
+                <div className="hidden md:block mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
                     <span className="font-bold">Rejection Reason:</span> {tracking.rejectionReason}
                 </div>
             )}
@@ -528,7 +653,7 @@ function MessReductionPage() {
                         <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-teal-400/80 uppercase">
                             Government College of Engineering
                         </span>
-                        <span className="text-2xl sm:text-3xl font-black text-white tracking-widest">
+                        <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">
                             SRIRANGAM
                         </span>
                     </div>
@@ -560,7 +685,7 @@ function MessReductionPage() {
                             <div className="p-2 bg-teal-500/20 rounded-lg">
                                 <FiUser className="text-teal-400" size={20} />
                             </div>
-                            <h4 className="text-sm font-black text-white/90 uppercase tracking-widest">Student Profile</h4>
+                            <h4 className="text-base font-semibold text-white/90 uppercase tracking-wider">Student Profile</h4>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
                             <Field label="Full Name" icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
@@ -584,16 +709,17 @@ function MessReductionPage() {
                                     <div className="p-2 bg-teal-500/20 rounded-lg">
                                         <FiActivity className="text-teal-400" size={20} />
                                     </div>
-                                    <h4 className="text-sm font-black text-teal-400 uppercase tracking-widest">Active Request</h4>
+                                    <h4 className="text-base font-semibold text-teal-400 uppercase tracking-wider">Active Request</h4>
                                 </div>
                                 <span className={`px-4 py-1.5 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm ${getStatusColor(activeRequest.currentStatus)}`}>
                                     {getStatusDisplay(activeRequest.currentStatus)}
                                 </span>
                             </div>
 
-                            <RequestTimeline tracking={trackingDetails} />
+                            <RequestTimeline tracking={trackingDetails} activeRequest={activeRequest} onEditRequest={handleEditRequest} />
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
+                            {/* Desktop Details Layout */}
+                            <div className="hidden md:grid grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12} /> Deputy Warden</span>
                                     <span className="text-base font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
@@ -608,9 +734,25 @@ function MessReductionPage() {
                                 </div>
                             </div>
 
+                            {/* Mobile Details Layout */}
+                            <div className="block md:hidden space-y-3 relative z-10">
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12} /> Assigned Deputy Warden</span>
+                                    <span className="text-sm font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
+                                </div>
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Leave Date</span>
+                                    <span className="text-sm font-semibold text-white/90">{activeRequest.leaveDate}</span>
+                                </div>
+                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
+                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Arrival Date</span>
+                                    <span className="text-sm font-semibold text-white/90">{activeRequest.arrivalDate}</span>
+                                </div>
+                            </div>
+
                             {((activeRequest.currentStatus)?.startsWith('Rejected')) && (
-                                <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 relative z-10">
-                                    <div className="flex flex-col gap-1.5">
+                                <div className="hidden md:flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 relative z-10 mt-5 pt-4 border-t border-white/10">
+                                    <div className="flex flex-col gap-1.5 text-left">
                                         <div className="flex items-center gap-3 text-rose-400">
                                             <FiAlertTriangle size={18} className="shrink-0" />
                                             <span className="text-sm font-bold">Request rejected. You can edit and resubmit.</span>
@@ -648,7 +790,7 @@ function MessReductionPage() {
                                     {editingFormId ? <FiEdit3 size={24} /> : <FiFileText size={24} />}
                                 </div>
                                 <div>
-                                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                                         {editingFormId ? "EDIT REQUEST" : "NEW REQUEST"}
                                     </h3>
                                     <p className="text-sm text-white/50 font-medium">
@@ -799,7 +941,7 @@ function MessReductionPage() {
                                     <motion.button
                                         whileHover={isSubmitBlocked || isSubmitting ? {} : { scale: 1.01, y: -1 }}
                                         whileTap={isSubmitBlocked || isSubmitting ? {} : { scale: 0.99 }}
-                                        className={`flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all duration-500 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
+                                        className={`flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-semibold text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all duration-500 tracking-wide ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
                                         type="submit"
                                         disabled={isSubmitting || isSubmitBlocked}
                                     >
@@ -823,7 +965,7 @@ function MessReductionPage() {
                                         whileTap={{ scale: 0.99 }}
                                         type="button"
                                         onClick={handleReset}
-                                        className="flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-teal-500/40 transition-all duration-300 tracking-widest cursor-pointer"
+                                        className="flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-semibold text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-teal-500/40 transition-all duration-300 tracking-wide cursor-pointer"
                                     >
                                         RESET
                                     </motion.button>

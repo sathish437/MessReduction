@@ -20,7 +20,7 @@ function LandingPage({ onNavigate }) {
         <img src={image} alt="GCES Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
         <div className="flex flex-col leading-tight">
           <span className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-teal-400/80 uppercase">Government College of Engineering</span>
-          <span className="text-xl sm:text-2xl font-black text-white tracking-widest">SRIRANGAM</span>
+          <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">SRIRANGAM</span>
         </div>
       </header>
 

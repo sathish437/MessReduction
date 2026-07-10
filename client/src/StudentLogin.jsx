@@ -92,17 +92,23 @@ function StudentLogin({ onNavigate }) {
                 <p className="text-sm sm:text-base text-white/30 mt-2">Sign in with your student credentials</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
-                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
-                  <span className={error ? "text-rose-400" : "text-teal-400/60"}><FiMail size={18} /></span>
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/25 w-full"
-                  />
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-1.5 w-full text-left">
+                  <label htmlFor="email-input" className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
+                    Email Address
+                  </label>
+                  <div className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all bg-[#0a1628] w-full focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.15)] ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/8'}`}>
+                    <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}><FiMail size={18} /></span>
+                    <input
+                      id="email-input"
+                      type="email"
+                      placeholder="Email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium appearance-none w-full"
+                    />
+                  </div>
                 </div>
 
                 <DobInputComponent

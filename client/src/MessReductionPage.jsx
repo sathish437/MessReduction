@@ -11,17 +11,39 @@ import image from "./assets/1000088399.png";
 
 const TITLE = "MESS REDUCTION";
 
-function Field({ icon, as: Component = "input", readOnly = false, children, ...props }) {
+function Field({ label, icon, as: Component = "input", readOnly = false, children, error, ...props }) {
+    const id = props.id || props.name;
+    const isSelect = Component === "select";
     return (
-        <div className={`flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/40' : ''}`}>
-            <span className="text-teal-400/60 shrink-0 text-base group-focus-within:text-teal-400 transition-colors">{icon}</span>
-            <Component
-                className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium appearance-none w-full"
-                readOnly={readOnly}
-                {...props}
-            >
-                {children}
-            </Component>
+        <div className="flex flex-col gap-1.5 w-full text-left">
+            {label && (
+                <label htmlFor={id} className="text-xs sm:text-sm font-bold tracking-wider text-white/70 select-none uppercase">
+                    {label}
+                </label>
+            )}
+            <div className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 relative group 
+                ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/40 border-white/5' : 'bg-black/20'} 
+                ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/8 focus-within:border-teal-500/60 focus-within:bg-teal-950/10 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)]'}`}>
+                {icon && <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}>{icon}</span>}
+                <Component
+                    id={id}
+                    className={`flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white placeholder:text-white/30 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
+                    readOnly={readOnly}
+                    {...props}
+                >
+                    {children}
+                </Component>
+                {isSelect && (
+                    <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                        <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                )}
+            </div>
+            {error && (
+                <span className="text-xs font-semibold text-rose-400 tracking-wide mt-1 pl-1">
+                    {error}
+                </span>
+            )}
         </div>
     )
 }
@@ -221,6 +243,7 @@ function MessReductionPage() {
     const [editingFormId, setEditingFormId] = useState(null)
     const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
     const [trackingDetails, setTrackingDetails] = useState(null)
+    const [formErrors, setFormErrors] = useState({});
 
     const activeRequest = Array.isArray(studentForm)
         ? studentForm.find(form => form.active === true || form.isActive === true)
@@ -330,10 +353,17 @@ function MessReductionPage() {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (formErrors[name]) {
+            setFormErrors(prev => ({
+                ...prev,
+                [name]: ""
+            }));
+        }
     };
 
     const handleEditRequest = (req) => {
         setEditingFormId(req.formId);
+        setFormErrors({});
 
         const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
         const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
@@ -355,6 +385,23 @@ function MessReductionPage() {
         document.getElementById("form-section")?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const handleReset = () => {
+        setFormData(prev => ({
+            ...prev,
+            room: "",
+            year: "",
+            leaveDate: "",
+            leaveTime: "",
+            arrivalDate: "",
+            arrivalTime: "",
+            reason: "",
+            otherReason: "",
+            isEmergency: false
+        }));
+        setEditingFormId(null);
+        setFormErrors({});
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -362,8 +409,11 @@ function MessReductionPage() {
         const roomVal = formData.room ? formData.room.toString().trim() : "";
         const roomRegex = /^4[0-3]\d{2,4}$/;
         if (!roomRegex.test(roomVal)) {
+            setFormErrors({ room: "Room number must start with 4, second digit must be 0, 1, 2, or 3, and contain 4 to 6 digits." });
             showToast("Room number must start with 4, second digit must be 0, 1, 2, or 3, and contain 4 to 6 digits.", 'error');
             return;
+        } else {
+            setFormErrors({});
         }
 
         if (isSubmitBlocked) {
@@ -512,12 +562,12 @@ function MessReductionPage() {
                             </div>
                             <h4 className="text-sm font-black text-white/90 uppercase tracking-widest">Student Profile</h4>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
-                            <Field icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
-                            <Field icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
-                            <Field icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo || ""} readOnly />
-                            <Field icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
-                            <Field icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+                            <Field label="Full Name" icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
+                            <Field label="Register No" icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
+                            <Field label="Roll No" icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo || ""} readOnly />
+                            <Field label="Department" icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
+                            <Field label="Mobile Number" icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                         </div>
                     </motion.div>
 
@@ -609,34 +659,44 @@ function MessReductionPage() {
                         </div>
 
                         <div className="p-6 sm:p-8 relative z-10">
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
                                 {/* Editable Leave Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group">
-                                        <span className="text-teal-400/60 shrink-0 group-focus-within:text-teal-400 transition-colors"><FiCalendar size={18} /></span>
-                                        <select
-                                            name="year"
-                                            value={formData.year}
-                                            onChange={handleChange}
-                                            required
-                                            className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white font-medium appearance-none w-full cursor-pointer"
-                                        >
-                                            <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Year</option>
-                                            {["1st", "2nd", "3rd", "4th"].map(y => (
-                                                <option key={y} value={y} className="bg-[#0f1f38] text-white">{y} Year</option>
-                                            ))}
-                                        </select>
-                                        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                            <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </div>
-                                    </div>
-                                    <Field icon={<FiMapPin />} type="number" placeholder="Room No" name="room" value={formData.room} onChange={handleChange} min="1" required />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <Field
+                                        as="select"
+                                        label="Year of Study"
+                                        icon={<FiCalendar size={18} />}
+                                        name="year"
+                                        value={formData.year}
+                                        onChange={handleChange}
+                                        required
+                                        id="year-select"
+                                    >
+                                        <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Year</option>
+                                        {["1st", "2nd", "3rd", "4th"].map(y => (
+                                            <option key={y} value={y} className="bg-[#0f1f38] text-white">{y} Year</option>
+                                        ))}
+                                    </Field>
+                                    <Field
+                                        label="Room Number"
+                                        icon={<FiMapPin />}
+                                        type="number"
+                                        placeholder="Room No"
+                                        name="room"
+                                        value={formData.room}
+                                        onChange={handleChange}
+                                        min="1"
+                                        required
+                                        id="room-input"
+                                        error={formErrors.room}
+                                    />
                                 </div>
 
                                 {/* Leave Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <Field
+                                        label="Leave Date"
                                         icon={<FiCalendar />}
                                         type="date"
                                         name="leaveDate"
@@ -644,20 +704,24 @@ function MessReductionPage() {
                                         onChange={handleChange}
                                         min={new Date().toISOString().split('T')[0]}
                                         required
+                                        id="leave-date-input"
                                     />
                                     <Field
+                                        label="Leave Time"
                                         icon={<FiClock />}
                                         type="time"
                                         name="leaveTime"
                                         value={formData.leaveTime}
                                         onChange={handleChange}
                                         required
+                                        id="leave-time-input"
                                     />
                                 </div>
 
                                 {/* Arrival Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <Field
+                                        label="Arrival Date"
                                         icon={<FiCalendar />}
                                         type="date"
                                         name="arrivalDate"
@@ -665,36 +729,36 @@ function MessReductionPage() {
                                         onChange={handleChange}
                                         min={formData.leaveDate || new Date().toISOString().split('T')[0]}
                                         required
+                                        id="arrival-date-input"
                                     />
                                     <Field
+                                        label="Arrival Time"
                                         icon={<FiClock />}
                                         type="time"
                                         name="arrivalTime"
                                         value={formData.arrivalTime}
                                         onChange={handleChange}
                                         required
+                                        id="arrival-time-input"
                                     />
                                 </div>
 
                                 {/* Reason */}
-                                <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/20 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all duration-300 relative group">
-                                    <span className="text-teal-400/60 shrink-0 group-focus-within:text-teal-400 transition-colors"><FiInfo size={18} /></span>
-                                    <select
-                                        name="reason"
-                                        value={formData.reason}
-                                        onChange={handleChange}
-                                        required
-                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white font-medium appearance-none w-full cursor-pointer"
-                                    >
-                                        <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Reason</option>
-                                        <option value="Study Holidays" className="bg-[#0f1f38]">Study Holidays</option>
-                                        <option value="Medical Leave" className="bg-[#0f1f38]">Medical Leave</option>
-                                        <option value="other" className="bg-[#0f1f38]">Other Reason</option>
-                                    </select>
-                                    <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                        <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                </div>
+                                <Field
+                                    as="select"
+                                    label="Reason for Leave"
+                                    icon={<FiInfo size={18} />}
+                                    name="reason"
+                                    value={formData.reason}
+                                    onChange={handleChange}
+                                    required
+                                    id="reason-select"
+                                >
+                                    <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Reason</option>
+                                    <option value="Study Holidays" className="bg-[#0f1f38]">Study Holidays</option>
+                                    <option value="Medical Leave" className="bg-[#0f1f38]">Medical Leave</option>
+                                    <option value="other" className="bg-[#0f1f38]">Other Reason</option>
+                                </Field>
 
                                 {/* Other Reason (conditional) */}
                                 <AnimatePresence>
@@ -705,6 +769,7 @@ function MessReductionPage() {
                                             exit={{ opacity: 0, height: 0 }}
                                         >
                                             <Field
+                                                label="Specify Reason"
                                                 icon={<FiFileText />}
                                                 type="text"
                                                 placeholder="Enter your reason"
@@ -712,6 +777,7 @@ function MessReductionPage() {
                                                 value={formData.otherReason}
                                                 onChange={handleChange}
                                                 required
+                                                id="other-reason-input"
                                             />
                                         </motion.div>
                                     )}
@@ -728,28 +794,40 @@ function MessReductionPage() {
                                     </div>
                                 )}
 
-                                {/* Submit Button */}
-                                <motion.button
-                                    whileHover={isSubmitBlocked || isSubmitting ? {} : { scale: 1.02, y: -2 }}
-                                    whileTap={isSubmitBlocked || isSubmitting ? {} : { scale: 0.98 }}
-                                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_rgba(45,212,191,0.5)] transition-all duration-500 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
-                                    type="submit"
-                                    disabled={isSubmitting || isSubmitBlocked}
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            PROCESSING...
-                                        </>
-                                    ) : (
-                                        <>
-                                            {editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST"} <FiArrowRight size={18} />
-                                        </>
-                                    )}
-                                </motion.button>
+                                {/* Buttons Container */}
+                                <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 w-full">
+                                    <motion.button
+                                        whileHover={isSubmitBlocked || isSubmitting ? {} : { scale: 1.01, y: -1 }}
+                                        whileTap={isSubmitBlocked || isSubmitting ? {} : { scale: 0.99 }}
+                                        className={`flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all duration-500 tracking-widest ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
+                                        type="submit"
+                                        disabled={isSubmitting || isSubmitBlocked}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                PROCESSING...
+                                            </>
+                                        ) : (
+                                            <>
+                                                {editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST"} <FiArrowRight size={18} />
+                                            </>
+                                        )}
+                                    </motion.button>
+
+                                    <motion.button
+                                        whileHover={{ scale: 1.01, y: -1 }}
+                                        whileTap={{ scale: 0.99 }}
+                                        type="button"
+                                        onClick={handleReset}
+                                        className="flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-black text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-teal-500/40 transition-all duration-300 tracking-widest cursor-pointer"
+                                    >
+                                        RESET
+                                    </motion.button>
+                                </div>
                             </form>
                         </div>
                     </motion.div>

@@ -219,7 +219,18 @@ function AutoAcceptSettingsCard() {
                     <button
                         type="button"
                         disabled={saving}
-                        onClick={() => setEnabled(!enabled)}
+                        onClick={() => {
+                            const newEnabled = !enabled;
+                            setEnabled(newEnabled);
+                            if (newEnabled) {
+                                // Default fromDate to today if turning on and it's missing or before today
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                if (!fromDate || fromDate < todayStr) {
+                                    setFromDate(todayStr);
+                                    if (toDate && toDate < todayStr) setToDate(todayStr);
+                                }
+                            }
+                        }}
                         className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${enabled ? 'bg-teal-500' : 'bg-slate-700'}`}
                     >
                         <span
@@ -233,18 +244,26 @@ function AutoAcceptSettingsCard() {
                         <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">From Date</label>
                         <input
                             type="date"
+                            disabled={!enabled || saving}
+                            min={new Date().toISOString().split('T')[0]}
                             value={fromDate}
-                            onChange={(e) => setFromDate(e.target.value)}
-                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors"
+                            onChange={(e) => {
+                                const newFrom = e.target.value;
+                                setFromDate(newFrom);
+                                if (toDate && toDate < newFrom) setToDate(newFrom);
+                            }}
+                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">To Date</label>
                         <input
                             type="date"
+                            disabled={!enabled || saving}
+                            min={fromDate || new Date().toISOString().split('T')[0]}
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
-                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors"
+                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>

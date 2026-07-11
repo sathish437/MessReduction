@@ -144,14 +144,6 @@ function App() {
           <ProtectedRoute requiredType="student" onNavigate={navigate}>
             <div className="relative">
               <MessReductionPage />
-              <button
-                onClick={() => {
-                  logout();
-                }}
-                className="fixed bottom-6 left-6 px-6 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400 font-bold uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all z-[100]"
-              >
-                Logout
-              </button>
             </div>
           </ProtectedRoute>
         );

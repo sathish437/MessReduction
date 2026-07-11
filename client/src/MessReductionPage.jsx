@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
     FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
-    FiCheckCircle, FiXCircle, FiActivity, FiMapPin
+    FiCheckCircle, FiXCircle, FiActivity, FiMapPin, FiLogOut
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
+import { logout } from "./services/authService";
 
 import image from "./assets/1000088399.png";
 
@@ -369,6 +370,7 @@ function MessReductionPage() {
     const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
     const [trackingDetails, setTrackingDetails] = useState(null)
     const [formErrors, setFormErrors] = useState({});
+    const [activeTab, setActiveTab] = useState('dashboard');
 
     const activeRequest = Array.isArray(studentForm)
         ? studentForm.find(form => form.active === true || form.isActive === true)
@@ -489,6 +491,7 @@ function MessReductionPage() {
     const handleEditRequest = (req) => {
         setEditingFormId(req.formId);
         setFormErrors({});
+        setActiveTab('dashboard');
 
         const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
         const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
@@ -659,7 +662,12 @@ function MessReductionPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-
+                    <button
+                        onClick={() => logout()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                    >
+                        <FiLogOut size={14} /> Logout
+                    </button>
                 </div>
             </header>
 
@@ -667,6 +675,23 @@ function MessReductionPage() {
 
             {/* Main Content */}
             <main className="flex-1 w-full flex flex-col items-center px-4 py-8 sm:py-12 z-10">
+                <div className="w-full flex justify-center mb-8">
+                    <div className="flex bg-white/[0.02] border border-white/10 rounded-xl p-1 backdrop-blur-xl shadow-lg">
+                        <button 
+                            onClick={() => setActiveTab('dashboard')}
+                            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 cursor-pointer ${activeTab === 'dashboard' ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.02]'}`}
+                        >
+                            Dashboard
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('track')}
+                            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 cursor-pointer ${activeTab === 'track' ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.02]'}`}
+                        >
+                            Track Request
+                        </button>
+                    </div>
+                </div>
+
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -675,7 +700,8 @@ function MessReductionPage() {
                 >
 
                     {/* 1. Student Details (Auto-filled) */}
-                    <motion.div
+                    {activeTab === 'dashboard' && (
+                        <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden group"
@@ -688,17 +714,20 @@ function MessReductionPage() {
                             <h4 className="text-base font-semibold text-white/90 uppercase tracking-wider">Student Profile</h4>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
-                            <Field label="Full Name" icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name} readOnly />
-                            <Field label="Register No" icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id} readOnly />
-                            <Field label="Roll No" icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo || ""} readOnly />
-                            <Field label="Department" icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept} readOnly />
+                            <Field label="Full Name" icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name?.toUpperCase()} readOnly />
+                            <Field label="Register No" icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id?.toUpperCase()} readOnly />
+                            <Field label="Roll No" icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo ? formData.rollNo.toUpperCase() : ""} readOnly />
+                            <Field label="Department" icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept?.toUpperCase()} readOnly />
                             <Field label="Mobile Number" icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                         </div>
                     </motion.div>
+                    )}
 
-                    {/* 2. Active Request Status (only when active request exists) */}
-                    {activeRequest && (
-                        <motion.div
+                    {/* 2. Active Request Status */}
+                    {activeTab === 'track' && (
+                        <>
+                            {activeRequest ? (
+                                <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="w-full rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6 sm:p-8 shadow-sm relative overflow-hidden"
@@ -774,10 +803,23 @@ function MessReductionPage() {
                                 </div>
                             )}
                         </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="w-full rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center shadow-sm"
+                                >
+                                    <FiCheckCircle size={48} className="mx-auto text-teal-400/50 mb-4" />
+                                    <h3 className="text-xl font-bold text-white/90 mb-2">No Active Requests</h3>
+                                    <p className="text-white/50 text-sm">You don't have any pending or active mess reduction requests to track.</p>
+                                </motion.div>
+                            )}
+                        </>
                     )}
 
                     {/* 3. New Request Form */}
-                    <motion.div
+                    {activeTab === 'dashboard' && (
+                        <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         id="form-section"
@@ -973,6 +1015,7 @@ function MessReductionPage() {
                             </form>
                         </div>
                     </motion.div>
+                    )}
 
                 </motion.div>
             </main>

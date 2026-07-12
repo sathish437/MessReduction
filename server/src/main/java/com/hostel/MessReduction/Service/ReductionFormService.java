@@ -1054,7 +1054,7 @@ public class ReductionFormService {
         log.info("[AUTO_ACCEPT] DeputyWarden auto-accept triggered: user={}, formId={}, previousStatus={}", deputyWarden, form.getFormId(), previousStatus);
         
         try {
-            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingWarden, "SYSTEM", "Auto accept enabled for leave/availability period");
+            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingWarden, "SYSTEM (Auto Accept)", "Automatically approved because Auto Accept was enabled.");
             log.info("[AUTO_ACCEPT] FormHistory saved for formId={}", form.getFormId());
         } catch (Exception e) {
             log.error("[AUTO_ACCEPT] FAILED to save FormHistory for formId={}: {}", form.getFormId(), e.getMessage(), e);
@@ -1120,7 +1120,7 @@ public class ReductionFormService {
         log.info("[AUTO_ACCEPT] Warden auto-accept triggered: user={}, formId={}, previousStatus={}", settings.getUsername(), form.getFormId(), previousStatus);
         
         try {
-            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingOffice, "SYSTEM", "Auto accept enabled for leave/availability period");
+            saveFormHistory(form, "AUTO_ACCEPT", previousStatus, FormStatus.PendingOffice, "SYSTEM (Auto Accept)", "Automatically approved because Auto Accept was enabled.");
             log.info("[AUTO_ACCEPT] FormHistory saved for formId={}", form.getFormId());
         } catch (Exception e) {
             log.error("[AUTO_ACCEPT] FAILED to save FormHistory for formId={}: {}", form.getFormId(), e.getMessage(), e);
@@ -1240,7 +1240,7 @@ public class ReductionFormService {
                     tracking.setOfficeApprovalTime(h.getEventTimestamp());
                     tracking.setOfficeName(h.getPerformedBy());
                     
-                    if ("SYSTEM".equalsIgnoreCase(h.getPerformedBy())) {
+                    if (h.getPerformedBy() != null && h.getPerformedBy().startsWith("SYSTEM")) {
                         tracking.setAutoAccepted(true);
                     }
                 }

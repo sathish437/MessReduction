@@ -1,6 +1,8 @@
 package com.hostel.MessReduction.Service;
 
 import com.hostel.MessReduction.Entity.AppNotification;
+import com.hostel.MessReduction.Entity.Role;
+import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.stereotype.Service;
@@ -21,11 +23,13 @@ public class NotificationService {
     
     private final AppNotificationRepository notificationRepo;
     private final StaffUsersRepo staffUsersRepo;
+    private final PushNotificationService pushNotificationService;
     private final ConcurrentHashMap<String, Long> notificationLocks = new ConcurrentHashMap<>();
 
-    public NotificationService(AppNotificationRepository notificationRepo, StaffUsersRepo staffUsersRepo) {
+    public NotificationService(AppNotificationRepository notificationRepo, StaffUsersRepo staffUsersRepo, PushNotificationService pushNotificationService) {
         this.notificationRepo = notificationRepo;
         this.staffUsersRepo = staffUsersRepo;
+        this.pushNotificationService = pushNotificationService;
     }
 
     @jakarta.annotation.PostConstruct
@@ -66,6 +70,15 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
+            
+            // Trigger browser push notification
+            try {
+                String title = getPushTitle(recipientUsername, type, message);
+                String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
+                pushNotificationService.sendPushNotification(recipientUsername, title, message, redirectUrl, relatedFormId);
+            } catch (Exception pe) {
+                logger.error("Failed to send push notification during createNotification: {}", pe.getMessage());
+            }
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
@@ -95,9 +108,61 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
+            
+            // Trigger browser push notification
+            try {
+                String title = getPushTitle(recipientUsername, type, message);
+                String redirectUrl = getPushRedirectUrl(recipientUsername, type, -1L);
+                pushNotificationService.sendPushNotification(recipientUsername, title, message, redirectUrl, -1L);
+            } catch (Exception pe) {
+                logger.error("Failed to send push notification during createAggregatedNotification: {}", pe.getMessage());
+            }
         } catch (Exception e) {
             logger.error("Failed to create aggregated notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
+    }
+
+    private String getPushTitle(String recipientUsername, String type, String message) {
+        if ("REJECTED".equals(type) || (message != null && message.toLowerCase().contains("rejected"))) {
+            return "Request Rejected";
+        }
+        if ("APPROVED".equals(type) || (message != null && message.toLowerCase().contains("approved"))) {
+            return "Request Approved";
+        }
+        if (recipientUsername != null) {
+            if (recipientUsername.startsWith("deputy")) {
+                return "New Mess Reduction Request";
+            }
+            if ("warden".equalsIgnoreCase(recipientUsername) || recipientUsername.startsWith("warden")) {
+                return "New Mess Reduction Request Pending";
+            }
+            if ("office".equalsIgnoreCase(recipientUsername)) {
+                return "New Mess Reduction Request";
+            }
+        }
+        return "Mess Reduction Update";
+    }
+
+    private String getPushRedirectUrl(String recipientUsername, String type, Long formId) {
+        if (recipientUsername == null) {
+            return "/";
+        }
+        if (recipientUsername.contains("@")) {
+            return "/student-dashboard";
+        }
+        if ("warden".equalsIgnoreCase(recipientUsername) || recipientUsername.startsWith("warden")) {
+            return "/warden";
+        }
+        if ("office".equalsIgnoreCase(recipientUsername)) {
+            return "/office";
+        }
+        if (recipientUsername.startsWith("deputy")) {
+            if (formId != null && formId > 0) {
+                return "/deputy/request/" + formId;
+            }
+            return "/deputy";
+        }
+        return "/student-dashboard";
     }
 
     public List<AppNotification> getUserNotifications(String username) {

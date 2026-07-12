@@ -54,6 +54,9 @@ export const setStaffAuth = (token, username, role) => {
   localStorage.setItem('user_type', 'STAFF');
   localStorage.setItem('staff_role', role);
   localStorage.setItem('staff_data', JSON.stringify({ username, role }));
+
+  // Register push notifications
+  registerPush().catch(err => console.error('Failed to register push:', err));
 };
 
 export const clearStaffAuth = () => {
@@ -110,6 +113,8 @@ export const getStudentAuth = () => {
   return { token: null, user: null };
 };
 
+import { registerPush, unregisterPush } from '../utils/pushNotificationHelper';
+
 export const setStudentAuth = (token, userData) => {
   localStorage.setItem('auth_token', token);
   localStorage.setItem('user_type', 'STUDENT');
@@ -117,6 +122,9 @@ export const setStudentAuth = (token, userData) => {
   // also set sessionStorage for legacy compatibility
   sessionStorage.setItem('token', token);
   sessionStorage.setItem('currentUser', JSON.stringify(userData));
+  
+  // Register push notifications
+  registerPush().catch(err => console.error('Failed to register push:', err));
 };
 
 export const clearStudentAuth = () => {
@@ -127,7 +135,14 @@ export const clearStudentAuth = () => {
   sessionStorage.removeItem('currentUser');
 };
 
-export const logout = () => {
+export const logout = async () => {
+  // Clear push subscription first before navigating away
+  try {
+    await unregisterPush();
+  } catch (e) {
+    console.error('Error unregistering push subscription:', e);
+  }
+
   // Clear localStorage
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_type');

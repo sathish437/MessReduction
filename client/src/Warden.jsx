@@ -96,9 +96,10 @@ function AutoAcceptSettingsCard() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchSettings = async () => {
             try {
-                const res = await apiClient.get("/api/hostelStaff/staff/auto-accept");
+                const res = await apiClient.get("/api/hostelStaff/staff/auto-accept", { signal: controller.signal });
                 if (res.data) {
                     setEnabled(res.data.enabled);
                     setFromDate(res.data.fromDate || "");
@@ -106,13 +107,19 @@ function AutoAcceptSettingsCard() {
                     setReason(res.data.reason || "");
                 }
             } catch (err) {
+                if (controller.signal.aborted) return;
                 console.error("Error fetching auto-accept settings:", err);
                 setError("Failed to load auto-accept settings");
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
         fetchSettings();
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     const handleSave = async (e) => {
@@ -325,14 +332,14 @@ const Warden = () => {
     const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        fetchData();
+        const controller = new AbortController();
+        fetchData(controller.signal);
+        return () => {
+            controller.abort();
+        };
     }, [genderFilter, selectedYear]);
 
-    const fetchData = async () => {
+    const fetchData = async (signal = null) => {
         setLoading(true);
         try {
             // Get logged-in username from cookie
@@ -349,11 +356,13 @@ const Warden = () => {
             }
 
             // Fetch warden-specific dashboard counts (filtered by year)
-            const countsRes = await apiClient.get(`/api/hostelStaff/staff/dashboard-count/warden?userName=${username}`);
+            const countsRes = await apiClient.get(`/api/hostelStaff/staff/dashboard-count/warden?userName=${username}`, signal ? { signal } : {});
+            if (signal && signal.aborted) return;
             setCounts(countsRes.data);
 
             // Fetch warden pending forms with filter parameters
-            const formsRes = await apiClient.get(`/api/hostelStaff/staff/warden?${queryParams}`);
+            const formsRes = await apiClient.get(`/api/hostelStaff/staff/warden?${queryParams}`, signal ? { signal } : {});
+            if (signal && signal.aborted) return;
 
             // Backend returns array (may be empty) - map to frontend format
             const data = Array.isArray(formsRes.data) ? formsRes.data.map(r => ({
@@ -364,12 +373,15 @@ const Warden = () => {
             })) : [];
             setRequests(data);
         } catch (err) {
+            if (signal && signal.aborted) return;
             // Any error (including 404) - treat as empty
             setRequests([]);
             setCounts({ pendingWarden: 0, pendingDeputyWarden: 0, pendingOffice: 0, approved: 0, rejectedWarden: 0, rejectedDeputyWarden: 0, rejectedOffice: 0 });
             console.error("Error fetching warden data:", err);
         } finally {
-            setLoading(false);
+            if (!signal || !signal.aborted) {
+                setLoading(false);
+            }
         }
     };
     const handleAction = async (formId, action) => {

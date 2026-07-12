@@ -113,10 +113,12 @@ function HostelOffice() {
         }
     };
 
-    const refreshData = async () => {
+    const refreshData = async (signal = null) => {
         try {
             // Fetch ALL pending forms for Office (PendingOffice status)
-            const response = await apiClient.get(`/api/hostelStaff/staff/office`);
+            const response = await apiClient.get(`/api/hostelStaff/staff/office`, signal ? { signal } : {});
+            if (signal && signal.aborted) return;
+            
             const data = response.data.map(r => ({
                 ...r,
                 id: r.formId,
@@ -128,29 +130,39 @@ function HostelOffice() {
             setRequests(data);
 
             // Fetch dashboard counts
-            const countRes = await apiClient.get("/api/hostelStaff/staff/dashboard-count");
+            const countRes = await apiClient.get("/api/hostelStaff/staff/dashboard-count", signal ? { signal } : {});
+            if (signal && signal.aborted) return;
             setDashboardStats(countRes.data);
 
             // Fetch year-wise counts
-            const yearCountRes = await apiClient.get("/api/hostelStaff/staff/office/year-count");
+            const yearCountRes = await apiClient.get("/api/hostelStaff/staff/office/year-count", signal ? { signal } : {});
+            if (signal && signal.aborted) return;
             setYearStats(yearCountRes.data);
 
         } catch (err) {
+            if (signal && signal.aborted) return;
             console.error("Error fetching Office data:", err);
         }
     };
 
     useEffect(() => {
+        const controller = new AbortController();
         const loadInitialData = async () => {
             try {
-                await refreshData();
+                await refreshData(controller.signal);
             } catch (err) {
+                if (controller.signal.aborted) return;
                 console.error("Error loading initial data:", err);
             } finally {
-                setIsLoading(false);
+                if (!controller.signal.aborted) {
+                    setIsLoading(false);
+                }
             }
         };
         loadInitialData();
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     useEffect(() => {

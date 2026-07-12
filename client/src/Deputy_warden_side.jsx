@@ -84,9 +84,10 @@ function AutoAcceptSettingsCard() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        const controller = new AbortController();
         const fetchSettings = async () => {
             try {
-                const res = await apiClient.get("/api/hostelStaff/staff/auto-accept");
+                const res = await apiClient.get("/api/hostelStaff/staff/auto-accept", { signal: controller.signal });
                 if (res.data) {
                     setEnabled(res.data.enabled);
                     setFromDate(res.data.fromDate || "");
@@ -94,13 +95,19 @@ function AutoAcceptSettingsCard() {
                     setReason(res.data.reason || "");
                 }
             } catch (err) {
+                if (controller.signal.aborted) return;
                 console.error("Error fetching auto-accept settings:", err);
                 setError("Failed to load auto-accept settings");
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
         fetchSettings();
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     const handleSave = async (e) => {
@@ -296,13 +303,14 @@ function Deputy_warden_side() {
         setCurrentPage(1);
     }, [search, selectedYear]);
 
-    const refreshData = async () => {
+    const refreshData = async (signal = null) => {
         try {
             const currentUsername = getCookie('staffUsername');
             const currentDeputyDetails = getDeputyDetails(currentUsername);
 
             // Fetch pending forms for Deputy Warden
-            const response = await apiClient.get("/api/hostelStaff/staff/deputyWarden");
+            const response = await apiClient.get("/api/hostelStaff/staff/deputyWarden", signal ? { signal } : {});
+            if (signal && signal.aborted) return;
 
             // Filter forms in frontend
             const filteredData = response.data.filter(form => {
@@ -323,31 +331,41 @@ function Deputy_warden_side() {
             setRequests(data);
 
             // Fetch dashboard counts
-            const countRes = await apiClient.get("/api/hostelStaff/staff/dashboard-count");
+            const countRes = await apiClient.get("/api/hostelStaff/staff/dashboard-count", signal ? { signal } : {});
+            if (signal && signal.aborted) return;
             setDashboardStats(countRes.data);
 
             // Fetch year-wise counts
-            const yearCountRes = await apiClient.get("/api/hostelStaff/staff/deputyWarden/year-count");
+            const yearCountRes = await apiClient.get("/api/hostelStaff/staff/deputyWarden/year-count", signal ? { signal } : {});
+            if (signal && signal.aborted) return;
             setYearStats(yearCountRes.data);
 
         } catch (err) {
+            if (signal && signal.aborted) return;
             console.error("Error fetching Deputy Warden data:", err);
         }
     };
 
     useEffect(() => {
+        const controller = new AbortController();
         const loadInitialData = async () => {
             try {
-                await refreshData();
+                await refreshData(controller.signal);
             } catch (err) {
+                if (controller.signal.aborted) return;
                 console.error("Error loading initial data:", err);
                 const fallback = JSON.parse(localStorage.getItem("mock_requests") || "[]");
                 setRequests(fallback);
             } finally {
-                setIsLoading(false);
+                if (!controller.signal.aborted) {
+                    setIsLoading(false);
+                }
             }
         };
         loadInitialData();
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     const [dashboardStats, setDashboardStats] = useState({

@@ -120,26 +120,34 @@ public class ReductionFormService {
         ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
         reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
         reductionFormRepo.save(reductionForm);
+        log.info("Student request created");
         saveFormHistory(reductionForm, "Student Submitted", null, FormStatus.PendingDeputyWarden, "student", "Initial submission");
         
         processAutoAcceptIfApplicable(reductionForm);
         
-        handleNewSubmissionNotifications(reductionForm);
+        sendWorkflowNotifications(reductionForm);
         
         return ReductionFormMapper.mapToReductionFormResDTO(reductionForm);
     }
 
-    private void handleNewSubmissionNotifications(ReductionForm form) {
-        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
-            return;
-        }
-        String deputyUsername = form.getAssignedDeputyWarden();
-        if (deputyUsername != null) {
-            staffUsersRepo.findByUserName(deputyUsername).ifPresent(dw -> {
-                notificationService.createNotification(dw.getUserName(), "New Reduction Request Received", "NORMAL_REQUEST", form.getFormId());
-                if (dw.getPhoneNo() != null) {
-                    // WhatsApp message will be sent by batch scheduler
+    private void sendWorkflowNotifications(ReductionForm form) {
+        if (form.getCurrentStatus() == FormStatus.PendingDeputyWarden) {
+            String deputyUsername = form.getAssignedDeputyWarden();
+            if (deputyUsername != null) {
+                staffUsersRepo.findByUserName(deputyUsername).ifPresent(dw -> {
+                    notificationService.createNotification(dw.getUserName(), "You have a new request pending.", "NORMAL_REQUEST", form.getFormId());
+                });
+            }
+        } else if (form.getCurrentStatus() == FormStatus.PendingWarden) {
+            staffUsersRepo.findByRole(Role.Warden).forEach(warden -> {
+                if ("warden".equals(warden.getUserName()) || ("warden" + form.getYear()).equals(warden.getUserName())) {
+                    notificationService.createNotification(warden.getUserName(), "New Mess Reduction Request Pending.", "NORMAL_REQUEST", form.getFormId());
                 }
+            });
+        } else if (form.getCurrentStatus() == FormStatus.PendingOffice) {
+            log.info("Moving request to Office");
+            staffUsersRepo.findByRole(Role.Office).forEach(office -> {
+                notificationService.createNotification(office.getUserName(), "New request pending for approval.", "NORMAL_REQUEST", form.getFormId());
             });
         }
     }
@@ -200,7 +208,7 @@ public class ReductionFormService {
         
         processAutoAcceptIfApplicable(form);
         
-        handleNewSubmissionNotifications(form);
+        sendWorkflowNotifications(form);
         
         return ReductionFormMapper.mapToReductionFormResDTO(form);
     }
@@ -304,15 +312,15 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Warden", previousStatus, FormStatus.PendingOffice, userName, null);
         createActivityLog(form, Role.Warden, userName, "Approved");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
+        
+        log.info("Warden manual approval completed");
+        
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
-        staffUsersRepo.findByRole(Role.Office).forEach(office -> {
-            if (office.getPhoneNo() != null) {
-                // WhatsApp message will be sent by batch scheduler
-            }
-        });
+        
+        sendWorkflowNotifications(form);
     }
 
 
@@ -329,19 +337,17 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Deputy Warden", previousStatus, FormStatus.PendingWarden, userName, null);
         createActivityLog(form, Role.DeputyWarden, userName, "Approved");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
+        
+        log.info("Deputy Warden manual approval completed");
+        
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
-        staffUsersRepo.findByRole(Role.Warden).forEach(warden -> {
-            if ("warden".equals(warden.getUserName()) || ("warden" + form.getYear()).equals(warden.getUserName())) {
-                if (warden.getPhoneNo() != null) {
-                    // WhatsApp message will be sent by batch scheduler
-                }
-            }
-        });
         
         processAutoAcceptIfApplicable(form);
+        
+        sendWorkflowNotifications(form);
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -354,7 +360,7 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Office", previousStatus, FormStatus.Approved, userName, null);
         createActivityLog(form, Role.Office, userName, "Approved");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Office Approved Request", "APPROVED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
@@ -372,7 +378,7 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Warden", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.Warden, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Warden", "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
@@ -390,7 +396,7 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Deputy Warden", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Deputy Warden", "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
@@ -407,7 +413,7 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Rejected by Office", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
         createActivityLog(form, Role.Office, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Request Rejected by Office", "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
@@ -506,7 +512,12 @@ public class ReductionFormService {
             form.setCurrentStatus(FormStatus.PendingOffice);
             saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
             createActivityLog(form, Role.Warden, userName, "Approved");
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Warden Approved Request", "APPROVED", form.getFormId());
+            
+            log.info("Warden manual approval completed");
+            
+            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId());
+            
+            sendWorkflowNotifications(form);
             validForms.add(form);
         }
 
@@ -538,7 +549,14 @@ public class ReductionFormService {
             form.setCurrentStatus(FormStatus.PendingWarden);
             saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingWarden, userName, null);
             createActivityLog(form, Role.DeputyWarden, userName, "Approved");
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Deputy Warden Approved Request", "APPROVED", form.getFormId());
+            
+            log.info("Deputy Warden manual approval completed");
+            
+            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId());
+            
+            processAutoAcceptIfApplicable(form);
+            
+            sendWorkflowNotifications(form);
         }
 
         reductionFormRepo.saveAll(forms);
@@ -571,7 +589,7 @@ public class ReductionFormService {
             form.setCurrentStatus(FormStatus.Approved);
             saveFormHistory(form, "Approved by Office (Bulk)", previousStatus, FormStatus.Approved, userName, null);
             createActivityLog(form, Role.Office, userName, "Approved");
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Office Approved Request", "APPROVED", form.getFormId());
+            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId());
         }
 
         reductionFormRepo.saveAll(forms);
@@ -614,7 +632,7 @@ public class ReductionFormService {
                 saveFormHistory(form, "Rejected by Warden (Bulk)", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
                 createActivityLog(form, Role.Warden, userName, "Rejected");
                 
-                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
                 notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
                 
                 rejected++;
@@ -663,7 +681,7 @@ public class ReductionFormService {
                 saveFormHistory(form, "Rejected by Deputy Warden (Bulk)", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
                 createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
                 
-                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
                 notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
                 
                 rejected++;
@@ -708,7 +726,7 @@ public class ReductionFormService {
                 saveFormHistory(form, "Rejected by Office (Bulk)", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
                 createActivityLog(form, Role.Office, userName, "Rejected");
                 
-                String notificationMessage = "❌ Mess Reduction Request Rejected\n\nReason:\n" + rejectReason.trim();
+                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
                 notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
                 
                 rejected++;
@@ -1012,6 +1030,8 @@ public class ReductionFormService {
             return false;
         }
         
+        log.info("Deputy Warden auto approval enabled");
+        
         // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
         if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
             return false;
@@ -1030,6 +1050,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.PendingWarden);
         reductionFormRepo.save(form);
         
+        log.info("Deputy Warden auto approved request");
         log.info("[AUTO_ACCEPT] DeputyWarden auto-accept triggered: user={}, formId={}, previousStatus={}", deputyWarden, form.getFormId(), previousStatus);
         
         try {
@@ -1075,6 +1096,8 @@ public class ReductionFormService {
             return false;
         }
         
+        log.info("Warden auto approval enabled");
+        
         // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
         if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
             return false;
@@ -1093,6 +1116,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.PendingOffice);
         reductionFormRepo.save(form);
         
+        log.info("Warden auto approved request");
         log.info("[AUTO_ACCEPT] Warden auto-accept triggered: user={}, formId={}, previousStatus={}", settings.getUsername(), form.getFormId(), previousStatus);
         
         try {

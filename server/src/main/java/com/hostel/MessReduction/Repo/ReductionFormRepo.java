@@ -27,6 +27,10 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     
     @Query("SELECT DISTINCT r FROM ReductionForm r LEFT JOIN FETCH r.history WHERE r.currentStatus IN :statuses AND r.isActive = true")
     List<ReductionForm> findPendingFormsWithHistory(@Param("statuses") List<FormStatus> statuses);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM ReductionForm r WHERE r.currentStatus IN :statuses AND r.isActive = true ORDER BY r.formId ASC")
+    List<ReductionForm> findPendingFormsForUpdate(@Param("statuses") List<FormStatus> statuses);
     
     // Testing Mode Methods
     List<ReductionForm> findByCurrentStatusInAndSubmittedAtAfter(List<FormStatus> statuses, java.time.LocalDateTime time);

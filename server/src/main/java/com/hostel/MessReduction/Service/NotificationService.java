@@ -24,12 +24,17 @@ public class NotificationService {
     private final AppNotificationRepository notificationRepo;
     private final StaffUsersRepo staffUsersRepo;
     private final PushNotificationService pushNotificationService;
+    private final BatchNotificationService batchNotificationService;
     private final ConcurrentHashMap<String, Long> notificationLocks = new ConcurrentHashMap<>();
 
-    public NotificationService(AppNotificationRepository notificationRepo, StaffUsersRepo staffUsersRepo, PushNotificationService pushNotificationService) {
+    public NotificationService(AppNotificationRepository notificationRepo, 
+                               StaffUsersRepo staffUsersRepo, 
+                               PushNotificationService pushNotificationService,
+                               BatchNotificationService batchNotificationService) {
         this.notificationRepo = notificationRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.pushNotificationService = pushNotificationService;
+        this.batchNotificationService = batchNotificationService;
     }
 
     @jakarta.annotation.PostConstruct
@@ -71,14 +76,10 @@ public class NotificationService {
             logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
             
-            // Trigger browser push notification
-            try {
-                String title = getPushTitle(recipientUsername, type, message);
-                String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
-                pushNotificationService.sendPushNotification(recipientUsername, title, message, redirectUrl, relatedFormId);
-            } catch (Exception pe) {
-                logger.error("Failed to send push notification during createNotification: {}", pe.getMessage());
-            }
+            // Trigger browser push notification (delegated to batch or direct sending)
+            String title = getPushTitle(recipientUsername, type, message);
+            String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
+            batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, relatedFormId);
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
@@ -109,14 +110,10 @@ public class NotificationService {
             logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
             
-            // Trigger browser push notification
-            try {
-                String title = getPushTitle(recipientUsername, type, message);
-                String redirectUrl = getPushRedirectUrl(recipientUsername, type, -1L);
-                pushNotificationService.sendPushNotification(recipientUsername, title, message, redirectUrl, -1L);
-            } catch (Exception pe) {
-                logger.error("Failed to send push notification during createAggregatedNotification: {}", pe.getMessage());
-            }
+            // Trigger browser push notification (delegated to batch or direct sending)
+            String title = getPushTitle(recipientUsername, type, message);
+            String redirectUrl = getPushRedirectUrl(recipientUsername, type, -1L);
+            batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, -1L);
         } catch (Exception e) {
             logger.error("Failed to create aggregated notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }

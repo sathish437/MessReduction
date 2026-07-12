@@ -1,6 +1,7 @@
 package com.hostel.MessReduction.Service;
 
 import com.hostel.MessReduction.Entity.PushSubscription;
+import com.hostel.MessReduction.Entity.SubscriptionDetail;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Repo.PushSubscriptionRepository;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
@@ -115,54 +116,59 @@ public class PushNotificationService {
         log.info("Assigned Office: {}", assignedOffice);
 
         List<String> targetUsernames = resolveUsernames(username);
-        List<PushSubscription> subscriptions = new ArrayList<>();
+        List<PushSubscription> userSubscriptions = new ArrayList<>();
         for (String u : targetUsernames) {
-            subscriptions.addAll(pushSubscriptionRepository.findByUsername(u));
+            pushSubscriptionRepository.findByUsername(u).ifPresent(userSubscriptions::add);
         }
 
-        if (subscriptions.isEmpty()) {
+        if (userSubscriptions.isEmpty()) {
             log.warn("missing subscription for username: {}", username);
             return;
         }
 
         String finalUrl = redirectUrl != null ? redirectUrl : getDefaultRedirectUrl(username);
 
-        for (PushSubscription sub : subscriptions) {
-            try {
-                log.info("Subscription found for: {}", sub.getUsername());
-                log.info("Sending push notification to: {}", sub.getUsername());
-                log.info("Endpoint: {}", sub.getEndpoint());
-                
-                log.info("Preparing web push request");
-                Subscription subscription = new Subscription(
-                        sub.getEndpoint(),
-                        new Subscription.Keys(sub.getP256dh(), sub.getAuth())
-                );
+        for (PushSubscription userSub : userSubscriptions) {
+            if (userSub.getSubscriptions() == null || userSub.getSubscriptions().isEmpty()) {
+                continue;
+            }
+            for (SubscriptionDetail detail : userSub.getSubscriptions()) {
+                try {
+                    log.info("Subscription found for: {}", userSub.getUsername());
+                    log.info("Sending push notification to: {}", userSub.getUsername());
+                    log.info("Endpoint: {}", detail.getEndpoint());
+                    
+                    log.info("Preparing web push request");
+                    Subscription subscription = new Subscription(
+                            detail.getEndpoint(),
+                            new Subscription.Keys(detail.getP256dh(), detail.getAuth())
+                    );
 
-                Map<String, String> payloadMap = new HashMap<>();
-                payloadMap.put("title", title != null ? title : "Test Notification");
-                payloadMap.put("message", message != null ? message : "No payload received.");
-                payloadMap.put("url", finalUrl != null ? finalUrl : "/");
+                    Map<String, String> payloadMap = new HashMap<>();
+                    payloadMap.put("title", title != null ? title : "Test Notification");
+                    payloadMap.put("message", message != null ? message : "No payload received.");
+                    payloadMap.put("url", finalUrl != null ? finalUrl : "/");
 
-                String payload = objectMapper.writeValueAsString(payloadMap);
+                    String payload = objectMapper.writeValueAsString(payloadMap);
 
-                Notification notification = new Notification(subscription, payload);
-                log.info("Sending push payload");
-                HttpResponse response = pushService.send(notification);
+                    Notification notification = new Notification(subscription, payload);
+                    log.info("Sending push payload");
+                    HttpResponse response = pushService.send(notification);
 
-                int status = response.getStatusLine().getStatusCode();
-                log.info("Push response status: {}", status);
-                log.info("Push response received");
-                if (status == 201) {
-                    log.info("Push notification sent successfully to user {} at endpoint {}", sub.getUsername(), sub.getEndpoint());
-                } else if (status == 404 || status == 410) {
-                    log.warn("invalid endpoint (status {}). Deleting subscription for endpoint: {}", status, sub.getEndpoint());
-                    pushSubscriptionRepository.deleteByEndpoint(sub.getEndpoint());
-                } else {
-                    log.error("Push service returned error code {} for endpoint: {}", status, sub.getEndpoint());
+                    int status = response.getStatusLine().getStatusCode();
+                    log.info("Push response status: {}", status);
+                    log.info("Push response received");
+                    if (status == 201) {
+                        log.info("Push notification sent successfully to user {} at endpoint {}", userSub.getUsername(), detail.getEndpoint());
+                    } else if (status == 404 || status == 410) {
+                        log.warn("invalid endpoint (status {}). Deleting subscription for endpoint: {}", status, detail.getEndpoint());
+                        deleteEndpoint(detail.getEndpoint());
+                    } else {
+                        log.error("Push service returned error code {} for endpoint: {}", status, detail.getEndpoint());
+                    }
+                } catch (Exception e) {
+                    log.error("push sending error for username {}: {}", userSub.getUsername(), e.getMessage());
                 }
-            } catch (Exception e) {
-                log.error("push sending error for subscription id {}: {}", sub.getId(), e.getMessage());
             }
         }
     }
@@ -215,5 +221,22 @@ public class PushNotificationService {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private void deleteEndpoint(String endpoint) {
+        List<PushSubscription> otherSubs = pushSubscriptionRepository.findByEndpointLike(endpoint);
+        for (PushSubscription otherSub : otherSubs) {
+            if (otherSub.getSubscriptions() != null) {
+                boolean removed = otherSub.getSubscriptions().removeIf(sub -> endpoint.equals(sub.getEndpoint()));
+                if (removed) {
+                    if (otherSub.getSubscriptions().isEmpty()) {
+                        pushSubscriptionRepository.delete(otherSub);
+                    } else {
+                        pushSubscriptionRepository.save(otherSub);
+                    }
+                    log.info("Deleted invalid endpoint registered by user: {}", otherSub.getUsername());
+                }
+            }
+        }
     }
 }

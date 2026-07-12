@@ -2,6 +2,8 @@ package com.hostel.MessReduction.Repo;
 
 import com.hostel.MessReduction.Entity.PushSubscription;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,16 +12,13 @@ import java.util.Optional;
 
 @Repository
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, Long> {
-    List<PushSubscription> findByUsername(String username);
+    Optional<PushSubscription> findByUsername(String username);
     
     @Transactional
     void deleteByUsername(String username);
     
-    Optional<PushSubscription> findByEndpoint(String endpoint);
-    
-    @Transactional
-    void deleteByEndpoint(String endpoint);
+    @Query("SELECT p FROM PushSubscription p WHERE p.subscriptionsJson LIKE %:endpoint%")
+    List<PushSubscription> findByEndpointLike(@Param("endpoint") String endpoint);
     
     boolean existsByUsername(String username);
 }
-

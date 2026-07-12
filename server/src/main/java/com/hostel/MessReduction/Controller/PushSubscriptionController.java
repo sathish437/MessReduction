@@ -2,6 +2,7 @@ package com.hostel.MessReduction.Controller;
 
 import com.hostel.MessReduction.DTO.ReqDTO.PushSubscriptionReqDTO;
 import com.hostel.MessReduction.Entity.PushSubscription;
+import com.hostel.MessReduction.Entity.SubscriptionDetail;
 import com.hostel.MessReduction.Repo.PushSubscriptionRepository;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -11,9 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/push")
@@ -34,25 +35,40 @@ public class PushSubscriptionController {
         String username = authentication.getName();
         log.info("Received push subscription request for user: {}", username);
 
-        // Enforce "One active subscription per user. Replace old subscription if user subscribes again."
-        List<PushSubscription> oldSubscriptions = pushSubscriptionRepository.findByUsername(username);
-        if (!oldSubscriptions.isEmpty()) {
-            pushSubscriptionRepository.deleteAll(oldSubscriptions);
-            log.info("Deleted {} old subscriptions for user: {}", oldSubscriptions.size(), username);
+        // Also check if the endpoint is already registered by another user, and delete it to prevent conflict
+        List<PushSubscription> otherSubs = pushSubscriptionRepository.findByEndpointLike(dto.getEndpoint());
+        for (PushSubscription otherSub : otherSubs) {
+            if (otherSub.getSubscriptions() != null) {
+                boolean removed = otherSub.getSubscriptions().removeIf(sub -> dto.getEndpoint().equals(sub.getEndpoint()));
+                if (removed) {
+                    if (otherSub.getSubscriptions().isEmpty()) {
+                        pushSubscriptionRepository.delete(otherSub);
+                    } else {
+                        pushSubscriptionRepository.save(otherSub);
+                    }
+                    log.info("Deleted conflicting endpoint registered by user: {}", otherSub.getUsername());
+                }
+            }
         }
 
-        // Also check if the endpoint is already registered by another user, and delete it to prevent conflict
-        pushSubscriptionRepository.findByEndpoint(dto.getEndpoint()).ifPresent(sub -> {
-            pushSubscriptionRepository.delete(sub);
-            log.info("Deleted subscription with matching endpoint registered by another user: {}", sub.getUsername());
-        });
-
         // Save new subscription
-        PushSubscription subscription = new PushSubscription();
-        subscription.setUsername(username);
-        subscription.setEndpoint(dto.getEndpoint());
-        subscription.setP256dh(dto.getP256dh());
-        subscription.setAuth(dto.getAuth());
+        PushSubscription subscription = pushSubscriptionRepository.findByUsername(username)
+                .orElseGet(() -> {
+                    PushSubscription newSub = new PushSubscription();
+                    newSub.setUsername(username);
+                    newSub.setSubscriptions(new ArrayList<>());
+                    return newSub;
+                });
+
+        if (subscription.getSubscriptions() == null) {
+            subscription.setSubscriptions(new ArrayList<>());
+        }
+
+        // Remove existing endpoint if already present under this user to avoid duplicates
+        subscription.getSubscriptions().removeIf(sub -> dto.getEndpoint().equals(sub.getEndpoint()));
+
+        SubscriptionDetail detail = new SubscriptionDetail(dto.getEndpoint(), dto.getP256dh(), dto.getAuth());
+        subscription.getSubscriptions().add(detail);
 
         pushSubscriptionRepository.save(subscription);
         log.info("Successfully saved push subscription for user: {}", username);
@@ -75,19 +91,24 @@ public class PushSubscriptionController {
 
         if (targetEndpoint != null) {
             final String finalEndpoint = targetEndpoint;
-            pushSubscriptionRepository.findByEndpoint(finalEndpoint).ifPresent(sub -> {
-                if (sub.getUsername().equals(username)) {
-                    pushSubscriptionRepository.delete(sub);
-                    log.info("Removed push subscription for endpoint: {}", finalEndpoint);
+            pushSubscriptionRepository.findByUsername(username).ifPresent(sub -> {
+                if (sub.getSubscriptions() != null) {
+                    boolean removed = sub.getSubscriptions().removeIf(detail -> finalEndpoint.equals(detail.getEndpoint()));
+                    if (removed) {
+                        if (sub.getSubscriptions().isEmpty()) {
+                            pushSubscriptionRepository.delete(sub);
+                        } else {
+                            pushSubscriptionRepository.save(sub);
+                        }
+                        log.info("Removed push subscription for endpoint: {}", finalEndpoint);
+                    }
                 }
             });
         } else {
-            List<PushSubscription> subs = pushSubscriptionRepository.findByUsername(username);
-            pushSubscriptionRepository.deleteAll(subs);
+            pushSubscriptionRepository.deleteByUsername(username);
             log.info("Removed all push subscriptions for user: {}", username);
         }
 
         return ResponseEntity.ok(Map.of("message", "Unsubscribed successfully"));
     }
 }
-

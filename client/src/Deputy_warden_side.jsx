@@ -443,11 +443,11 @@ function Deputy_warden_side() {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${id}?action=${action}`);
             // Refresh data after action
             await refreshData();
-            // Note: Not removing from processingIds on success so it stays locked until row is gone
         } catch (err) {
             console.error("Action error:", err);
             alert("Failed to update status.");
-            // Remove from processing set on failure to allow retry
+        } finally {
+            // Remove from processing set to allow subsequent actions/retries
             setProcessingIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);

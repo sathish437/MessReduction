@@ -433,7 +433,6 @@ const Warden = () => {
             await apiClient.patch(`/api/hostelStaff/staff/warden/${formId}?action=${action}`);
             // Refresh data after action
             await fetchData();
-            // Note: Not removing from processingIds on success so it stays locked until row is gone
         } catch (err) {
             console.error("Warden action error:", err);
             if (err.response?.status === 401) {
@@ -442,7 +441,8 @@ const Warden = () => {
             } else {
                 alert("Failed to update status.");
             }
-            // Remove from processing set on failure to allow retry
+        } finally {
+            // Remove from processing set to allow subsequent actions/retries
             setProcessingIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(formId);
@@ -508,6 +508,7 @@ const Warden = () => {
         if (!token) {
             alert("Authentication token not found. Please login again.");
             handleLogout();
+            setIsBulkProcessing(false);
             return;
         }
 
@@ -526,7 +527,8 @@ const Warden = () => {
             } else {
                 alert("Failed to perform bulk approval.");
             }
-            setIsBulkProcessing(false); // Enable retry on failure
+        } finally {
+            setIsBulkProcessing(false);
         }
     };
 

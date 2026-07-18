@@ -15,14 +15,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.hostel.MessReduction.Service.ExtraSubmissionService;
+
 @RestController
 @RequestMapping("/api/student-form")
 public class ReductionFormController {
     private static final Logger logger = LoggerFactory.getLogger(ReductionFormController.class);
     private final ReductionFormService reductionFormService;
+    private final ExtraSubmissionService extraSubmissionService;
 
-    public ReductionFormController(ReductionFormService reductionFormService) {
+    public ReductionFormController(ReductionFormService reductionFormService, ExtraSubmissionService extraSubmissionService) {
         this.reductionFormService = reductionFormService;
+        this.extraSubmissionService = extraSubmissionService;
     }
 
     @GetMapping("/Student/{studentId}")
@@ -86,5 +90,46 @@ public class ReductionFormController {
             @PathVariable Long formId) {
         return ResponseEntity.ok(reductionFormService.getTrackingDetails(formId));
     }
-}
 
+    @DeleteMapping("/StudentForm/{studentId}/{formId}")
+    public ResponseEntity<java.util.Map<String, String>> deleteStudentRequest(
+            @PathVariable Long studentId,
+            @PathVariable Long formId) {
+        reductionFormService.deleteStudentRequest(formId, studentId);
+        return ResponseEntity.ok(java.util.Map.of("message", "Request deleted successfully"));
+    }
+
+    @GetMapping("/limits/{studentId}")
+    public ResponseEntity<java.util.Map<String, Object>> getStudentLimits(@PathVariable Long studentId) {
+        StudentDetails student = reductionFormService.getStudentDetails(studentId);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
+        int count = 0;
+        int granted = 0;
+        int used = 0;
+        if (student.getLastSubmissionDate() != null && !student.getLastSubmissionDate().isBefore(today)) {
+            count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+            granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+            used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+        }
+        
+        int extraRemaining = granted - used;
+        
+        return ResponseEntity.ok(java.util.Map.of(
+            "dailyCount", count,
+            "extraRemaining", Math.max(0, extraRemaining),
+            "limitReached", count >= 3 && extraRemaining <= 0
+        ));
+    }
+    
+    @PostMapping("/extra-submission/{studentId}")
+    public ResponseEntity<?> requestExtraSubmission(
+            @PathVariable Long studentId,
+            @RequestBody java.util.Map<String, String> payload) {
+        String reason = payload.get("reason");
+        if (reason == null || reason.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body((java.util.Map) java.util.Map.of("message", "Reason is required", "statusCode", 400));
+        }
+        return ResponseEntity.ok(extraSubmissionService.requestExtraSubmission(studentId, reason));
+    }
+}

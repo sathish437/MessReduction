@@ -6,13 +6,14 @@ import com.hostel.MessReduction.Entity.ReductionForm;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
+public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, JpaSpecificationExecutor<ReductionForm> {
     boolean existsByStudentDetailsStudentIdAndCurrentStatusIn(Long id, List<FormStatus> statuses);
     List<ReductionForm> findByCurrentStatus(FormStatus status);
     List<ReductionForm> findByCurrentStatusAndYear(FormStatus status,Integer year);
@@ -59,4 +60,9 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long> {
     List<ReductionForm> findByIsActiveTrue();
     List<ReductionForm> findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(FormStatus status, java.time.LocalDate startDate, java.time.LocalDate endDate);
     List<ReductionForm> findByArrivalDateBefore(java.time.LocalDate date);
+
+    Long countBySubmittedAtBetween(java.time.LocalDateTime startOfDay, java.time.LocalDateTime endOfDay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT r.studentDetails.department, COUNT(r) FROM ReductionForm r GROUP BY r.studentDetails.department")
+    List<Object[]> countRequestsByDepartment();
 }

@@ -13,6 +13,11 @@ import ProtectedRoute from './ProtectedRoute'
 import { isTokenExpired, getStaffDashboardRoute, logout } from './services/authService'
 import { setCookie, deleteCookie } from './utils/cookieUtils'
 
+import AdminLogin from './AdminLogin'
+import AdminLayout from './AdminLayout'
+import AdminDashboard from './AdminDashboard'
+import AdminStudents from './AdminStudents'
+
 // ============================================
 // ROOT ROUTER CONFIGURATION
 // All app routes defined in one place
@@ -24,6 +29,7 @@ const ROUTE_CONFIG = {
   '/':                    { screen: 'landing', protected: false },
   '/student-login':       { screen: 'student-login', protected: false },
   '/staff-login':         { screen: 'staff-login', protected: false },
+  '/admin-login':         { screen: 'admin-login', protected: false },
   '/register':            { screen: 'register', protected: false },
   // Protected student routes
   '/student-dashboard':   { screen: 'student-dashboard', protected: true, type: 'student' },
@@ -32,10 +38,15 @@ const ROUTE_CONFIG = {
   '/deputy':              { screen: 'deputy', protected: true, type: 'staff', role: 'DeputyWarden' },
   '/warden':              { screen: 'warden', protected: true, type: 'staff', role: 'Warden' },
   '/office':              { screen: 'office', protected: true, type: 'staff', role: 'Office' },
+  // Admin Routes (rendered via nested routes in App.jsx but root registered here)
+  '/admin':               { screen: 'admin-layout', protected: true, type: 'staff', role: 'ADMIN' },
 };
 
 // Helper: Get route config for current path
 const getRouteConfig = (pathname) => {
+  if (pathname.startsWith('/admin') && pathname !== '/admin-login') {
+    return { screen: 'admin-layout', protected: true, type: 'staff', role: 'ADMIN' };
+  }
   return ROUTE_CONFIG[pathname] || { screen: 'landing', protected: false };
 };
 
@@ -173,7 +184,25 @@ function App() {
           </ProtectedRoute>
         );
 
+      case 'admin-login':
+        return <AdminLogin />;
+
+      case 'admin-layout':
+        return (
+          <ProtectedRoute requiredType="staff" requiredRole="ADMIN" onNavigate={navigate}>
+            <AdminLayout />
+          </ProtectedRoute>
+        );
+
       default:
+        // Handle nested admin routes
+        if (currentPath.startsWith('/admin/')) {
+           return (
+            <ProtectedRoute requiredType="staff" requiredRole="ADMIN" onNavigate={navigate}>
+              <AdminLayout />
+            </ProtectedRoute>
+          );
+        }
         return <LandingPage onNavigate={navigate} />;
     }
   };

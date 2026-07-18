@@ -25,7 +25,6 @@ apiClient.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } else {
-    console.warn(`[API Request] No token found - request will be unauthenticated`);
   }
   return config;
 }, (error) => {
@@ -43,19 +42,14 @@ apiClient.interceptors.response.use(
   (error) => {
     // Log 401 but DO NOT auto-logout - let ProtectedRoute handle auth state
     if (error.response?.status === 401) {
-      console.warn(`[API Response] 401 Unauthorized on ${error.config?.url}`);
-      console.warn('[API Response] Letting ProtectedRoute handle logout decision');
-      console.warn('[API Response] Request headers at failure:', error.config?.headers);
     }
 
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
-      console.warn("Forbidden access.");
     }
 
     // Handle 404 Not Found
     if (error.response?.status === 404) {
-      console.warn("Resource not found.");
     }
 
     return Promise.reject(error);

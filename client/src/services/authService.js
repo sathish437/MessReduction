@@ -56,7 +56,7 @@ export const setStaffAuth = (token, username, role) => {
   localStorage.setItem('staff_data', JSON.stringify({ username, role }));
 
   // Register push notifications
-  registerPush().catch(err => console.error('Failed to register push:', err));
+  registerPush().catch(err => {});
 };
 
 export const clearStaffAuth = () => {
@@ -74,7 +74,6 @@ export const validateStaff = async () => {
   const { token, username, role } = getStaffAuth();
 
   if (!token || isTokenExpired(token)) {
-    console.warn('[validateStaff] Token missing or expired - returning invalid');
     clearStaffAuth();
     return { valid: false, reason: 'no_token_or_expired' };
   }
@@ -88,9 +87,7 @@ export const validateStaff = async () => {
       role: response.data.role,
     };
   } catch (error) {
-    console.error(`[validateStaff] Error: ${error.response?.status || error.message}`);
     if (error.response?.status === 401) {
-      console.warn('[validateStaff] 401 received - clearing staff auth');
       clearStaffAuth();
       return { valid: false, reason: 'token_invalid' };
     }
@@ -124,7 +121,7 @@ export const setStudentAuth = (token, userData) => {
   sessionStorage.setItem('currentUser', JSON.stringify(userData));
   
   // Register push notifications
-  registerPush().catch(err => console.error('Failed to register push:', err));
+  registerPush().catch(err => {});
 };
 
 export const clearStudentAuth = () => {
@@ -140,7 +137,6 @@ export const logout = async () => {
   try {
     await unregisterPush();
   } catch (e) {
-    console.error('Error unregistering push subscription:', e);
   }
 
   // Clear localStorage
@@ -174,6 +170,10 @@ export const getStaffDashboardRoute = (role, username) => {
 
   if (role === 'Office') {
     return '/office';
+  }
+
+  if (role === 'ADMIN') {
+    return '/admin/dashboard';
   }
 
   return null;

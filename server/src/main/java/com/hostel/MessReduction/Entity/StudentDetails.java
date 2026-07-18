@@ -52,7 +52,26 @@ public class StudentDetails {
     @Column(nullable = false,unique = true,length = 10)
     private String phoneNo;
 
-    @OneToMany(mappedBy = "studentDetails", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "studentDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<ReductionForm> reductionForms;
+
+    @OneToMany(mappedBy = "studentDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private List<ExtraSubmissionRequest> extraSubmissionRequests;
+
+    @Column(columnDefinition = "integer default 0")
+    private Integer dailySubmissionCount = 0;
+
+    @Column(columnDefinition = "integer default 0")
+    private Integer extraSubmissionGranted = 0;
+
+    @Column(columnDefinition = "integer default 0")
+    private Integer extraSubmissionUsed = 0;
+
+    private LocalDate lastSubmissionDate;
+    
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

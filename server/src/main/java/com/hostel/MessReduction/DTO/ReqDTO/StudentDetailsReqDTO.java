@@ -42,8 +42,5 @@ public class StudentDetailsReqDTO {
     private Department department;
     @NotNull
     private Gender gender;
-    @NotNull
-    @Min(1)
-    @Max(4)
-    private Integer year;
+
 }

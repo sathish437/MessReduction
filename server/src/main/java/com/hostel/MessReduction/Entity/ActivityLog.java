@@ -36,4 +36,6 @@ public class ActivityLog {
     private LocalDate arrivalDate;
 
     private boolean isActive = true;
+
+    private String ipAddress;
 }

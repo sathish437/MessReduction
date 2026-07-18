@@ -96,7 +96,6 @@ function AutoAcceptSettingsCard() {
                 }
             } catch (err) {
                 if (controller.signal.aborted) return;
-                console.error("Error fetching auto-accept settings:", err);
                 setError("Failed to load auto-accept settings");
             } finally {
                 if (!controller.signal.aborted) {
@@ -138,7 +137,6 @@ function AutoAcceptSettingsCard() {
             setMessage("Settings saved successfully!");
             setTimeout(() => setMessage(null), 3000);
         } catch (err) {
-            console.error("Error saving auto-accept settings:", err);
             setError(err.response?.data?.message || "Failed to save settings");
         } finally {
             setSaving(false);
@@ -361,7 +359,6 @@ function Deputy_warden_side() {
 
         } catch (err) {
             if (signal && signal.aborted) return;
-            console.error("Error fetching Deputy Warden data:", err);
         }
     };
 
@@ -372,7 +369,6 @@ function Deputy_warden_side() {
                 await refreshData(controller.signal);
             } catch (err) {
                 if (controller.signal.aborted) return;
-                console.error("Error loading initial data:", err);
                 const fallback = JSON.parse(localStorage.getItem("mock_requests") || "[]");
                 setRequests(fallback);
             } finally {
@@ -445,7 +441,6 @@ function Deputy_warden_side() {
             await refreshData();
             // Note: Not removing from processingIds on success so it stays locked until row is gone
         } catch (err) {
-            console.error("Action error:", err);
             alert("Failed to update status.");
             // Remove from processing set on failure to allow retry
             setProcessingIds(prev => {
@@ -482,7 +477,6 @@ function Deputy_warden_side() {
             setRejectReason("");
             await refreshData();
         } catch (err) {
-            console.error("Deputy Warden reject error:", err);
             alert("Failed to reject request.");
         } finally {
             setIsRejecting(false); // Enable retry on failure
@@ -500,7 +494,6 @@ function Deputy_warden_side() {
             // Refresh data after action
             await refreshData();
         } catch (err) {
-            console.error("Bulk action error:", err);
             alert("Failed to perform bulk action.");
         } finally {
             setIsBulkProcessing(false); // Enable retry on failure

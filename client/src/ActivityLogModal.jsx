@@ -69,7 +69,6 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
             setLogs(res.data.content || []);
             setTotalPages(res.data.totalPages || 0);
         } catch (err) {
-            console.error("Failed to fetch activity logs:", err);
             setLogs([]);
         } finally {
             setLoading(false);

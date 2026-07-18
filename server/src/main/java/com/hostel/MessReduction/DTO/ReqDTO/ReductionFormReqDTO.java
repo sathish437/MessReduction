@@ -33,16 +33,16 @@ public class ReductionFormReqDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate leaveDate;
     @NotNull
-    @Schema(type = "string", example = "10:10:10")
-    @JsonFormat(pattern = "HH:mm:ss")
+    @Schema(type = "string", example = "10:10")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime leaveTime;
     @NotNull
     @Schema(type = "string", example = "2026-04-27")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate arrivalDate;
     @NotNull
-    @Schema(type = "string", example = "10:10:10")
-    @JsonFormat(pattern = "HH:mm:ss")
+    @Schema(type = "string", example = "10:10")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime arrivalTime;
     @NotBlank
     private String reason;

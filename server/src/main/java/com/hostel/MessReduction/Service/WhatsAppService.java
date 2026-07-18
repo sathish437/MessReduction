@@ -16,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.hostel.MessReduction.Repo.SystemSettingsRepo;
+import com.hostel.MessReduction.Entity.SystemSettings;
 
 @Service
 public class WhatsAppService {
@@ -38,9 +40,20 @@ public class WhatsAppService {
     private boolean sandboxEnabled;
 
     private final RestTemplate restTemplate;
+    private final SystemSettingsRepo systemSettingsRepo;
 
-    public WhatsAppService(RestTemplate restTemplate) {
+    public WhatsAppService(RestTemplate restTemplate, SystemSettingsRepo systemSettingsRepo) {
         this.restTemplate = restTemplate;
+        this.systemSettingsRepo = systemSettingsRepo;
+    }
+
+    private boolean isWhatsAppActuallyEnabled() {
+        if (!whatsappEnabled) return false; // Hard disabled in application.properties
+        SystemSettings sysSetting = systemSettingsRepo.findById("whatsappEnabled").orElse(null);
+        if (sysSetting != null) {
+            return Boolean.parseBoolean(sysSetting.getSettingValue());
+        }
+        return true; // Default if not in DB
     }
 
     /**
@@ -56,7 +69,7 @@ public class WhatsAppService {
         backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     public void sendTextMessage(String phoneNumber, String message) {
-        if (!whatsappEnabled) {
+        if (!isWhatsAppActuallyEnabled()) {
             logger.info("[WhatsApp] WhatsApp service is disabled. Skipping text message.");
             return;
         }
@@ -153,7 +166,7 @@ public class WhatsAppService {
         backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     public void sendTemplateMessage(String phoneNumber, String templateName, java.util.List<String> parameters) {
-        if (!whatsappEnabled) {
+        if (!isWhatsAppActuallyEnabled()) {
             logger.info("[WhatsApp] WhatsApp service is disabled. Skipping template message.");
             return;
         }

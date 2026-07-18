@@ -103,7 +103,6 @@ function Login({ goToRegister, onLoginSuccess }) {
         setError('Login failed. Please check your credentials.');
       }
     } catch (err) {
-      console.error('Login error:', err);
       const errorMsg = err.response?.data?.message || err.message || 'Login failed. Please try again.';
       setError(errorMsg);
     } finally {

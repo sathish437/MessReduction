@@ -76,6 +76,37 @@
   .input-focus {
     @apply focus:border-teal-500/60 focus:bg-teal-950/20;
   }
+
+  /* Admin Portal Cyber Theme */
+  .admin-bg { background-color: #050505; }
+  .admin-sidebar { background-color: #0A0A0A; }
+  .admin-card { background-color: #161616; }
+  .admin-hover:hover { background-color: #202020; }
+  .admin-primary-text { color: #FFFFFF; }
+  .admin-secondary-text { color: #A1A1AA; }
+  .admin-accent { color: #EF4444; }
+  .admin-primary-red { background-color: #DC2626; }
+  .admin-primary-red-text { color: #DC2626; }
+  .admin-border { border-color: rgba(255,255,255,0.08); }
+  
+  .admin-glass {
+    background: rgba(22, 22, 22, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  
+  .admin-glow:hover {
+    box-shadow: 0 0 15px 0 rgba(220, 38, 38, 0.4);
+    border-color: rgba(220, 38, 38, 0.5);
+  }
+  
+  .admin-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .admin-lift:hover {
+    transform: translateY(-4px);
+  }
 }
 
 /* Custom Scrollbar */

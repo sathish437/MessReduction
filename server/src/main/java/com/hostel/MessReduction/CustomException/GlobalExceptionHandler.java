@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +96,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<HashMap<String, Object>> handleIllegalArgument(IllegalArgumentException exp) {
         logger.error("IllegalArgumentException: ", exp);
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<HashMap<String, Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException exp) {
+        logger.error("HttpMessageNotReadableException: ", exp);
+        return buildErrorResponse("Invalid JSON payload or missing required fields", HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

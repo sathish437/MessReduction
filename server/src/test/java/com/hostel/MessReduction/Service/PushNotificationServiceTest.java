@@ -14,6 +14,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Mockito.*;
 
@@ -42,7 +43,7 @@ public class PushNotificationServiceTest {
     void testSendPushNotification_NoSubscriptions() {
         // Arrange
         String username = "deputy01";
-        when(pushSubscriptionRepository.findByUsername(username)).thenReturn(Collections.emptyList());
+        when(pushSubscriptionRepository.findByUsername(username)).thenReturn(Optional.empty());
 
         // Act
         pushNotificationService.sendPushNotification(username, "Test Title", "Test Message");
@@ -60,9 +61,9 @@ public class PushNotificationServiceTest {
         student.setRollNo("ROLL001");
         
         when(studentDetailsRepo.findByEmailId(email)).thenReturn(student);
-        when(pushSubscriptionRepository.findByUsername(email)).thenReturn(Collections.emptyList());
-        when(pushSubscriptionRepository.findByUsername("REG001")).thenReturn(Collections.emptyList());
-        when(pushSubscriptionRepository.findByUsername("ROLL001")).thenReturn(Collections.emptyList());
+        when(pushSubscriptionRepository.findByUsername(email)).thenReturn(Optional.empty());
+        when(pushSubscriptionRepository.findByUsername("REG001")).thenReturn(Optional.empty());
+        when(pushSubscriptionRepository.findByUsername("ROLL001")).thenReturn(Optional.empty());
 
         // Act
         pushNotificationService.sendPushNotification(email, "Approved", "Approved by Warden");

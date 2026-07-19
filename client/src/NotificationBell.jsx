@@ -14,7 +14,6 @@ const NotificationBell = () => {
             setNotifications(res.data.notifications || []);
             setUnreadCount(res.data.unreadCount || 0);
         } catch (error) {
-            console.error("Error fetching notifications", error);
         }
     };
 
@@ -30,7 +29,6 @@ const NotificationBell = () => {
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
-            console.error("Error marking as read", error);
         }
     };
 
@@ -40,7 +38,6 @@ const NotificationBell = () => {
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
         } catch (error) {
-            console.error("Error marking all as read", error);
         }
     };
 

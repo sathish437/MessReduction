@@ -74,7 +74,6 @@ function StaffLogin({ onNavigate }) {
         setError('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      console.error('Staff login error:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Login failed. Please try again.';
       setError(errorMsg);
     } finally {

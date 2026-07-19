@@ -129,7 +129,8 @@ public class ReminderScheduler {
             messageText.append(headerTitle).append(" [").append(role.name()).append("]\n\n");
             messageText.append("Total Pending Requests: ").append(roleForms.size()).append("\n\n");
             for (ReductionForm form : roleForms) {
-                messageText.append("#").append(form.getFormId()).append(" - ").append(form.getStudentDetails().getName()).append("\n");
+                String studentName = (form.getStudentDetails() != null) ? form.getStudentDetails().getName() : "N/A";
+                messageText.append("#").append(form.getFormId()).append(" - ").append(studentName).append("\n");
             }
             messageText.append("\nPlease review pending requests.");
 
@@ -162,7 +163,8 @@ public class ReminderScheduler {
                     StringBuilder wMsg = new StringBuilder();
                     wMsg.append(headerTitle).append("\n\nTotal Pending Requests: ").append(staffSpecificForms.size()).append("\n\n");
                     for (ReductionForm form : staffSpecificForms) {
-                        wMsg.append("#").append(form.getFormId()).append(" - ").append(form.getStudentDetails().getName()).append("\n");
+                        String studentName = (form.getStudentDetails() != null) ? form.getStudentDetails().getName() : "N/A";
+                        wMsg.append("#").append(form.getFormId()).append(" - ").append(studentName).append("\n");
                     }
                     wMsg.append("\nPlease review pending requests.");
                     notificationService.createAggregatedNotification(staff.getUserName(), wMsg.toString(), type);
@@ -194,9 +196,10 @@ public class ReminderScheduler {
             } catch (Exception ex) {
             }
 
+            String studentName = (form.getStudentDetails() != null) ? form.getStudentDetails().getName() : "N/A";
             String notifMessage = isEscalation
-                    ? "🚨 ESCALATION: Request #" + form.getFormId() + " from " + form.getStudentDetails().getName() + " has been pending for over " + ChronoUnit.HOURS.between(form.getSubmittedAt(), LocalDateTime.now()) + " hour(s). Immediate action required!"
-                    : "⏰ Reminder: Request #" + form.getFormId() + " from " + form.getStudentDetails().getName() + " is still awaiting your approval.";
+                    ? "🚨 ESCALATION: Request #" + form.getFormId() + " from " + studentName + " has been pending for over " + ChronoUnit.HOURS.between(form.getSubmittedAt(), LocalDateTime.now()) + " hour(s). Immediate action required!"
+                    : "⏰ Reminder: Request #" + form.getFormId() + " from " + studentName + " is still awaiting your approval.";
 
             String notifType = isEscalation ? "ESCALATION" : "REMINDER";
             notificationService.createNotification(staff.getUserName(), notifMessage, notifType, form.getFormId());

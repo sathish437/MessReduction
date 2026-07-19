@@ -40,6 +40,7 @@ public class ReductionFormMapper {
             reductionFormResDTO.setName(studentDetails.getName());
             reductionFormResDTO.setDepartment(studentDetails.getDepartment());
             reductionFormResDTO.setRegisterNo(studentDetails.getRegisterNo());
+            reductionFormResDTO.setRollNo(studentDetails.getRollNo());
             reductionFormResDTO.setGender(studentDetails.getGender());
         }
 
@@ -55,6 +56,7 @@ public class ReductionFormMapper {
         reductionFormResDTO.setReason(reductionForm.getReason());
         reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
         reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
+        reductionFormResDTO.setSubmittedAt(reductionForm.getSubmittedAt());
         return reductionFormResDTO;
     }
 }

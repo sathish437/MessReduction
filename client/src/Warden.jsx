@@ -108,7 +108,6 @@ function AutoAcceptSettingsCard() {
                 }
             } catch (err) {
                 if (controller.signal.aborted) return;
-                console.error("Error fetching auto-accept settings:", err);
                 setError("Failed to load auto-accept settings");
             } finally {
                 if (!controller.signal.aborted) {
@@ -150,7 +149,6 @@ function AutoAcceptSettingsCard() {
             setMessage("Settings saved successfully!");
             setTimeout(() => setMessage(null), 3000);
         } catch (err) {
-            console.error("Error saving auto-accept settings:", err);
             setError(err.response?.data?.message || "Failed to save settings");
         } finally {
             setSaving(false);
@@ -396,7 +394,6 @@ const Warden = () => {
             // Any error (including 404) - treat as empty
             setRequests([]);
             setCounts({ pendingWarden: 0, pendingDeputyWarden: 0, pendingOffice: 0, approved: 0, rejectedWarden: 0, rejectedDeputyWarden: 0, rejectedOffice: 0 });
-            console.error("Error fetching warden data:", err);
         } finally {
             if (!signal || !signal.aborted) {
                 setLoading(false);
@@ -434,7 +431,6 @@ const Warden = () => {
             // Refresh data after action
             await fetchData();
         } catch (err) {
-            console.error("Warden action error:", err);
             if (err.response?.status === 401) {
                 alert("Session expired. Please login again.");
                 handleLogout();
@@ -486,7 +482,6 @@ const Warden = () => {
             setRejectReason("");
             await fetchData();
         } catch (err) {
-            console.error("Warden reject error:", err);
             if (err.response?.status === 401) {
                 alert("Session expired. Please login again.");
                 handleLogout();
@@ -517,7 +512,6 @@ const Warden = () => {
             setSelectedIds([]);
             await fetchData();
         } catch (err) {
-            console.error("Bulk action error:", err);
             if (err.response?.status === 401) {
                 alert("Session expired. Please login again.");
                 handleLogout();

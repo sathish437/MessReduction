@@ -15,33 +15,42 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.hostel.MessReduction.Service.ExtraSubmissionService;
+
 @RestController
 @RequestMapping("/api/student-form")
 public class ReductionFormController {
     private static final Logger logger = LoggerFactory.getLogger(ReductionFormController.class);
     private final ReductionFormService reductionFormService;
+    private final ExtraSubmissionService extraSubmissionService;
 
-    public ReductionFormController(ReductionFormService reductionFormService) {
+    public ReductionFormController(ReductionFormService reductionFormService, ExtraSubmissionService extraSubmissionService) {
         this.reductionFormService = reductionFormService;
+        this.extraSubmissionService = extraSubmissionService;
     }
 
     @GetMapping("/Student/{studentId}")
     public ResponseEntity<?> fetchStudentData(@PathVariable Long studentId) {
-        logger.info("Student controller reached: GET /Student/{}", studentId);
+        logger.info("Student controller entered: GET /Student/{}", studentId);
         try {
             if (studentId == null || studentId <= 0) {
                 return ResponseEntity.badRequest().body(java.util.Map.of("message", "Invalid student ID", "statusCode", 400));
             }
-            StudentDetails studentDetails = reductionFormService.getStudentDetails(studentId);
-            return ResponseEntity.ok(studentDetails);
+            java.util.Map<String, Object> response = reductionFormService.getStudentProfileWithForms(studentId);
+            logger.info("Response successfully mapped and returning 200 OK");
+            return ResponseEntity.ok(response);
         } catch (com.hostel.MessReduction.CustomException.StudentNotFoundException e) {
             logger.warn("Student not found: {}", studentId);
             return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
                     .body(java.util.Map.of("message", e.getMessage(), "statusCode", 404));
+        } catch (com.hostel.MessReduction.CustomException.BadRequestException e) {
+            logger.warn("Bad request fetching student data: {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("message", e.getMessage(), "statusCode", 400));
         } catch (Exception e) {
             logger.error("Internal error fetching student data for studentId: {}", studentId, e);
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(java.util.Map.of("message", "An unexpected error occurred", "statusCode", 500));
+                    .body(java.util.Map.of("message", "Unable to fetch student reduction forms.", "statusCode", 500));
         }
     }
 
@@ -86,5 +95,46 @@ public class ReductionFormController {
             @PathVariable Long formId) {
         return ResponseEntity.ok(reductionFormService.getTrackingDetails(formId));
     }
-}
 
+    @DeleteMapping("/StudentForm/{studentId}/{formId}")
+    public ResponseEntity<java.util.Map<String, String>> deleteStudentRequest(
+            @PathVariable Long studentId,
+            @PathVariable Long formId) {
+        reductionFormService.deleteStudentRequest(formId, studentId);
+        return ResponseEntity.ok(java.util.Map.of("message", "Request deleted successfully"));
+    }
+
+    @GetMapping("/limits/{studentId}")
+    public ResponseEntity<java.util.Map<String, Object>> getStudentLimits(@PathVariable Long studentId) {
+        StudentDetails student = reductionFormService.getStudentDetails(studentId);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
+        int count = 0;
+        int granted = 0;
+        int used = 0;
+        if (student.getLastSubmissionDate() != null && !student.getLastSubmissionDate().isBefore(today)) {
+            count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+            granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+            used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+        }
+        
+        int extraRemaining = granted - used;
+        
+        return ResponseEntity.ok(java.util.Map.of(
+            "dailyCount", count,
+            "extraRemaining", Math.max(0, extraRemaining),
+            "limitReached", count >= 3 && extraRemaining <= 0
+        ));
+    }
+    
+    @PostMapping("/extra-submission/{studentId}")
+    public ResponseEntity<?> requestExtraSubmission(
+            @PathVariable Long studentId,
+            @RequestBody java.util.Map<String, String> payload) {
+        String reason = payload.get("reason");
+        if (reason == null || reason.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body((java.util.Map) java.util.Map.of("message", "Reason is required", "statusCode", 400));
+        }
+        return ResponseEntity.ok(extraSubmissionService.requestExtraSubmission(studentId, reason));
+    }
+}

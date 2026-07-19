@@ -4,4 +4,5 @@ public enum Role {
     Warden,
     DeputyWarden,
     Office,
+    ADMIN
 }

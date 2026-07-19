@@ -47,7 +47,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/student/reg").permitAll()
                         .requestMatchers("/api/staff/login").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
@@ -65,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/logs/**").hasAnyRole("Warden", "DeputyWarden", "Office")
                         .requestMatchers("/api/student-form/**").hasRole("STUDENT")
                         .requestMatchers("/api/push/**").hasAnyRole("STUDENT", "Warden", "DeputyWarden", "Office")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )

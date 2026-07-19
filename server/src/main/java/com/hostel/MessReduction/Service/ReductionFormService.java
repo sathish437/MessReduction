@@ -21,7 +21,6 @@ import com.hostel.MessReduction.DTO.ResDTO.StaffDashboardCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.YearWiseCountDTO;
 import com.hostel.MessReduction.DTO.ResDTO.BulkRejectSummaryDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
-import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.ReductionFormHistory;
 import com.hostel.MessReduction.Entity.Role;
@@ -30,8 +29,6 @@ import com.hostel.MessReduction.MappingDTO.ReductionFormMapper;
 import com.hostel.MessReduction.Repo.ReductionFormHistoryRepo;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
-import com.hostel.MessReduction.Repo.StaffUsersRepo;
-import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Service.ActivityLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +66,7 @@ public class ReductionFormService {
     private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final AuditLogRepo auditLogRepo;
     private final WhatsAppService whatsAppService;
+    private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
@@ -79,7 +77,8 @@ public class ReductionFormService {
                                 StaffUsersRepo staffUsersRepo,
                                 AutoAcceptSettingsRepo autoAcceptSettingsRepo,
                                 AuditLogRepo auditLogRepo,
-                                WhatsAppService whatsAppService) {
+                                WhatsAppService whatsAppService,
+                                com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -90,11 +89,9 @@ public class ReductionFormService {
         this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
         this.auditLogRepo = auditLogRepo;
         this.whatsAppService = whatsAppService;
+        this.systemSettingsRepo = systemSettingsRepo;
     }
 
-    private void sendWhatsAppFormStatusNotification(ReductionForm form, String status) {
-        // Obsolete
-    }
 
     public StudentDetails getStudentDetails(Long id) {
         if (id == null || id <= 0) {
@@ -110,6 +107,51 @@ public class ReductionFormService {
         }
         student.setReductionForms(forms);
         return student;
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getStudentProfileWithForms(Long id) {
+        log.info("Student ID received: {}", id);
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid student ID");
+        }
+        autoDeactivateAllExpiredForms();
+        StudentDetails studentDetails = studentDetailsRepo.findById(id)
+                .orElseThrow(() -> new StudentNotFoundException("Student not found"));
+        log.info("Student found: {}", studentDetails.getName());
+
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(id);
+        log.info("Repository query executed. Forms retrieved count: {}", forms != null ? forms.size() : 0);
+        
+        log.info("DTO mapping started");
+        // Map to a safe structure to avoid LazyInitializationException/Infinite recursion during serialization
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("studentId", studentDetails.getStudentId());
+        response.put("name", studentDetails.getName());
+        response.put("registerNo", studentDetails.getRegisterNo());
+        response.put("rollNo", studentDetails.getRollNo());
+        response.put("department", studentDetails.getDepartment());
+        response.put("gender", studentDetails.getGender());
+        response.put("dob", studentDetails.getDob());
+        response.put("emailId", studentDetails.getEmailId());
+        response.put("phoneNo", studentDetails.getPhoneNo());
+        response.put("dailySubmissionCount", studentDetails.getDailySubmissionCount());
+        response.put("extraSubmissionGranted", studentDetails.getExtraSubmissionGranted());
+        response.put("extraSubmissionUsed", studentDetails.getExtraSubmissionUsed());
+        response.put("lastSubmissionDate", studentDetails.getLastSubmissionDate());
+        
+        java.util.List<com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO> formDTOs = new java.util.ArrayList<>();
+        if (forms != null) {
+            for (com.hostel.MessReduction.Entity.ReductionForm form : forms) {
+                if (form != null) {
+                    formDTOs.add(com.hostel.MessReduction.MappingDTO.ReductionFormMapper.mapToReductionFormResDTO(form));
+                }
+            }
+        }
+        response.put("reductionForms", formDTOs);
+        log.info("DTO mapping completed");
+        
+        return response;
     }
 
     public ReductionFormResDTO formSubmit(ReductionFormReqDTO dto, Long studentId) {
@@ -179,6 +221,11 @@ public class ReductionFormService {
             throw new InvalidStatusException("Only rejected requests can be edited and resubmitted");
         }
 
+        StudentDetails studentDetails = form.getStudentDetails();
+        if (studentDetails == null) {
+            throw new StudentNotFoundException("Student details not associated with this form");
+        }
+        checkSubmissionLimit(studentDetails);
         validateResubmitPayload(dto);
 
         FormStatus previousStatus = form.getCurrentStatus();
@@ -200,7 +247,7 @@ public class ReductionFormService {
         }
         form.setCurrentStatus(newStatus);
         
-        form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(form.getStudentDetails().getGender(), form.getYear()));
+        form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(studentDetails.getGender(), form.getYear()));
         form.setRejectReason(null);
 
         reductionFormRepo.save(form);
@@ -211,6 +258,19 @@ public class ReductionFormService {
         sendWorkflowNotifications(form);
         
         return ReductionFormMapper.mapToReductionFormResDTO(form);
+    }
+
+    public void deleteStudentRequest(Long formId, Long studentId) {
+        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
+                .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
+
+        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
+            throw new InvalidStatusException("Only requests pending at Deputy Warden can be deleted.");
+        }
+
+        form.setActive(false);
+        reductionFormRepo.save(form);
+        saveFormHistory(form, "Student Deleted Request", form.getCurrentStatus(), null, "student", "Request deleted by student. Limit not restored.");
     }
 
     public List<ReductionFormHistoryResDTO> getFormHistory(Long formId, Long studentId) {
@@ -753,9 +813,14 @@ public class ReductionFormService {
     private void createActivityLog(ReductionForm form, Role staffRole, String staffName, String action) {
         ActivityLogRequest activityLogRequest = new ActivityLogRequest();
         activityLogRequest.setFormId(form.getFormId());
-        activityLogRequest.setStudentId(form.getStudentDetails().getStudentId());
-        activityLogRequest.setStudentName(form.getStudentDetails().getName());
-        activityLogRequest.setDepartment(form.getStudentDetails().getDepartment().name());
+        StudentDetails studentDetails = form.getStudentDetails();
+        if (studentDetails != null) {
+            activityLogRequest.setStudentId(studentDetails.getStudentId());
+            activityLogRequest.setStudentName(studentDetails.getName());
+            if (studentDetails.getDepartment() != null) {
+                activityLogRequest.setDepartment(studentDetails.getDepartment().name());
+            }
+        }
         activityLogRequest.setStaffRole(staffRole);
         activityLogRequest.setStaffName(staffName);
         activityLogRequest.setAction(action);
@@ -766,7 +831,7 @@ public class ReductionFormService {
     private ReductionFormHistoryResDTO mapHistoryToDTO(ReductionFormHistory history) {
         return new ReductionFormHistoryResDTO(
                 history.getId(),
-                history.getReductionForm().getFormId(),
+                history.getReductionForm() != null ? history.getReductionForm().getFormId() : null,
                 history.getFromStatus(),
                 history.getToStatus(),
                 history.getEventType(),
@@ -793,7 +858,36 @@ public class ReductionFormService {
         }
     }
 
+    private void checkSubmissionLimit(StudentDetails student) {
+        LocalDate today = LocalDate.now();
+        if (student.getLastSubmissionDate() == null || student.getLastSubmissionDate().isBefore(today)) {
+            student.setDailySubmissionCount(0);
+            student.setExtraSubmissionGranted(0);
+            student.setExtraSubmissionUsed(0);
+            student.setLastSubmissionDate(today);
+        }
+
+        if (student.getDailySubmissionCount() >= 3) {
+            // Check extra permissions
+            if (student.getExtraSubmissionGranted() != null && student.getExtraSubmissionUsed() != null &&
+                student.getExtraSubmissionGranted() > student.getExtraSubmissionUsed()) {
+                
+                student.setExtraSubmissionUsed(student.getExtraSubmissionUsed() + 1);
+            } else {
+                throw new BadRequestException("You have reached the daily submission limit of 3 requests.");
+            }
+        }
+        
+        student.setDailySubmissionCount(student.getDailySubmissionCount() + 1);
+        studentDetailsRepo.save(student);
+    }
+
     private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
+        com.hostel.MessReduction.Entity.SystemSettings settings = systemSettingsRepo.findById("systemActive").orElse(null);
+        if (settings != null && "false".equalsIgnoreCase(settings.getSettingValue())) {
+            throw new BadRequestException("Form submission is currently disabled by the administration.");
+        }
+
         autoDeactivateAllExpiredForms();
 
         // Check if there is any active form for this student
@@ -802,12 +896,12 @@ public class ReductionFormService {
             throw new StatusAlreadyPendingException("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.");
         }
 
+        StudentDetails student = studentDetailsRepo.findById(studentId).orElseThrow(() -> new StudentNotFoundException("Student not found"));
+        checkSubmissionLimit(student);
+
         validateResubmitPayload(dto);
     }
 
-    private void validateActiveApprovedRequest(Long studentId) {
-        // Kept for backward compatibility if needed, but not used during validateNewSubmission anymore.
-    }
 
     public void deleteAllReductionForms() {
         reductionFormRepo.deleteAll();
@@ -994,23 +1088,13 @@ public class ReductionFormService {
         if (form == null || !form.isActive()) {
             return;
         }
+
+        if (form.getCurrentStatus() == FormStatus.PendingDeputyWarden) {
+            checkAndApplyAutoAcceptForDeputy(form);
+        }
         
-        boolean processed = true;
-        int loopCount = 0;
-        // Safety guard against infinite loops
-        while (processed && loopCount < 10) {
-            processed = false;
-            loopCount++;
-            
-            if (form.getCurrentStatus() == FormStatus.PendingDeputyWarden) {
-                if (checkAndApplyAutoAcceptForDeputy(form)) {
-                    processed = true;
-                }
-            } else if (form.getCurrentStatus() == FormStatus.PendingWarden) {
-                if (checkAndApplyAutoAcceptForWarden(form)) {
-                    processed = true;
-                }
-            }
+        if (form.getCurrentStatus() == FormStatus.PendingWarden) {
+            checkAndApplyAutoAcceptForWarden(form);
         }
     }
 

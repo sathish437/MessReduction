@@ -371,12 +371,17 @@ function MessReductionPage() {
     const [trackingDetails, setTrackingDetails] = useState(null)
     const [formErrors, setFormErrors] = useState({});
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [limits, setLimits] = useState({ dailyCount: 0, extraRemaining: 0, limitReached: false });
+    const [showExtraDialog, setShowExtraDialog] = useState(false);
+    const [extraReason, setExtraReason] = useState("");
+    const [isRequestingExtra, setIsRequestingExtra] = useState(false);
 
     const activeRequest = Array.isArray(studentForm)
         ? studentForm.find(form => form.active === true || form.isActive === true)
         : null;
 
-    const isSubmitBlocked = !!activeRequest && !editingFormId;
+    const isLimitReached = limits.limitReached && limits.extraRemaining <= 0;
+    const isSubmitBlocked = (!!activeRequest && !editingFormId) || isLimitReached;
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -395,7 +400,6 @@ function MessReductionPage() {
             const user = JSON.parse(savedUser);
             setStudentId(user.studentId);
         } catch (e) {
-            console.error('Failed to parse savedUser', e);
             setLoading(false);
         }
     }, []);
@@ -405,6 +409,14 @@ function MessReductionPage() {
         if (!studentId) return;
         fetchStudentData(studentId);
     }, [studentId]);
+
+    const fetchLimits = async (id) => {
+        try {
+            const res = await apiClient.get(`/api/student-form/limits/${id}`);
+            setLimits(res.data);
+        } catch (error) {
+        }
+    };
 
     const fetchStudentData = async (studentId) => {
         try {
@@ -426,13 +438,13 @@ function MessReductionPage() {
                 // Get forms from nested reductionForms if present
                 const forms = Array.isArray(currentStudent.reductionForms) ? currentStudent.reductionForms : [];
                 setStudentForm(forms);
+                fetchLimits(studentId);
             } else {
                 setStudentDetails(null);
                 setStudentForm([]);
             }
         } catch (error) {
-            console.error("Error fetching student data:", error);
-            try { console.error('Failed request headers:', error.config?.headers); } catch (e) { }
+            try {  } catch (e) { }
         } finally {
             setLoading(false);
         }
@@ -445,7 +457,6 @@ function MessReductionPage() {
                     const res = await apiClient.get(`/api/student-form/StudentForm/${studentId}/${activeRequest.formId}/tracking`);
                     setTrackingDetails(res.data);
                 } catch (error) {
-                    console.error("Error fetching tracking details:", error);
                 }
             };
             fetchTracking();
@@ -558,17 +569,14 @@ function MessReductionPage() {
             return;
         }
 
-        // Map year string to number
-        const yearMap = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4 };
-
         const submissionData = {
-            year: yearMap[formData.year] || 1,
-            roomNo: parseInt(formData.room) || 0,
+            year: parseInt(formData.year.replace(/\D/g, '')),
+            roomNo: parseInt(formData.room),
             leaveDate: formData.leaveDate,
-            leaveTime: formData.leaveTime.length === 5 ? `${formData.leaveTime}:00` : formData.leaveTime,
+            leaveTime: formData.leaveTime?.substring(0, 5),
             arrivalDate: formData.arrivalDate,
-            arrivalTime: formData.arrivalTime.length === 5 ? `${formData.arrivalTime}:00` : formData.arrivalTime,
-            reason: formData.reason === "other" ? formData.otherReason : formData.reason,
+            arrivalTime: formData.arrivalTime?.substring(0, 5),
+            reason: formData.reason === 'other' ? formData.otherReason : formData.reason,
             isEmergency: false
         };
 
@@ -602,11 +610,41 @@ function MessReductionPage() {
                 showToast("Submission failed. Please try again.", 'error');
             }
         } catch (error) {
-            console.error("Error submitting form:", error);
             const errMsg = error.response?.data?.message || "Error submitting form. Ensure all fields are valid.";
             showToast(errMsg, 'error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteRequest = async (formId) => {
+        if (!window.confirm("Are you sure you want to delete this request? This action cannot be undone, and this submission will still count toward your daily limit.")) return;
+        try {
+            await apiClient.delete(`/api/student-form/StudentForm/${studentId}/${formId}`);
+            showToast("Request deleted successfully", "success");
+            fetchStudentData(studentId);
+        } catch (error) {
+            showToast(error.response?.data?.message || "Failed to delete request", "error");
+        }
+    };
+
+    const handleRequestExtraSubmission = async () => {
+        if (!extraReason.trim()) {
+            showToast("Reason is required", "error");
+            return;
+        }
+        setIsRequestingExtra(true);
+        try {
+            await apiClient.post(`/api/student-form/extra-submission/${studentId}`, { reason: extraReason });
+            showToast("Extra submission requested successfully", "success");
+            setShowExtraDialog(false);
+            setExtraReason("");
+        } catch (error) {
+            showToast(error.response?.data?.message || "Failed to request extra submission", "error");
+            setShowExtraDialog(false);
+            setExtraReason("");
+        } finally {
+            setIsRequestingExtra(false);
         }
     };
 
@@ -635,10 +673,10 @@ function MessReductionPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -60 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border max-w-md w-full
+                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-start sm:items-center gap-3 px-4 sm:px-6 py-4 rounded-2xl shadow-2xl border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[350px] max-w-md
                             ${toast.type === 'success'
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                                : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}
+                                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-300 backdrop-blur-xl'
+                                : 'bg-rose-950/80 border-rose-500/30 text-rose-300 backdrop-blur-xl'}`}
                     >
                         {toast.type === 'success'
                             ? <FiCheckCircle size={22} className="shrink-0 text-emerald-400" />
@@ -699,8 +737,49 @@ function MessReductionPage() {
                     className="w-full max-w-[650px] space-y-6"
                 >
 
-                    {/* 1. Student Details (Auto-filled) */}
+                    {/* 1. Student Details (Auto-filled) & Limits */}
                     {activeTab === 'dashboard' && (
+                        <>
+                        {/* Daily Limit Tracker */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="w-full rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6 shadow-sm relative overflow-hidden mb-6"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-sm font-bold text-teal-400 uppercase tracking-wider">Today's Requests</h4>
+                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${limits.limitReached ? 'bg-rose-500/20 text-rose-400' : 'bg-teal-500/20 text-teal-400'}`}>
+                                    {limits.dailyCount} / 3 Used
+                                </span>
+                            </div>
+                            
+                            {/* Progress bar */}
+                            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden mb-4">
+                                <div 
+                                    className={`h-full transition-all duration-500 ${limits.limitReached ? 'bg-rose-500' : 'bg-gradient-to-r from-teal-500 to-emerald-400'}`} 
+                                    style={{ width: `${Math.min((limits.dailyCount / 3) * 100, 100)}%` }}
+                                ></div>
+                            </div>
+
+                            {limits.extraRemaining > 0 && (
+                                <div className="text-sm text-emerald-400 font-medium bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/20 mb-4">
+                                    Extra Submissions Available: {limits.extraRemaining}
+                                </div>
+                            )}
+
+                            {limits.limitReached && limits.extraRemaining === 0 && (
+                                <div className="mt-4 flex flex-col gap-3">
+                                    <p className="text-sm text-rose-400 font-medium">You have reached the maximum number of requests for today.</p>
+                                    <button
+                                        onClick={() => setShowExtraDialog(true)}
+                                        className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-xl text-sm font-bold transition-all"
+                                    >
+                                        Request Extra Submission Permission
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+
                         <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -721,6 +800,7 @@ function MessReductionPage() {
                             <Field label="Mobile Number" icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
                         </div>
                     </motion.div>
+                    </>
                     )}
 
                     {/* 2. Active Request Status */}
@@ -799,6 +879,18 @@ function MessReductionPage() {
                                         className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
                                     >
                                         <FiEdit3 size={16} /> Edit and Resubmit
+                                    </button>
+                                </div>
+                            )}
+
+                            {activeRequest.currentStatus === 'PendingDeputyWarden' && (
+                                <div className="flex justify-end mt-5 pt-4 border-t border-white/10 relative z-10">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteRequest(activeRequest.formId)}
+                                        className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
+                                    >
+                                        <FiXCircle size={16} /> Delete Request
                                     </button>
                                 </div>
                             )}
@@ -973,7 +1065,9 @@ function MessReductionPage() {
                                     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-amber-400">
                                         <FiAlertTriangle size={20} className="shrink-0 mt-0.5" />
                                         <p className="text-sm font-bold leading-normal">
-                                            You already have an active mess reduction request. New requests can be submitted after your arrival date and time.
+                                            {isLimitReached
+                                                ? "You have reached your daily limit of 3 submissions. Please request an extra submission to submit another request."
+                                                : "You already have an active mess reduction request. New requests can be submitted after your arrival date and time."}
                                         </p>
                                     </div>
                                 )}
@@ -1019,6 +1113,58 @@ function MessReductionPage() {
 
                 </motion.div>
             </main>
+
+            {/* Extra Submission Request Dialog */}
+            <AnimatePresence>
+                {showExtraDialog && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="w-full max-w-md bg-[#0a1628] border border-white/10 rounded-3xl shadow-2xl overflow-hidden p-6 relative"
+                        >
+                            <h3 className="text-xl font-bold text-white mb-2">Request Extra Submission</h3>
+                            <p className="text-white/60 text-sm mb-6">
+                                Please provide a valid reason for why you need an extra submission limit today. 
+                                The administration will review your request.
+                            </p>
+                            
+                            <textarea
+                                value={extraReason}
+                                onChange={(e) => setExtraReason(e.target.value)}
+                                placeholder="Enter reason here..."
+                                className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-amber-500/50 resize-none mb-6"
+                            />
+                            
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        setShowExtraDialog(false);
+                                        setExtraReason("");
+                                    }}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-all text-sm font-bold"
+                                    disabled={isRequestingExtra}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRequestExtraSubmission}
+                                    disabled={isRequestingExtra || !extraReason.trim()}
+                                    className="flex-1 py-3 rounded-xl bg-amber-500 text-[#0a1628] hover:bg-amber-400 transition-all text-sm font-bold disabled:opacity-50 flex justify-center items-center gap-2"
+                                >
+                                    {isRequestingExtra ? "Submitting..." : "Submit Request"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Footer */}
             <footer className="shrink-0 pb-4 pt-2 text-center">

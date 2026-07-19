@@ -88,7 +88,6 @@ function HostelOffice() {
             }));
             setReportData(data);
         } catch (err) {
-            console.error("Error generating report:", err);
             alert("Failed to generate report.");
         }
     };
@@ -108,7 +107,6 @@ function HostelOffice() {
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            console.error("Error downloading report:", err);
             alert("Failed to download report.");
         }
     };
@@ -141,7 +139,6 @@ function HostelOffice() {
 
         } catch (err) {
             if (signal && signal.aborted) return;
-            console.error("Error fetching Office data:", err);
         }
     };
 
@@ -152,7 +149,6 @@ function HostelOffice() {
                 await refreshData(controller.signal);
             } catch (err) {
                 if (controller.signal.aborted) return;
-                console.error("Error loading initial data:", err);
             } finally {
                 if (!controller.signal.aborted) {
                     setIsLoading(false);
@@ -224,7 +220,6 @@ function HostelOffice() {
             // Refresh data after action
             await refreshData();
         } catch (err) {
-            console.error("Action error:", err);
             alert("Failed to update status.");
         } finally {
             // Remove from processing set to allow subsequent actions/retries
@@ -262,7 +257,6 @@ function HostelOffice() {
             setRejectReason("");
             await refreshData();
         } catch (err) {
-            console.error("Office reject error:", err);
             alert("Failed to reject request.");
         } finally {
             setIsRejecting(false); // Enable retry on failure
@@ -278,7 +272,6 @@ function HostelOffice() {
             setSelectedIds([]);
             await refreshData();
         } catch (err) {
-            console.error("Bulk action error:", err);
             alert("Failed to perform bulk approval.");
         } finally {
             setIsBulkProcessing(false); // Enable retry on failure

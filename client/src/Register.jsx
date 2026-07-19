@@ -125,7 +125,6 @@ function Register({ onNavigate }) {
         setError("Registration failed. Please try again.");
       }
     } catch (err) {
-      console.error("Registration error:", err);
       setError(err.response?.data?.message || "Registration failed. Ensure all fields are unique.");
     } finally {
       setLoading(false);

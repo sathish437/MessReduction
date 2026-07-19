@@ -42,6 +42,9 @@ public class StaffDataInitializer implements CommandLineRunner {
         // Create Office
         createStaff("office", "office123", Role.Office, "office@gmail.com");
 
+        // Create Admin permanently
+        createStaff("leodas", "benigay", Role.ADMIN, "admin@gces.edu");
+
         log.info("Default staff accounts initialized successfully");
     }
 

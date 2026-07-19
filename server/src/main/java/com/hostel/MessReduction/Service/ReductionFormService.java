@@ -922,8 +922,9 @@ public class ReductionFormService {
     public List<ReductionFormResDTO> getOfficeReportData() {
         LocalDate today = LocalDate.now();
         LocalDate fourMonthsAgo = today.minusMonths(4);
+        LocalDate futureBound = today.plusYears(5);
         List<ReductionForm> reports = reductionFormRepo.findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(
-                FormStatus.Approved, fourMonthsAgo, today
+                FormStatus.Approved, fourMonthsAgo, futureBound
         );
         return reports.stream()
                 .map(ReductionFormMapper::mapToReductionFormResDTO)

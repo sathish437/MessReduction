@@ -26,7 +26,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const DEPARTMENTS = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT', 'AIDS'];
+const DEPARTMENTS = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'MECHATRONICS'];
 
 const AdminRequests = () => {
   const [requests, setRequests] = useState([]);

@@ -2,16 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MdDashboard, MdPeople, MdAssignment, MdAnalytics, 
-  MdList, MdSettings, MdPerson, MdLogout, MdMenu 
+  MdPeople, MdLogout, MdMenu 
 } from 'react-icons/md';
 import { logout } from './services/authService';
-import AdminDashboard from './AdminDashboard';
 import AdminStudents from './AdminStudents';
-import AdminRequests from './AdminRequests';
-import AdminSettings from './AdminSettings';
-import AdminProfile from './AdminProfile';
-import AdminExtraSubmissions from './AdminExtraSubmissions';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
@@ -34,12 +28,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { path: '/admin/dashboard', icon: <MdDashboard size={24} />, label: 'Dashboard' },
-    { path: '/admin/students', icon: <MdPeople size={24} />, label: 'Students' },
-    { path: '/admin/requests', icon: <MdAssignment size={24} />, label: 'Requests' },
-    { path: '/admin/extra-submissions', icon: <MdList size={24} />, label: 'Extra Permissions' },
-    { path: '/admin/settings', icon: <MdSettings size={24} />, label: 'Settings' },
-    { path: '/admin/profile', icon: <MdPerson size={24} />, label: 'Profile' }
+    { path: '/admin/students', icon: <MdPeople size={24} />, label: 'Students' }
   ];
 
   const handleLogout = async () => {
@@ -47,13 +36,8 @@ const AdminLayout = () => {
   };
 
   const renderAdminContent = () => {
-    if (location.pathname.startsWith('/admin/dashboard')) return <AdminDashboard />;
     if (location.pathname.startsWith('/admin/students')) return <AdminStudents />;
-    if (location.pathname.startsWith('/admin/requests')) return <AdminRequests />;
-    if (location.pathname.startsWith('/admin/extra-submissions')) return <AdminExtraSubmissions />;
-    if (location.pathname.startsWith('/admin/settings')) return <AdminSettings />;
-    if (location.pathname.startsWith('/admin/profile')) return <AdminProfile />;
-    return <AdminDashboard />;
+    return <AdminStudents />;
   };
 
   return (
@@ -162,16 +146,16 @@ const AdminLayout = () => {
               <MdMenu size={24} />
             </button>
             <div className="text-xl font-bold truncate">
-              {menuItems.find(item => location.pathname.startsWith(item.path))?.label || 'Dashboard'}
+              {menuItems.find(item => location.pathname.startsWith(item.path))?.label || 'Students'}
             </div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <div className="text-sm text-right hidden sm:block">
-              <div className="font-medium">Leodas Admin</div>
+              <div className="font-medium">Master Admin</div>
               <div className="text-gray-400 text-xs">Administrator</div>
             </div>
             <div className="w-10 h-10 rounded-full admin-primary-red flex items-center justify-center font-bold shadow-lg shadow-red-500/20 shrink-0">
-              L
+              A
             </div>
           </div>
         </header>

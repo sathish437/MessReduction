@@ -41,8 +41,8 @@ public class ExtraSubmissionService {
         
         ExtraSubmissionRequest saved = extraSubmissionRequestRepo.save(request);
 
-        // Notify Admin (Assuming Admin uses 'leodas')
-        notificationService.createNotification("leodas", "New extra submission request from " + student.getName(), "EXTRA_REQUEST", saved.getId());
+        // Notify Admin (Assuming Admin uses 'MasterAdmin')
+        notificationService.createNotification("MasterAdmin", "New extra submission request from " + student.getName(), "EXTRA_REQUEST", saved.getId());
 
         return saved;
     }

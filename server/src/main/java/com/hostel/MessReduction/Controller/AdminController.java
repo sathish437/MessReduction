@@ -27,12 +27,13 @@ public class AdminController {
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "department", required = false) Department department,
             @RequestParam(value = "gender", required = false) Gender gender,
+            @RequestParam(value = "year", required = false) Integer year,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sortBy", defaultValue = "studentId") String sortBy,
             @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir
     ) {
-        return ResponseEntity.ok(adminService.getStudents(search, department, gender, page, size, sortBy, sortDir));
+        return ResponseEntity.ok(adminService.getStudents(search, department, gender, year, page, size, sortBy, sortDir));
     }
 
     @GetMapping("/students/{id}")
@@ -129,14 +130,14 @@ public class AdminController {
 
     @PostMapping("/extra-submissions/{id}/approve")
     public ResponseEntity<Void> approveExtraSubmission(@PathVariable Long id) {
-        // Mock admin username as leodas for now
-        extraSubmissionService.approveRequest(id, "leodas");
+        // Mock admin username as MasterAdmin for now
+        extraSubmissionService.approveRequest(id, "MasterAdmin");
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/extra-submissions/{id}/reject")
     public ResponseEntity<Void> rejectExtraSubmission(@PathVariable Long id) {
-        extraSubmissionService.rejectRequest(id, "leodas");
+        extraSubmissionService.rejectRequest(id, "MasterAdmin");
         return ResponseEntity.ok().build();
     }
 

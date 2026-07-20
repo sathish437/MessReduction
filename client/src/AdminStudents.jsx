@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MdSearch, MdFilterList, MdFileDownload, MdFileUpload, 
+  MdSearch, MdFilterList, 
   MdDelete, MdEdit, MdVisibility, MdMoreVert 
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
@@ -12,6 +12,8 @@ const AdminStudents = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
   const [totalPages, setTotalPages] = useState(0);
   const [selectedIds, setSelectedIds] = useState([]);
   const [sortBy, setSortBy] = useState('studentId');
@@ -24,58 +26,11 @@ const AdminStudents = () => {
   // CRUD State
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: ''
+    name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: ''
   });
 
-  const fileInputRef = useRef(null);
-  const [importing, setImporting] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const response = await apiClient.get('/api/admin/students/export', {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'students.xlsx');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      alert('Failed to export students.');
-    } finally {
-      setExporting(false);
-    }
-  };
 
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const importData = new FormData();
-    importData.append('file', file);
-
-    setImporting(true);
-    try {
-      await apiClient.post('/api/admin/students/import', importData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Students imported successfully!');
-      fetchStudents();
-    } catch (error) {
-      alert('Failed to import students. Check file format.');
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -106,16 +61,18 @@ const AdminStudents = () => {
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/api/admin/students', {
-        params: { page, size, search, sortBy, sortDir }
-      });
+      const params = { page, size, search, sortBy, sortDir };
+      if (selectedDept) params.department = selectedDept;
+      if (selectedYear) params.year = selectedYear;
+
+      const response = await apiClient.get('/api/admin/students', { params });
       setStudents(response.data.content);
       setTotalPages(response.data.totalPages);
     } catch (error) {
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, sortBy, sortDir]);
+  }, [page, size, search, sortBy, sortDir, selectedDept, selectedYear]);
 
   useEffect(() => {
     // Debounce search
@@ -178,33 +135,38 @@ const AdminStudents = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#161616] border admin-border rounded-xl text-sm hover:bg-[#202020] transition-colors">
-            <MdFilterList size={18} /> Filters
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept=".xlsx, .xls" 
-            className="hidden" 
-          />
-          <button 
-            onClick={handleImport}
-            disabled={importing}
-            className="flex items-center gap-2 px-4 py-2 bg-[#161616] border admin-border rounded-xl text-sm hover:bg-[#202020] transition-colors disabled:opacity-50"
-          >
-            <MdFileUpload size={18} /> {importing ? 'Importing...' : 'Import'}
-          </button>
-          <button 
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 bg-[#161616] border admin-border rounded-xl text-sm hover:bg-[#202020] transition-colors disabled:opacity-50"
-          >
-            <MdFileDownload size={18} /> {exporting ? 'Exporting...' : 'Export'}
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <select 
+              value={selectedDept}
+              onChange={(e) => { setSelectedDept(e.target.value); setPage(0); }}
+              className="bg-[#161616] border admin-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500 transition-colors"
+            >
+              <option value="">All Depts</option>
+              <option value="CSE">CSE</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="MECH">MECH</option>
+              <option value="CIVIL">CIVIL</option>
+              <option value="MECHATRONICS">MECHATRONICS</option>
+            </select>
+
+            <select 
+              value={selectedYear}
+              onChange={(e) => { setSelectedYear(e.target.value); setPage(0); }}
+              className="bg-[#161616] border admin-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500 transition-colors"
+            >
+              <option value="">All Years</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+          </div>
+
           <button 
             onClick={() => {
-              setFormData({ name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '' });
+              setFormData({ name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: '' });
               setShowForm(true);
             }}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium shadow-lg shadow-red-600/20 transition-all admin-lift">
@@ -294,7 +256,9 @@ const AdminStudents = () => {
                         {student.department}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">3rd Year</td>
+                    <td className="px-4 py-3 text-gray-400">
+                      {student.currentYear ? `${student.currentYear}${student.currentYear === 1 ? 'st' : student.currentYear === 2 ? 'nd' : student.currentYear === 3 ? 'rd' : 'th'} Year` : '-'}
+                    </td>
                     <td className="px-4 py-3 text-gray-400">{student.phoneNo}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -388,12 +352,10 @@ const AdminStudents = () => {
                   <p><span className="text-gray-400">Register No:</span> {selectedStudent?.registerNo}</p>
                   <p><span className="text-gray-400">Roll No:</span> {selectedStudent?.rollNo}</p>
                   <p><span className="text-gray-400">Department:</span> {selectedStudent?.department}</p>
+                  <p><span className="text-gray-400">Year:</span> {selectedStudent?.currentYear}</p>
                 </div>
               </div>
-              <div className="border-t admin-border pt-4">
-                 <h4 className="text-red-500 font-bold mb-2">Approval History</h4>
-                 <p className="text-gray-400 text-sm italic">Loading history...</p>
-              </div>
+
             </div>
           </motion.div>
         </div>
@@ -442,13 +404,10 @@ const AdminStudents = () => {
                   <select required value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} className="w-full bg-[#161616] border admin-border rounded-lg px-3 py-2 text-sm focus:border-red-500 outline-none">
                     <option value="">Select Dept</option>
                     <option value="CSE">CSE</option>
-                    <option value="IT">IT</option>
                     <option value="ECE">ECE</option>
                     <option value="EEE">EEE</option>
                     <option value="MECH">MECH</option>
                     <option value="CIVIL">CIVIL</option>
-                    <option value="AIDS">AIDS</option>
-                    <option value="CSBS">CSBS</option>
                     <option value="MECHATRONICS">MECHATRONICS</option>
                   </select>
                 </div>
@@ -458,6 +417,16 @@ const AdminStudents = () => {
                     <option value="">Select Gender</option>
                     <option value="MALE">MALE</option>
                     <option value="FEMALE">FEMALE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Year</label>
+                  <select required value={formData.currentYear} onChange={e => setFormData({...formData, currentYear: e.target.value})} className="w-full bg-[#161616] border admin-border rounded-lg px-3 py-2 text-sm focus:border-red-500 outline-none">
+                    <option value="">Select Year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
                   </select>
                 </div>
               </div>

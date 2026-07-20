@@ -52,6 +52,9 @@ public class StudentDetails {
     @Column(nullable = false,unique = true,length = 10)
     private String phoneNo;
 
+    @Column(name = "current_year")
+    private Integer currentYear;
+
     @OneToMany(mappedBy = "studentDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<ReductionForm> reductionForms;

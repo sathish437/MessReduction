@@ -21,4 +21,5 @@ public class StudentResponseDTO {
     private LocalDate dob;
     private String emailId;
     private String phoneNo;
+    private Integer currentYear;
 }

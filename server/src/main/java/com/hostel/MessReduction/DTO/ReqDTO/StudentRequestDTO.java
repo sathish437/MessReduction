@@ -39,4 +39,7 @@ public class StudentRequestDTO {
 
     @NotBlank(message = "Phone number is required")
     private String phoneNo;
+
+    @NotNull(message = "Current Year is required")
+    private Integer currentYear;
 }

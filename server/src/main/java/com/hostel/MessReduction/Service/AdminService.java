@@ -39,7 +39,7 @@ public class AdminService {
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public PaginatedResponseDTO<StudentResponseDTO> getStudents(
-            String search, Department department, Gender gender, 
+            String search, Department department, Gender gender, Integer year,
             int page, int size, String sortBy, String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
@@ -67,6 +67,10 @@ public class AdminService {
 
             if (gender != null) {
                 predicates.add(cb.equal(root.get("gender"), gender));
+            }
+
+            if (year != null) {
+                predicates.add(cb.equal(root.get("currentYear"), year));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -150,6 +154,7 @@ public class AdminService {
         student.setDob(dto.getDob());
         student.setEmailId(dto.getEmailId());
         student.setPhoneNo(dto.getPhoneNo());
+        student.setCurrentYear(dto.getCurrentYear());
     }
 
     private StudentResponseDTO mapToDTO(StudentDetails student) {
@@ -162,7 +167,8 @@ public class AdminService {
                 student.getGender(),
                 student.getDob(),
                 student.getEmailId(),
-                student.getPhoneNo()
+                student.getPhoneNo(),
+                student.getCurrentYear() != null ? student.getCurrentYear() : 3
         );
     }
 

@@ -15,8 +15,6 @@ import { setCookie, deleteCookie } from './utils/cookieUtils'
 
 import AdminLogin from './AdminLogin'
 import AdminLayout from './AdminLayout'
-import AdminDashboard from './AdminDashboard'
-import AdminStudents from './AdminStudents'
 
 // ============================================
 // ROOT ROUTER CONFIGURATION

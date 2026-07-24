@@ -5,6 +5,7 @@ import LandingPage from './LandingPage'
 import StudentLogin from './StudentLogin'
 import StaffLogin from './StaffLogin'
 import Register from './Register'
+import HostelVerification from './HostelVerification'
 import MessReductionPage from './MessReductionPage'
 import Deputy_warden_side from './Deputy_warden_side'
 import Warden from './Warden'
@@ -28,6 +29,8 @@ const ROUTE_CONFIG = {
   '/student-login':       { screen: 'student-login', protected: false },
   '/staff-login':         { screen: 'staff-login', protected: false },
   '/admin-login':         { screen: 'admin-login', protected: false },
+  '/hostel-verification': { screen: 'hostel-verification', protected: false },
+  '/student-register':    { screen: 'register', protected: false },
   '/register':            { screen: 'register', protected: false },
   // Protected student routes
   '/student-dashboard':   { screen: 'student-dashboard', protected: true, type: 'student' },
@@ -144,6 +147,9 @@ function App() {
 
       case 'staff-login':
         return <StaffLogin onNavigate={navigate} />;
+
+      case 'hostel-verification':
+        return <HostelVerification onNavigate={navigate} />;
 
       case 'register':
         return <Register onNavigate={navigate} />;

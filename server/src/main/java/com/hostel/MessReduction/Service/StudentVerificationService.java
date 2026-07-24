@@ -3,6 +3,8 @@ package com.hostel.MessReduction.Service;
 import com.hostel.MessReduction.CustomException.StudentVerificationServiceUnavailableException;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentDetailsReqDTO;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentVerificationRequestDTO;
+import com.hostel.MessReduction.DTO.ReqDTO.HostelVerifyReqDTO;
+import com.hostel.MessReduction.DTO.ResDTO.HostelVerifyResDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +30,10 @@ public class StudentVerificationService {
         this.apiUrl = apiUrl;
         this.apiKey = apiKey;
         this.isEnabled = isEnabled;
+    }
+
+    public boolean isEnabled() {
+        return isEnabled;
     }
 
     public boolean verifyStudent(StudentDetailsReqDTO studentDto) {
@@ -65,6 +71,48 @@ public class StudentVerificationService {
             logger.error("Verification API call failed or is unavailable: {}", e.getMessage());
             throw new StudentVerificationServiceUnavailableException(
                     "External verification service is currently unavailable. Please try again later.", e);
+        }
+    }
+
+    public HostelVerifyResDTO verifyHostelCredentials(HostelVerifyReqDTO req) {
+        if (!isEnabled) {
+            logger.info("External student verification is disabled. Returning mock verified status.");
+            return HostelVerifyResDTO.builder()
+                    .verified(true)
+                    .rollNo(req.getRollNo())
+                    .registerNo("8301" + req.getRollNo())
+                    .name("Verified Student")
+                    .department("CSE")
+                    .gender("MALE")
+                    .message("Verification successful")
+                    .build();
+        }
+
+        logger.info("Hostel verification request started for rollNo: {}", req.getRollNo());
+
+        try {
+            HostelVerifyResDTO response = webClient.post()
+                    .uri(apiUrl)
+                    .header("X-Api-Key", apiKey)
+                    .bodyValue(req)
+                    .retrieve()
+                    .bodyToMono(HostelVerifyResDTO.class)
+                    .block();
+
+            if (response != null && response.isVerified()) {
+                logger.info("Hostel verification successful for rollNo: {}", req.getRollNo());
+                return response;
+            } else {
+                logger.warn("Hostel verification failed for rollNo: {}", req.getRollNo());
+                return HostelVerifyResDTO.builder()
+                        .verified(false)
+                        .message("Invalid Roll Number or Password.")
+                        .build();
+            }
+        } catch (Exception e) {
+            logger.error("Hostel Verification API call failed or is unavailable: {}", e.getMessage());
+            throw new StudentVerificationServiceUnavailableException(
+                    "Unable to verify your hostel account. Please try again later.", e);
         }
     }
 }

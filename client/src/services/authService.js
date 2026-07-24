@@ -178,3 +178,18 @@ export const getStaffDashboardRoute = (role, username) => {
 
   return null;
 };
+
+export const getHostelVerificationEnabled = async () => {
+  try {
+    const envVal = import.meta.env.VITE_ENABLE_HOSTEL_VERIFICATION;
+    if (envVal !== undefined && envVal !== null && envVal !== '') {
+      return String(envVal).toLowerCase() === 'true';
+    }
+    const response = await apiClient.get('/api/auth/hostel-verification-status');
+    return response.data?.enabled ?? true;
+  } catch (e) {
+    return true;
+  }
+};
+
+

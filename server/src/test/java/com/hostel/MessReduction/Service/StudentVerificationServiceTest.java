@@ -42,7 +42,7 @@ public class StudentVerificationServiceTest {
     void setUp() {
         studentVerificationService = new StudentVerificationService(
                 webClient,
-                "https://3dbarath-gcesjar.hf.space/api/auth/verify-details",
+                "https://hostel-api.gces.net.in/api/auth/verify-details",
                 "password",
                 true
         );

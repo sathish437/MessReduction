@@ -73,7 +73,7 @@ function LandingPage({ onNavigate }) {
               <p className="text-center text-sm mt-4 text-white/30">
                 New here?{" "}
                 <button
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate('/hostel-verification')}
                   className="text-teal-400 font-bold hover:text-teal-300 transition-colors"
                 >
                   Create Account

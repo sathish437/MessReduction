@@ -136,7 +136,7 @@ function StudentLogin({ onNavigate }) {
               <p className="text-center text-sm mt-6 text-white/50 font-medium relative z-10">
                 New student?{" "}
                 <button
-                  onClick={() => window.location.href = '/register'}
+                  onClick={() => onNavigate ? onNavigate('/hostel-verification') : window.location.href = '/hostel-verification'}
                   className="text-teal-400 font-bold hover:text-teal-300 transition-colors"
                   type="button"
                 >

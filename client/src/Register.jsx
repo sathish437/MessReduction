@@ -1,8 +1,9 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft, FiCheckCircle } from "react-icons/fi"
+import { FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft, FiCheckCircle, FiShield } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
+import { getHostelVerificationEnabled } from "./services/authService"
 
 const TITLE = "STUDENT REGISTRATION"
 
@@ -62,6 +63,7 @@ function FormSection({ title, icon, delay, children }) {
 }
 
 const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium w-full h-full"
+const disabledInp = "flex-1 min-w-0 bg-transparent focus:outline-none text-base text-teal-300/90 font-semibold cursor-not-allowed w-full h-full"
 
 function Register({ onNavigate }) {
   const [formData, setFormData] = useState({
@@ -70,8 +72,52 @@ function Register({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [isVerified, setIsVerified] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
+
+  const navigateTo = (path) => {
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.location.href = path;
+    }
+  };
+
+  useEffect(() => {
+    const verifySessionAccess = async () => {
+      const enabled = await getHostelVerificationEnabled();
+      const verified = sessionStorage.getItem("hostelVerified") === "true";
+
+      if (enabled && !verified) {
+        navigateTo("/hostel-verification");
+        return;
+      }
+
+      setIsVerified(verified);
+      const verifiedDataStr = sessionStorage.getItem("verifiedStudentData");
+      if (verifiedDataStr) {
+        try {
+          const verifiedData = JSON.parse(verifiedDataStr);
+          setFormData(prev => ({
+            ...prev,
+            name: verifiedData.name || prev.name,
+            regNo: verifiedData.registerNo || verifiedData.regNo || prev.regNo,
+            rollNo: verifiedData.rollNo || prev.rollNo,
+            dept: verifiedData.department || verifiedData.dept || prev.dept,
+            gender: verifiedData.gender || prev.gender,
+            email: verifiedData.email || prev.email,
+            phone: verifiedData.phone || prev.phone,
+            dob: verifiedData.dob || prev.dob
+          }));
+        } catch (e) {}
+      }
+      setCheckingAccess(false);
+    };
+
+    verifySessionAccess();
+  }, []);
 
   const goToLogin = () => {
     if (onNavigate) onNavigate('/student-login');
@@ -83,9 +129,9 @@ function Register({ onNavigate }) {
     if (name === "regNo") {
       if (!value.startsWith("8301")) {
         if (value.length < 4) value = "8301";
-        else value = "8301" + value.replace(/.*?8301/, ""); // Try to fix weird pastes
+        else value = "8301" + value.replace(/.*?8301/, "");
       }
-      if (!value.startsWith("8301")) value = "8301"; // Fallback
+      if (!value.startsWith("8301")) value = "8301";
     }
     
     if (name === "rollNo") {
@@ -119,6 +165,8 @@ function Register({ onNavigate }) {
     try {
       const response = await apiClient.post("/api/student/reg", submissionData);
       if (response.status === 200 || response.status === 201) {
+        sessionStorage.removeItem("hostelVerified");
+        sessionStorage.removeItem("verifiedStudentData");
         setSuccess(true);
         setTimeout(() => goToLogin(), 1500);
       } else {
@@ -130,6 +178,11 @@ function Register({ onNavigate }) {
       setLoading(false);
     }
   };
+
+  if (checkingAccess) {
+    return null;
+  }
+
 
   if (success) {
     return (
@@ -207,20 +260,20 @@ function Register({ onNavigate }) {
               <FormSection delay={0.1} title="PERSONAL INFORMATION" icon={<FiUser size={20} />}>
                 <div className="col-span-1 sm:col-span-2">
                   <Field label="Full Name" icon={<FiUser />} error={!!error} id="name-input">
-                    <input id="name-input" type="text" placeholder="Enter your full name" name="name" className={inp} value={formData.name} onChange={handleChange} required />
+                    <input id="name-input" type="text" placeholder="Enter your full name" name="name" className={isVerified && formData.name ? disabledInp : inp} value={formData.name} onChange={handleChange} readOnly={isVerified && !!formData.name} required />
                   </Field>
                 </div>
                 <Field label="Register Number" icon={<FiCreditCard />} error={!!error} id="regNo-input">
-                  <input id="regNo-input" type="text" placeholder="Register number" name="regNo" className={inp} value={formData.regNo} onChange={handleChange} required />
+                  <input id="regNo-input" type="text" placeholder="Register number" name="regNo" className={isVerified && formData.regNo ? disabledInp : inp} value={formData.regNo} onChange={handleChange} readOnly={isVerified && !!formData.regNo} required />
                 </Field>
                 <Field label="Roll Number" icon={<FiHash />} error={!!error} id="rollNo-input">
-                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} required />
+                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={isVerified && formData.rollNo ? disabledInp : inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} readOnly={isVerified && !!formData.rollNo} required />
                 </Field>
                 <Field label="Date of Birth" icon={<FiCalendar />} error={!!error} id="dob-input">
                    <input id="dob-input" type="date" value={formData.dob} max={today} onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })} required className={`${inp} cursor-pointer`} />
                 </Field>
-                <Field label="Gender" icon={<FiUser />} error={!!error} id="gender-select" isSelect>
-                  <select id="gender-select" name="gender" value={formData.gender} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
+                <Field label="Gender" icon={<FiUser />} error={!!error} id="gender-select" isSelect={!(isVerified && formData.gender)}>
+                  <select id="gender-select" name="gender" value={formData.gender} onChange={handleChange} disabled={isVerified && !!formData.gender} required className={`${isVerified && formData.gender ? disabledInp : inp} appearance-none cursor-pointer pr-8`}>
                     <option value="" className="text-white/40 bg-[#0f1f38]">Select Gender</option>
                     <option value="MALE" className="text-white bg-[#0f1f38]">Male</option>
                     <option value="FEMALE" className="text-white bg-[#0f1f38]">Female</option>
@@ -231,8 +284,8 @@ function Register({ onNavigate }) {
               {/* Section 2: Academic */}
               <FormSection delay={0.2} title="ACADEMIC INFORMATION" icon={<FiBookOpen size={20} />}>
                 <div className="col-span-1 sm:col-span-2">
-                  <Field label="Department" icon={<FiBookOpen />} error={!!error} id="dept-select" isSelect>
-                    <select id="dept-select" name="dept" value={formData.dept} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
+                  <Field label="Department" icon={<FiBookOpen />} error={!!error} id="dept-select" isSelect={!(isVerified && formData.dept)}>
+                    <select id="dept-select" name="dept" value={formData.dept} onChange={handleChange} disabled={isVerified && !!formData.dept} required className={`${isVerified && formData.dept ? disabledInp : inp} appearance-none cursor-pointer pr-8`}>
                       <option value="" className="text-white/40 bg-[#0f1f38]">Select Department</option>
                       {["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => <option key={d} value={d} className="text-white bg-[#0f1f38]">{d}</option>)}
                     </select>

@@ -3,12 +3,10 @@ package com.hostel.MessReduction.Service;
 import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.ReductionForm;
 import com.hostel.MessReduction.Entity.Role;
-import com.hostel.MessReduction.Entity.ReductionFormHistory;
 import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,26 +24,19 @@ public class ReminderScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);
 
-    @Value("${whatsapp.meta.to-number:}")
-    private String toNumber;
-
     // Testing Mode configuration
     private static final boolean TESTING_MODE = true;
-    private static final LocalDateTime APP_START_TIME = LocalDateTime.now();
 
     private final ReductionFormRepo reductionFormRepo;
-    private final EmailService emailService;
     private final NotificationService notificationService;
     private final StaffUsersRepo staffUsersRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
 
     public ReminderScheduler(ReductionFormRepo reductionFormRepo,
-                             EmailService emailService,
                              NotificationService notificationService,
                              StaffUsersRepo staffUsersRepo,
                              com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo) {
         this.reductionFormRepo = reductionFormRepo;
-        this.emailService = emailService;
         this.notificationService = notificationService;
         this.staffUsersRepo = staffUsersRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -124,7 +115,7 @@ public class ReminderScheduler {
 
             if (role == null || roleForms.isEmpty()) continue;
 
-            // Generate aggregated message for in-app / WhatsApp
+            // Generate aggregated message for in-app / push
             StringBuilder messageText = new StringBuilder();
             messageText.append(headerTitle).append(" [").append(role.name()).append("]\n\n");
             messageText.append("Total Pending Requests: ").append(roleForms.size()).append("\n\n");
@@ -148,16 +139,7 @@ public class ReminderScheduler {
 
                 if (staffSpecificForms.isEmpty()) continue;
 
-                // WhatsApp Notification handled by WhatsAppReminderScheduler
-
-                // Send Email
-                try {
-                    emailService.sendAggregatedEmail(staff.getGmail(), staffSpecificForms, isReminder, role.name());
-                } catch (Exception ex) {
-                    logger.error("Error sending aggregated email", ex);
-                }
-
-                // Send In-App Notification
+                // Send In-App / Push Notification
                 // Re-build message if staffSpecificForms is subset
                 if (role == Role.Warden) {
                     StringBuilder wMsg = new StringBuilder();
@@ -175,7 +157,7 @@ public class ReminderScheduler {
         }
     }
 
-    private void sendEmailAndNotificationToApprover(ReductionForm form, String type, boolean isEscalation) {
+    private void sendNotificationToApprover(ReductionForm form, String type, boolean isEscalation) {
         Role targetRole = getTargetRole(form.getCurrentStatus());
         if (targetRole == null) return;
 
@@ -186,14 +168,6 @@ public class ReminderScheduler {
                 if (!staff.getUserName().equalsIgnoreCase(expectedUsername)) {
                     continue;
                 }
-            }
-            try {
-                if (isEscalation) {
-                    emailService.sendEscalationEmail(staff.getGmail(), form);
-                } else {
-                    emailService.sendReminderEmail(staff.getGmail(), form, type);
-                }
-            } catch (Exception ex) {
             }
 
             String studentName = (form.getStudentDetails() != null) ? form.getStudentDetails().getName() : "N/A";

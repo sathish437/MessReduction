@@ -74,7 +74,6 @@ public class NotificationService {
 
             notificationRepo.save(notification);
             logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
-            logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
             
             // Trigger browser push notification (delegated to batch or direct sending)
             String title = getPushTitle(recipientUsername, type, message);
@@ -108,7 +107,6 @@ public class NotificationService {
             notification.setRelatedFormId(-1L); // Use -1 for aggregated notifications
             notificationRepo.save(notification);
             logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
-            logger.info("[Queue Added] Notification added to WhatsApp PENDING queue (ID: {})", notification.getId());
             
             // Trigger browser push notification (delegated to batch or direct sending)
             String title = getPushTitle(recipientUsername, type, message);

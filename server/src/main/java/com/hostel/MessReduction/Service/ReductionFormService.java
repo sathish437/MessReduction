@@ -61,11 +61,9 @@ public class ReductionFormService {
     private final ReductionFormHistoryRepo reductionFormHistoryRepo;
     private final ActivityLogService activityLogService;
     private final NotificationService notificationService;
-    private final EmailService emailService;
     private final StaffUsersRepo staffUsersRepo;
     private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final AuditLogRepo auditLogRepo;
-    private final WhatsAppService whatsAppService;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
@@ -73,22 +71,18 @@ public class ReductionFormService {
                                 ReductionFormHistoryRepo reductionFormHistoryRepo,
                                 ActivityLogService activityLogService,
                                 NotificationService notificationService,
-                                EmailService emailService,
                                 StaffUsersRepo staffUsersRepo,
                                 AutoAcceptSettingsRepo autoAcceptSettingsRepo,
                                 AuditLogRepo auditLogRepo,
-                                WhatsAppService whatsAppService,
                                 com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
         this.activityLogService = activityLogService;
         this.notificationService = notificationService;
-        this.emailService = emailService;
         this.staffUsersRepo = staffUsersRepo;
         this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
         this.auditLogRepo = auditLogRepo;
-        this.whatsAppService = whatsAppService;
         this.systemSettingsRepo = systemSettingsRepo;
     }
 
@@ -98,15 +92,8 @@ public class ReductionFormService {
             throw new BadRequestException("Invalid student ID");
         }
         autoDeactivateAllExpiredForms();
-        StudentDetails student = studentDetailsRepo.findById(id)
+        return studentDetailsRepo.findById(id)
                 .orElseThrow(() -> new StudentNotFoundException("Student not found"));
-
-        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(id);
-        if (forms == null) {
-            forms = new ArrayList<>();
-        }
-        student.setReductionForms(forms);
-        return student;
     }
 
     @Transactional(readOnly = true)

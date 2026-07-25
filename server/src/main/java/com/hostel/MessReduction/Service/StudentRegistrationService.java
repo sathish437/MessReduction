@@ -26,7 +26,7 @@ public class StudentRegistrationService {
 
         if (!isVerified) {
             throw new StudentVerificationFailedException(
-                    "Student details verification failed. Account cannot be created.");
+                    "Invalid student credentials/details");
         }
 
         // 2. Save student details to database

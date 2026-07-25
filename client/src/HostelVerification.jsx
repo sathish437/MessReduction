@@ -46,7 +46,7 @@ function HostelVerification({ onNavigate }) {
     setError("")
 
     if (!rollNo.trim() || !password) {
-      setError("Invalid Roll Number or Password.")
+      setError("Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
       return
     }
 
@@ -58,21 +58,28 @@ function HostelVerification({ onNavigate }) {
         password: password
       })
 
-      if (response.status === 200 && response.data?.verified) {
+      console.log("Hostel API Response:", response.data);
+      console.log("Type:", typeof response.data);
+      const isVerifiedSuccess = response.data === true || response.data?.verified === true;
+      console.log("Should Navigate:", isVerifiedSuccess);
+
+      if (response.status === 200 && isVerifiedSuccess) {
         // Save temporary session flags
         sessionStorage.setItem("hostelVerified", "true")
         sessionStorage.setItem("verifiedStudentData", JSON.stringify(response.data))
         
-        // Navigate to registration page
+        // Navigate ONLY when verification succeeded
         navigate("/register")
       } else {
-        setError("Invalid Roll Number or Password.")
+        setError(response.data?.message || "Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
       }
     } catch (err) {
+      console.error("Hostel Verification Error:", err)
+      const serverMsg = err.response?.data?.message
       if (err.response?.status === 401 || err.response?.status === 400) {
-        setError("Invalid Roll Number or Password.")
+        setError(serverMsg || "Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
       } else {
-        setError("Unable to verify your hostel account. Please try again later.")
+        setError(serverMsg || "Unable to connect to the College Hostel Verification Server.\n\nPlease try again later.")
       }
     } finally {
       setLoading(false)
@@ -174,9 +181,16 @@ function HostelVerification({ onNavigate }) {
                 {/* Error Banner */}
                 {error && (
                   <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
-                    <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 font-semibold text-center shadow-sm">
-                      {error}
-                    </p>
+                    <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3.5 shadow-sm text-center">
+                      {error.includes("Hostel App credentials") || error.includes("incorrect") ? (
+                        <>
+                          <div className="font-bold text-base text-rose-300 mb-1">Invalid Credentials</div>
+                          <div className="font-medium text-xs text-rose-400/90 leading-relaxed">{error}</div>
+                        </>
+                      ) : (
+                        <div className="font-semibold text-xs leading-relaxed">{error}</div>
+                      )}
+                    </div>
                   </motion.div>
                 )}
 

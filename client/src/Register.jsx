@@ -127,11 +127,15 @@ function Register({ onNavigate }) {
     let { name, value } = e.target;
     
     if (name === "regNo") {
-      if (!value.startsWith("8301")) {
-        if (value.length < 4) value = "8301";
-        else value = "8301" + value.replace(/.*?8301/, "");
+      let digits = value.replace(/[^0-9]/g, "");
+      if (!digits.startsWith("8301")) {
+        digits = "8301" + digits.replace(/.*?8301/, "");
       }
-      if (!value.startsWith("8301")) value = "8301";
+      value = digits.slice(0, 12);
+    }
+    
+    if (name === "phone") {
+      value = value.replace(/[^0-9]/g, "").slice(0, 10);
     }
     
     if (name === "rollNo") {
@@ -153,13 +157,54 @@ function Register({ onNavigate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
+
+    // Validate inputs
+    if (!formData.name || formData.name.trim().length < 2) {
+      setError("Please enter a valid Full Name.");
+      return;
+    }
+    if (!formData.regNo || formData.regNo.length !== 12) {
+      setError("Register Number must be 12 digits (starting with 8301).");
+      return;
+    }
+    if (!formData.rollNo || !formData.rollNo.trim()) {
+      setError("Please enter a valid Roll Number.");
+      return;
+    }
+    if (!formData.dob) {
+      setError("Please select your Date of Birth.");
+      return;
+    }
+    if (!formData.gender) {
+      setError("Please select your Gender.");
+      return;
+    }
+    if (!formData.dept) {
+      setError("Please select your Department.");
+      return;
+    }
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+      setError("Please enter a valid Email Address.");
+      return;
+    }
+    if (!formData.phone || formData.phone.length !== 10) {
+      setError("Please enter a valid 10-digit Phone Number.");
+      return;
+    }
+
     setLoading(true);
 
     const submissionData = {
-      name: formData.name, registerNo: formData.regNo, rollNo: formData.rollNo,
-      dob: formData.dob, department: formData.dept, gender: formData.gender,
-      emailId: formData.email, phoneNo: formData.phone
+      name: formData.name.trim(),
+      registerNo: formData.regNo,
+      rollNo: formData.rollNo.trim(),
+      dob: formData.dob,
+      department: formData.dept,
+      gender: formData.gender,
+      emailId: formData.email.trim(),
+      phoneNo: formData.phone
     };
 
     try {
@@ -260,20 +305,20 @@ function Register({ onNavigate }) {
               <FormSection delay={0.1} title="PERSONAL INFORMATION" icon={<FiUser size={20} />}>
                 <div className="col-span-1 sm:col-span-2">
                   <Field label="Full Name" icon={<FiUser />} error={!!error} id="name-input">
-                    <input id="name-input" type="text" placeholder="Enter your full name" name="name" className={isVerified && formData.name ? disabledInp : inp} value={formData.name} onChange={handleChange} readOnly={isVerified && !!formData.name} required />
+                    <input id="name-input" type="text" placeholder="Enter your full name" name="name" className={inp} value={formData.name} onChange={handleChange} required />
                   </Field>
                 </div>
                 <Field label="Register Number" icon={<FiCreditCard />} error={!!error} id="regNo-input">
-                  <input id="regNo-input" type="text" placeholder="Register number" name="regNo" className={isVerified && formData.regNo ? disabledInp : inp} value={formData.regNo} onChange={handleChange} readOnly={isVerified && !!formData.regNo} required />
+                  <input id="regNo-input" type="text" placeholder="Register number (12 digits)" name="regNo" className={inp} value={formData.regNo} onChange={handleChange} maxLength={12} required />
                 </Field>
                 <Field label="Roll Number" icon={<FiHash />} error={!!error} id="rollNo-input">
-                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={isVerified && formData.rollNo ? disabledInp : inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} readOnly={isVerified && !!formData.rollNo} required />
+                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={inp} onKeyDown={handleAlphaNumKey} value={formData.rollNo} onChange={handleChange} required />
                 </Field>
                 <Field label="Date of Birth" icon={<FiCalendar />} error={!!error} id="dob-input">
                    <input id="dob-input" type="date" value={formData.dob} max={today} onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })} required className={`${inp} cursor-pointer`} />
                 </Field>
-                <Field label="Gender" icon={<FiUser />} error={!!error} id="gender-select" isSelect={!(isVerified && formData.gender)}>
-                  <select id="gender-select" name="gender" value={formData.gender} onChange={handleChange} disabled={isVerified && !!formData.gender} required className={`${isVerified && formData.gender ? disabledInp : inp} appearance-none cursor-pointer pr-8`}>
+                <Field label="Gender" icon={<FiUser />} error={!!error} id="gender-select" isSelect={true}>
+                  <select id="gender-select" name="gender" value={formData.gender} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
                     <option value="" className="text-white/40 bg-[#0f1f38]">Select Gender</option>
                     <option value="MALE" className="text-white bg-[#0f1f38]">Male</option>
                     <option value="FEMALE" className="text-white bg-[#0f1f38]">Female</option>
@@ -284,8 +329,8 @@ function Register({ onNavigate }) {
               {/* Section 2: Academic */}
               <FormSection delay={0.2} title="ACADEMIC INFORMATION" icon={<FiBookOpen size={20} />}>
                 <div className="col-span-1 sm:col-span-2">
-                  <Field label="Department" icon={<FiBookOpen />} error={!!error} id="dept-select" isSelect={!(isVerified && formData.dept)}>
-                    <select id="dept-select" name="dept" value={formData.dept} onChange={handleChange} disabled={isVerified && !!formData.dept} required className={`${isVerified && formData.dept ? disabledInp : inp} appearance-none cursor-pointer pr-8`}>
+                  <Field label="Department" icon={<FiBookOpen />} error={!!error} id="dept-select" isSelect={true}>
+                    <select id="dept-select" name="dept" value={formData.dept} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
                       <option value="" className="text-white/40 bg-[#0f1f38]">Select Department</option>
                       {["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => <option key={d} value={d} className="text-white bg-[#0f1f38]">{d}</option>)}
                     </select>

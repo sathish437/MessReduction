@@ -3,6 +3,7 @@ package com.hostel.MessReduction.Controller;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentDetailsReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StudentDetailsResDTO;
 import com.hostel.MessReduction.Service.StudentRegistrationService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,7 @@ public class StudentDetailsController {
     }
 
     @PostMapping("/reg")
-    public StudentDetailsResDTO studentDetail(@RequestBody StudentDetailsReqDTO studentDetailsReqDTO){
+    public StudentDetailsResDTO studentDetail(@Valid @RequestBody StudentDetailsReqDTO studentDetailsReqDTO){
         return studentRegistrationService.registerStudent(studentDetailsReqDTO);
     }
 }

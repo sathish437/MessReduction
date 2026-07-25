@@ -5,10 +5,6 @@ import {
     FiTrendingUp, FiArrowRight, FiBarChart2, FiActivity, FiLogOut,
     FiCheckSquare, FiSquare, FiSearch
 } from "react-icons/fi";
-import {
-    ResponsiveContainer, AreaChart, Area, BarChart, Bar, LineChart, Line,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell
-} from "recharts";
 import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import logo from "./assets/1000088399.png";
@@ -89,24 +85,6 @@ function HostelOffice() {
     // Date range selectors for Report
     const [reportFromDate, setReportFromDate] = useState(defaultFromDate());
     const [reportToDate, setReportToDate] = useState(defaultToDate());
-
-    // Date range selectors for Analytics
-    const [analyticsFromDate, setAnalyticsFromDate] = useState(defaultFromDate());
-    const [analyticsToDate, setAnalyticsToDate] = useState(defaultToDate());
-    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
-    const [hasAnalyzed, setHasAnalyzed] = useState(false);
-    const [analyticsData, setAnalyticsData] = useState({
-        total: 0,
-        approved: 0,
-        pending: 0,
-        rejected: 0,
-        approvalRate: "0.0",
-        rejectionRate: "0.0",
-        deptData: [],
-        genderData: [],
-        yearData: [],
-        trendData: []
-    });
 
     // Pagination & Expand Reason Modal States
     const [currentPage, setCurrentPage]   = useState(1);
@@ -213,157 +191,10 @@ function HostelOffice() {
         window.URL.revokeObjectURL(url);
     };
 
-    const handleAnalyze = async () => {
-        if (!analyticsFromDate || !analyticsToDate) {
-            alert("Please select both From Date and To Date.");
-            return;
-        }
-        setIsLoadingAnalytics(true);
-        try {
-            const [approvedRes, pendingRes, rejectedRes] = await Promise.all([
-                apiClient.get(`/api/hostelStaff/staff/office/report-data?t=${Date.now()}`),
-                apiClient.get(`/api/hostelStaff/staff/office?t=${Date.now()}`),
-                apiClient.get(`/api/logs/role?action=Rejected&page=0&size=1000&t=${Date.now()}`)
-            ]);
-            
-            // Map Approved
-            const approved = approvedRes.data.map(r => ({
-                ...r,
-                status: "Approved",
-                date: r.submittedAt ? r.submittedAt.split("T")[0] : r.leaveDate,
-                yearStr: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : r.year === 4 ? "4th" : String(r.year)
-            }));
-            
-            // Map Pending
-            const pending = pendingRes.data.map(r => ({
-                ...r,
-                status: "Pending",
-                date: r.submittedAt ? r.submittedAt.split("T")[0] : r.leaveDate,
-                yearStr: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : r.year === 4 ? "4th" : String(r.year)
-            }));
-            
-            // Map Rejected from logs
-            const rejected = (rejectedRes.data.content || []).map(l => ({
-                ...l,
-                status: "Rejected",
-                date: l.timestamp ? l.timestamp.split("T")[0] : (l.arrivalDate || "")
-            }));
-            
-            // Combine and filter by date range
-            const allItems = [...approved, ...pending, ...rejected];
-            const filtered = allItems.filter(item => {
-                const date = item.date;
-                return date && date >= analyticsFromDate && date <= analyticsToDate;
-            });
-            
-            const total = filtered.length;
-            const approvedCount = filtered.filter(item => item.status === "Approved").length;
-            const pendingCount = filtered.filter(item => item.status === "Pending").length;
-            const rejectedCount = filtered.filter(item => item.status === "Rejected").length;
-            const approvalRate = total > 0 ? ((approvedCount / total) * 100).toFixed(1) : "0.0";
-            const rejectionRate = total > 0 ? ((rejectedCount / total) * 100).toFixed(1) : "0.0";
-            
-            // Department distribution
-            const deptMap = {};
-            filtered.forEach(item => {
-                let dept = item.department || item.dept;
-                if (dept) {
-                    if (typeof dept === 'object') dept = dept.name || JSON.stringify(dept);
-                    const deptStr = String(dept).trim();
-                    const deptUpper = deptStr.toUpperCase();
-                    if (deptStr && deptUpper !== "UNKNOWN" && deptUpper !== "NULL" && deptUpper !== "UNDEFINED") {
-                        deptMap[deptStr] = (deptMap[deptStr] || 0) + 1;
-                    }
-                }
-            });
-            const deptData = Object.keys(deptMap)
-                .map(name => ({ name, count: deptMap[name] }))
-                .filter(item => item.count > 0);
-            
-            // Gender distribution
-            const genderMap = {};
-            filtered.forEach(item => {
-                let gender = item.gender;
-                if (gender) {
-                    const genderStr = String(gender).trim().toUpperCase();
-                    if (genderStr === "MALE" || genderStr === "FEMALE") {
-                        genderMap[genderStr] = (genderMap[genderStr] || 0) + 1;
-                    }
-                }
-            });
-            const genderData = Object.keys(genderMap)
-                .map(name => ({ name, count: genderMap[name] }))
-                .filter(item => item.count > 0);
-            
-            // Year distribution
-            const yearMap = {};
-            filtered.forEach(item => {
-                let year = item.yearStr || item.year;
-                if (year) {
-                    let yStr = String(year).trim().toLowerCase();
-                    if (yStr === "1" || yStr === "1st" || yStr === "first") yStr = "1st";
-                    else if (yStr === "2" || yStr === "2nd" || yStr === "second") yStr = "2nd";
-                    else if (yStr === "3" || yStr === "3rd" || yStr === "third") yStr = "3rd";
-                    else if (yStr === "4" || yStr === "4th" || yStr === "fourth") yStr = "4th";
-                    else yStr = ""; // ignore other values
-                    
-                    if (yStr) {
-                        yearMap[yStr] = (yearMap[yStr] || 0) + 1;
-                    }
-                }
-            });
-            const yearOrder = ["1st", "2nd", "3rd", "4th"];
-            const yearData = yearOrder
-                .map(yr => ({ name: `${yr} Year`, count: yearMap[yr] || 0 }))
-                .filter(item => item.count > 0);
-            
-            // Daily trend
-            const dailyMap = {};
-            filtered.forEach(item => {
-                const date = item.date;
-                if (date) {
-                    if (!dailyMap[date]) {
-                        dailyMap[date] = { Approved: 0, Pending: 0, Rejected: 0, Total: 0 };
-                    }
-                    dailyMap[date][item.status]++;
-                    dailyMap[date].Total++;
-                }
-            });
-            const trendData = Object.keys(dailyMap).sort().map(date => ({
-                date,
-                Approved: dailyMap[date].Approved,
-                Pending: dailyMap[date].Pending,
-                Rejected: dailyMap[date].Rejected,
-                Total: dailyMap[date].Total
-            }));
-            
-            setAnalyticsData({
-                total,
-                approved: approvedCount,
-                pending: pendingCount,
-                rejected: rejectedCount,
-                approvalRate,
-                rejectionRate,
-                deptData,
-                genderData,
-                yearData,
-                trendData
-            });
-            setHasAnalyzed(true);
-        } catch (err) {
-            alert("Failed to analyze data.");
-        } finally {
-            setIsLoadingAnalytics(false);
-        }
-    };
-
     // Auto load data on tab switch
     useEffect(() => {
         if (view === "reports" && reportData.length === 0) {
             handleGenerateReport();
-        }
-        if (view === "analytics" && !hasAnalyzed) {
-            handleAnalyze();
         }
     }, [view]);
 
@@ -393,9 +224,8 @@ function HostelOffice() {
             if (signal && signal.aborted) return;
             setYearStats(yearCountRes.data);
 
-            // Refresh Reports & Analytics dynamically to maintain full synchronization across tabs
+            // Refresh Reports dynamically to maintain full synchronization across tabs
             await handleGenerateReport();
-            await handleAnalyze();
 
         } catch (err) {
             if (signal && signal.aborted) return;
@@ -646,9 +476,6 @@ function HostelOffice() {
                     </button>
                     <button onClick={() => setView("reports")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "reports" ? "bg-teal-500 text-slate-955 shadow-sm" : "text-white/40 hover:text-white"}`}>
                         <FiPieChart size={14} /> Reports
-                    </button>
-                    <button onClick={() => setView("analytics")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "analytics" ? "bg-teal-500 text-slate-955 shadow-sm" : "text-white/40 hover:text-white"}`}>
-                        <FiTrendingUp size={14} /> Analytics
                     </button>
                 </div>
 
@@ -1173,213 +1000,6 @@ function HostelOffice() {
                                     </table>
                                 </div>
                             </div>
-                        </motion.div>
-                    )}
-
-                    {/* ════ ANALYTICS VIEW ════ */}
-                    {view === "analytics" && (
-                        <motion.div
-                            key="analytics"
-                            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                            exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
-                            transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-                            className="space-y-8"
-                        >
-                            {/* Analytics Header */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
-                                <div>
-                                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                                        <div className="w-1 h-5 bg-teal-500 rounded-full" />
-                                        Data Insights & Analytics
-                                    </h2>
-                                    <p className="text-xs text-white/40 mt-0.5">Visualize and analyze requests patterns and trends</p>
-                                </div>
-                            </div>
-
-                            {/* Date filters row */}
-                            <div className="flex flex-col sm:flex-row items-end gap-4 bg-[#0f1f38] border border-white/10 rounded-2xl p-6">
-                                <div className="flex-1 w-full">
-                                    <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">From Date</label>
-                                    <input
-                                        type="date"
-                                        value={analyticsFromDate}
-                                        onChange={(e) => setAnalyticsFromDate(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/15 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-teal-500/50"
-                                    />
-                                </div>
-                                <div className="flex-1 w-full">
-                                    <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">To Date</label>
-                                    <input
-                                        type="date"
-                                        value={analyticsToDate}
-                                        onChange={(e) => setAnalyticsToDate(e.target.value)}
-                                        className="w-full bg-black/20 border border-white/15 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-teal-500/50"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleAnalyze}
-                                    disabled={isLoadingAnalytics}
-                                    className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 disabled:bg-white/5 disabled:text-white/20 disabled:cursor-not-allowed text-slate-955 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors w-full sm:w-auto flex items-center justify-center gap-2"
-                                >
-                                    {isLoadingAnalytics && (
-                                        <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-955 rounded-full animate-spin" />
-                                    )}
-                                    {isLoadingAnalytics ? "Analyzing..." : "Analyze"}
-                                </button>
-                            </div>
-
-                            {hasAnalyzed ? (
-                                <>
-                                    {/* Summary Cards */}
-                                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                                        {[
-                                            { label: "Total Requests", val: analyticsData.total, color: "text-white", bg: "bg-white/5", border: "border-white/10" },
-                                            { label: "Approved Requests", val: analyticsData.approved, color: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
-                                            { label: "Pending Requests", val: analyticsData.pending, color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/10" },
-                                            { label: "Rejected Requests", val: analyticsData.rejected, color: "text-rose-400", bg: "bg-rose-500/5", border: "border-rose-500/10" },
-                                            { label: "Approval Rate", val: `${analyticsData.approvalRate}%`, color: "text-teal-400", bg: "bg-teal-500/5", border: "border-teal-500/10" },
-                                            { label: "Rejection Rate", val: `${analyticsData.rejectionRate}%`, color: "text-rose-400", bg: "bg-rose-500/5", border: "border-rose-500/10" }
-                                        ].map((card, i) => (
-                                            <div key={i} className={`p-4 rounded-xl ${card.bg} border ${card.border} flex flex-col justify-between`}>
-                                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider leading-snug">{card.label}</span>
-                                                <span className={`text-2xl font-black mt-2 ${card.color}`}>{card.val}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Visual Charts Grid */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {/* Daily Trend Chart */}
-                                        <div className="bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-sm">
-                                            <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <FiTrendingUp className="text-teal-400" /> Daily Trend Chart
-                                            </h3>
-                                            <div className="h-72 w-full">
-                                                {analyticsData.trendData.length === 0 ? (
-                                                    <div className="h-full flex items-center justify-center text-white/30 text-xs font-medium">No data available for the selected date range.</div>
-                                                ) : (
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <AreaChart data={analyticsData.trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                            <defs>
-                                                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                                                </linearGradient>
-                                                                <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                                </linearGradient>
-                                                            </defs>
-                                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                                            <XAxis dataKey="date" stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <Tooltip contentStyle={{ backgroundColor: "#0f1f38", borderColor: "rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
-                                                            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
-                                                            <Area type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
-                                                            <Area type="monotone" dataKey="Approved" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorApproved)" />
-                                                            <Area type="monotone" dataKey="Rejected" stroke="#ef4444" strokeWidth={2} fill="none" />
-                                                        </AreaChart>
-                                                    </ResponsiveContainer>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Department-wise Distribution */}
-                                        <div className="bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-sm">
-                                            <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <FiBarChart2 className="text-teal-400" /> Department Distribution
-                                            </h3>
-                                            <div className="h-72 w-full">
-                                                {analyticsData.deptData.length === 0 ? (
-                                                    <div className="h-full flex items-center justify-center text-white/30 text-xs font-medium">No data available for the selected date range.</div>
-                                                ) : (
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <BarChart data={analyticsData.deptData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <Tooltip contentStyle={{ backgroundColor: "#0f1f38", borderColor: "rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
-                                                            <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]}>
-                                                                {analyticsData.deptData.map((entry, index) => {
-                                                                    const colors = ["#0d9488", "#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", "#ec4899", "#f43f5e"];
-                                                                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                                                                })}
-                                                            </Bar>
-                                                        </BarChart>
-                                                    </ResponsiveContainer>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Year-wise Distribution */}
-                                        <div className="bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-sm">
-                                            <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <FiUsers className="text-teal-400" /> Year-wise Distribution
-                                            </h3>
-                                            <div className="h-72 w-full">
-                                                {analyticsData.yearData.length === 0 ? (
-                                                    <div className="h-full flex items-center justify-center text-white/30 text-xs font-medium">No data available for the selected date range.</div>
-                                                ) : (
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <BarChart data={analyticsData.yearData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: 10 }} />
-                                                            <Tooltip contentStyle={{ backgroundColor: "#0f1f38", borderColor: "rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
-                                                            <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                                                                {analyticsData.yearData.map((entry, index) => {
-                                                                    const colors = ["#14b8a6", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
-                                                                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                                                                })}
-                                                            </Bar>
-                                                        </BarChart>
-                                                    </ResponsiveContainer>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Gender-wise Distribution */}
-                                        <div className="bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-sm">
-                                            <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                <FiActivity className="text-teal-400" /> Gender Distribution
-                                            </h3>
-                                            <div className="h-72 w-full">
-                                                {analyticsData.genderData.length === 0 ? (
-                                                    <div className="h-full flex items-center justify-center text-white/30 text-xs font-medium">No data available for the selected date range.</div>
-                                                ) : (
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <PieChart>
-                                                            <Pie
-                                                                data={analyticsData.genderData}
-                                                                cx="50%"
-                                                                cy="50%"
-                                                                labelLine={false}
-                                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                                outerRadius={80}
-                                                                fill="#8884d8"
-                                                                dataKey="count"
-                                                            >
-                                                                {analyticsData.genderData.map((entry, index) => {
-                                                                    const genderColors = { MALE: "#3b82f6", FEMALE: "#ec4899", UNKNOWN: "#6b7280" };
-                                                                    return <Cell key={`cell-${index}`} fill={genderColors[entry.name] || "#0d9488"} />;
-                                                                })}
-                                                            </Pie>
-                                                            <Tooltip contentStyle={{ backgroundColor: "#0f1f38", borderColor: "rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
-                                                            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
-                                                        </PieChart>
-                                                    </ResponsiveContainer>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="h-80 flex flex-col items-center justify-center text-center gap-4 text-white/30 border border-dashed border-white/10 rounded-2xl p-10 bg-white/[0.01]">
-                                    <FiActivity size={32} />
-                                    <p className="text-sm font-medium">Select a date range and click Analyze to view visual analytics</p>
-                                </div>
-                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

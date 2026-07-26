@@ -156,7 +156,7 @@ public class AdminService {
         student.setRegisterNo(dto.getRegisterNo());
         student.setRollNo(dto.getRollNo());
         if (dto.getDepartment() != null && !dto.getDepartment().trim().isEmpty()) {
-            student.setDepartment(departmentService.findEntityByCode(dto.getDepartment()));
+            student.setDepartment(dto.getDepartment().trim());
         }
         student.setGender(dto.getGender());
         student.setDob(dto.getDob());
@@ -171,7 +171,7 @@ public class AdminService {
                 student.getName(),
                 student.getRegisterNo(),
                 student.getRollNo(),
-                student.getDepartment() != null ? student.getDepartment().getDepartmentCode() : null,
+                student.getDepartment(),
                 student.getGender(),
                 student.getDob(),
                 student.getEmailId(),

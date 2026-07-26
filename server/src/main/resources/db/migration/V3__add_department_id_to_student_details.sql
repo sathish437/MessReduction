@@ -1,7 +1,8 @@
--- Migration V3: Department Master Migration
--- Preserves existing student_details.department string column for backward compatibility
+-- Migration V3: Complete Department Master Database Migration
+-- Converts student_details.department (String) to department_id (Foreign Key referencing departments.id)
+-- Preserves existing student data with zero data loss
 
--- 1. Create departments table first
+-- Step 1: Create departments table if missing
 CREATE TABLE IF NOT EXISTS departments (
     id BIGSERIAL PRIMARY KEY,
     department_code VARCHAR(50) NOT NULL UNIQUE,
@@ -33,7 +34,10 @@ SELECT 'CIVIL', 'Civil Engineering', 'CIVIL', 5, true, NOW(), NOW() WHERE NOT EX
 INSERT INTO departments (department_code, department_name, short_name, display_order, is_active, created_at, updated_at)
 SELECT 'MECHATRONICS', 'Mechatronics Engineering', 'MECHATRONICS', 6, true, NOW(), NOW() WHERE NOT EXISTS (SELECT 1 FROM departments WHERE department_code = 'MECHATRONICS');
 
--- 2. Insert unique department values from existing student_details.department into departments
+INSERT INTO departments (department_code, department_name, short_name, display_order, is_active, created_at, updated_at)
+SELECT 'AI&DS', 'Artificial Intelligence and Data Science', 'AI&DS', 7, true, NOW(), NOW() WHERE NOT EXISTS (SELECT 1 FROM departments WHERE department_code = 'AI&DS');
+
+-- Step 2: Auto-insert any unique department strings from existing student_details.department into departments
 DO $$
 BEGIN
     IF EXISTS (
@@ -51,7 +55,8 @@ BEGIN
             NOW(), 
             NOW()
         FROM student_details sd
-        WHERE sd.department IS NOT NULL AND TRIM(sd.department) <> ''
+        WHERE sd.department IS NOT NULL 
+          AND TRIM(sd.department) <> ''
           AND NOT EXISTS (
               SELECT 1 FROM departments d 
               WHERE LOWER(d.department_code) = LOWER(TRIM(sd.department))
@@ -61,7 +66,7 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Add department_id column as NULLABLE initially
+-- Step 3: Add department_id BIGINT NULL column initially
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -73,7 +78,7 @@ BEGIN
     END IF;
 END $$;
 
--- 4. Populate department_id for every existing student by matching student_details.department with departments
+-- Step 4: Populate department_id for every existing student by matching student_details.department with departments
 DO $$
 BEGIN
     IF EXISTS (
@@ -94,15 +99,15 @@ BEGIN
     END IF;
 END $$;
 
--- 5. Fallback verification: ensure no student has NULL department_id
+-- Step 5: Fallback verification: ensure no student has NULL department_id
 UPDATE student_details
 SET department_id = (SELECT id FROM departments ORDER BY id ASC LIMIT 1)
 WHERE department_id IS NULL;
 
--- 6. Apply NOT NULL constraint after all rows are updated
+-- Step 6: Make department_id NOT NULL after verification
 ALTER TABLE student_details ALTER COLUMN department_id SET NOT NULL;
 
--- 7. Add Foreign Key constraint
+-- Step 7: Add Foreign Key constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -115,4 +120,5 @@ BEGIN
     END IF;
 END $$;
 
--- NOTE: Legacy string column 'department' is retained for migration compatibility.
+-- Step 8: Retain string column 'department' for direct mapping compatibility
+-- (Column department remains available)

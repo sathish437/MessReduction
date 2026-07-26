@@ -23,13 +23,15 @@ public class StudentDetailsService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        Department department = departmentService.findEntityByCode(dto.getDepartment());
-        if (!department.getIsActive()) {
-            throw new IllegalArgumentException("Selected department is inactive and cannot be selected for new registrations.");
+        if (dto.getDepartment() != null) {
+            Department department = departmentService.findEntityByCode(dto.getDepartment());
+            if (!department.getIsActive()) {
+                throw new IllegalArgumentException("Selected department is inactive and cannot be selected for new registrations.");
+            }
         }
 
         try {
-            StudentDetails student = StudentDetailsMapper.mapToStudentDetails(dto, department);
+            StudentDetails student = StudentDetailsMapper.mapToStudentDetails(dto);
             studentDetailsRepo.save(student);
             return StudentDetailsMapper.mapToStudentDetailsResDTO(student);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {

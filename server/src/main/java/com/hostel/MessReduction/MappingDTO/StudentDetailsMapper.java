@@ -6,13 +6,13 @@ import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.StudentDetails;
 
 public class StudentDetailsMapper {
-    public static StudentDetails mapToStudentDetails(StudentDetailsReqDTO studentDetailsReqDTO, Department department){
+    public static StudentDetails mapToStudentDetails(StudentDetailsReqDTO studentDetailsReqDTO){
         StudentDetails studentDetails = new StudentDetails();
 
         studentDetails.setName(studentDetailsReqDTO.getName());
         studentDetails.setRegisterNo(studentDetailsReqDTO.getRegisterNo());
         studentDetails.setRollNo(studentDetailsReqDTO.getRollNo());
-        studentDetails.setDepartment(department);
+        studentDetails.setDepartment(studentDetailsReqDTO.getDepartment());
         studentDetails.setGender(studentDetailsReqDTO.getGender());
         studentDetails.setDob(studentDetailsReqDTO.getDob());
         studentDetails.setEmailId(studentDetailsReqDTO.getEmailId());

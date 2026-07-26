@@ -41,7 +41,7 @@ public class ReductionFormMapper {
         if (studentDetails != null) {
             reductionFormResDTO.setStudentId(studentDetails.getStudentId());
             reductionFormResDTO.setName(studentDetails.getName());
-            reductionFormResDTO.setDepartment(studentDetails.getDepartment() != null ? studentDetails.getDepartment().getDepartmentCode() : null);
+            reductionFormResDTO.setDepartment(studentDetails.getDepartment());
             reductionFormResDTO.setRegisterNo(studentDetails.getRegisterNo());
             reductionFormResDTO.setRollNo(studentDetails.getRollNo());
             reductionFormResDTO.setGender(studentDetails.getGender());

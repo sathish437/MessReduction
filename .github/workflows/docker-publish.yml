@@ -49,3 +49,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Webhook Deployment
+        run: |
+          curl -X POST "https://fedora.tail9454e5.ts.net/deploy_mess.sh?token=${{ secrets.WEBHOOK_TOKEN }}&async=true"
+

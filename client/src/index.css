@@ -114,36 +114,54 @@
 }
 
 
-/* Dropdown Filter — Theme-Aware */
+/* Dropdown Filter — Theme-Aware with Custom Chevron Arrow */
 select {
   color: var(--theme-text-primary) !important;
-  background-color: var(--theme-bg) !important;
+  background-color: var(--theme-card) !important;
   border-color: var(--theme-border) !important;
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.1em;
+  padding-right: 2.5rem !important;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.dark select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+select:hover {
+  border-color: var(--theme-btn-primary) !important;
 }
 
 select:focus {
-  outline: 2px solid var(--theme-btn-primary);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--theme-btn-primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
 select option {
   background-color: var(--theme-card) !important;
   color: var(--theme-text-primary) !important;
   font-weight: 500;
-  padding: 8px 14px;
+  padding: 10px 14px;
 }
 
-/* Light mode hover */
+/* Light mode option hover/checked */
 :root select option:hover,
 :root select option:focus,
 :root select option:checked {
-  background: linear-gradient(0deg, #2563EB 0%, #2563EB 100%) !important;
   background-color: #2563EB !important;
   color: #ffffff !important;
 }
 
-/* Dark mode hover */
+/* Dark mode option hover/checked */
 .dark select option:hover,
 .dark select option:focus,
 .dark select option:checked {

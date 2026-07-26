@@ -5,6 +5,7 @@ import apiClient from "./api/apiClient"
 import { setStaffAuth, getStaffDashboardRoute } from "./services/authService"
 import image from "./assets/1000088399.png"
 import PasswordInput from "./PasswordInput"
+import CustomSelect from "./CustomSelect"
 
 const TITLE = "STAFF LOGIN"
 
@@ -117,20 +118,21 @@ function StaffLogin({ onNavigate }) {
                             </div>
 
                             <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
-                                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 sm:py-4 transition-all bg-[#0a1628] w-full ${error && !role ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/10 input-focus'}`}>
-                                    <span className={error && !role ? "text-rose-400" : "text-amber-400/60"}><FiShield size={18} /></span>
-                                    <select
-                                        value={role}
-                                        onChange={(e) => { setRole(e.target.value); setUserName(""); }}
-                                        required
-                                        className="flex-1 bg-transparent focus:outline-none text-base sm:text-lg text-white appearance-none cursor-pointer w-full"
-                                    >
-                                        <option value="" disabled className="bg-[#0f1f38]">Select Role</option>
-                                        <option value="Warden" className="bg-[#0f1f38]">Warden</option>
-                                        <option value="DeputyWarden" className="bg-[#0f1f38]">Deputy Warden</option>
-                                        <option value="Office" className="bg-[#0f1f38]">Hostel Office</option>
-                                    </select>
-                                </div>
+                                <CustomSelect
+                                    icon={<FiShield size={18} />}
+                                    name="role"
+                                    id="staff-role-select"
+                                    value={role}
+                                    onChange={(e) => { setRole(e.target.value); setUserName(""); }}
+                                    required
+                                    placeholder="Select Staff Role"
+                                    options={[
+                                        { value: "Warden", label: "Warden" },
+                                        { value: "DeputyWarden", label: "Deputy Warden" },
+                                        { value: "Office", label: "Hostel Office" }
+                                    ]}
+                                    error={error && !role ? error : null}
+                                />
                                 <Field
                                     icon={<FiUser size={18} />}
                                     type="text"

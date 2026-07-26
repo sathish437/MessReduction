@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { FiSun, FiMoon, FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft, FiCheckCircle, FiShield } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
+import CustomSelect from "./CustomSelect"
 import { getHostelVerificationEnabled } from "./services/authService"
 
 const TITLE = "STUDENT REGISTRATION"
@@ -308,24 +309,38 @@ function Register({ onNavigate }) {
                 <Field label="Date of Birth" icon={<FiCalendar />} error={!!error} id="dob-input">
                    <input id="dob-input" type="date" value={formData.dob} max={today} onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })} required className={`${inp} cursor-pointer`} />
                 </Field>
-                <Field label="Gender" icon={<FiUser />} error={!!error} id="gender-select" isSelect={true}>
-                  <select id="gender-select" name="gender" value={formData.gender} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
-                    <option value="">Select Gender</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                  </select>
-                </Field>
+                <CustomSelect
+                  label="Gender"
+                  icon={<FiUser />}
+                  name="gender"
+                  id="gender-select"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  required
+                  placeholder="Select Gender"
+                  options={[
+                    { value: "MALE", label: "Male" },
+                    { value: "FEMALE", label: "Female" }
+                  ]}
+                  error={error && !formData.gender ? error : null}
+                />
               </FormSection>
 
               {/* Section 2: Academic */}
               <FormSection delay={0.2} title="ACADEMIC INFORMATION" icon={<FiBookOpen size={20} />}>
                 <div className="col-span-1 sm:col-span-2">
-                  <Field label="Department" icon={<FiBookOpen />} error={!!error} id="dept-select" isSelect={true}>
-                    <select id="dept-select" name="dept" value={formData.dept} onChange={handleChange} required className={`${inp} appearance-none cursor-pointer pr-8`}>
-                      <option value="">Select Department</option>
-                      {["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </Field>
+                  <CustomSelect
+                    label="Department"
+                    icon={<FiBookOpen />}
+                    name="dept"
+                    id="dept-select"
+                    value={formData.dept}
+                    onChange={handleChange}
+                    required
+                    placeholder="Select Department"
+                    options={["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => ({ value: d, label: d }))}
+                    error={error && !formData.dept ? error : null}
+                  />
                 </div>
               </FormSection>
 

@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { logout } from "./services/authService";
+import CustomSelect from "./CustomSelect";
 
 import image from "./assets/1000088399.png";
 
@@ -63,7 +64,25 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
 }
 
 function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
-    if (!tracking) return null;
+    if (!tracking && !activeRequest) return null;
+
+    const effectiveTracking = tracking || {
+        currentStatus: activeRequest?.currentStatus,
+        currentStage: activeRequest?.currentStatus === 'Approved' ? 'COMPLETED' : (
+            activeRequest?.currentStatus?.startsWith('Rejected') ? 'REJECTED' : (
+                activeRequest?.currentStatus === 'PendingOffice' ? 'OFFICE' : (
+                    activeRequest?.currentStatus === 'PendingWarden' ? 'WARDEN' : (
+                        activeRequest?.currentStatus === 'PendingDeputyWarden' ? 'DEPUTY_WARDEN' : 'SUBMITTED'
+                    )
+                )
+            )
+        ),
+        submittedTime: activeRequest?.submittedAt,
+        deputyWardenName: activeRequest?.assignedDeputyWarden,
+        rejectionReason: activeRequest?.rejectReason
+    };
+
+    const trackingData = effectiveTracking;
 
     const stages = [
         { id: "SUBMITTED", label: "Submitted" },
@@ -73,8 +92,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
         { id: "COMPLETED", label: "Completed" }
     ];
 
-    const currentStageIndex = stages.findIndex(s => s.id === tracking.currentStage);
-    const isRejected = tracking.currentStage === "REJECTED";
+    const currentStageIndex = stages.findIndex(s => s.id === trackingData.currentStage);
+    const isRejected = trackingData.currentStage === "REJECTED";
 
     const formatDate = (dateString) => {
         if (!dateString) return null;
@@ -88,14 +107,14 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
     const getStageState = (index) => {
         if (isRejected) {
             let rejectedIndex = 1;
-            if (tracking.rejectedBy === "Warden") rejectedIndex = 2;
-            if (tracking.rejectedBy === "Office") rejectedIndex = 3;
+            if (trackingData.rejectedBy === "Warden" || trackingData.currentStatus === "RejectedWarden") rejectedIndex = 2;
+            if (trackingData.rejectedBy === "Office" || trackingData.currentStatus === "RejectedOffice") rejectedIndex = 3;
             if (index < rejectedIndex) return "completed";
             if (index === rejectedIndex) return "rejected";
             return "pending";
         }
-        if (currentStageIndex === -1 && tracking.currentStatus === "Approved") return "completed";
-        if (tracking.currentStage === "COMPLETED") return "completed";
+        if (currentStageIndex === -1 && trackingData.currentStatus === "Approved") return "completed";
+        if (trackingData.currentStage === "COMPLETED") return "completed";
         if (index < currentStageIndex) return "completed";
         if (index === currentStageIndex) return "current";
         return "pending";
@@ -103,7 +122,7 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
 
     const getStageDetails = (stageId) => {
         if (stageId === "SUBMITTED") {
-            const time = formatDate(tracking.submittedTime);
+            const time = formatDate(trackingData.submittedTime);
             return time ? (
                 <div className="mt-2 text-center text-xs">
                     <div className="text-[var(--color-text-primary)] font-medium">{time.date}</div>
@@ -112,8 +131,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
             ) : null;
         }
         if (stageId === "DEPUTY_WARDEN") {
-            if (isRejected && tracking.rejectedBy === "DeputyWarden") {
-                const time = formatDate(tracking.rejectedTime);
+            if (isRejected && (trackingData.rejectedBy === "DeputyWarden" || trackingData.currentStatus === "RejectedDeputyWarden")) {
+                const time = formatDate(trackingData.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
                         <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
@@ -121,19 +140,19 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                     </div>
                 );
             }
-            if (tracking.deputyApprovalTime) {
-                const time = formatDate(tracking.deputyApprovalTime);
+            if (trackingData.deputyApprovalTime) {
+                const time = formatDate(trackingData.deputyApprovalTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.deputyWardenName}>{tracking.deputyWardenName}</div>
+                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={trackingData.deputyWardenName}>{trackingData.deputyWardenName}</div>
                         {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
         }
         if (stageId === "WARDEN") {
-            if (isRejected && tracking.rejectedBy === "Warden") {
-                const time = formatDate(tracking.rejectedTime);
+            if (isRejected && (trackingData.rejectedBy === "Warden" || trackingData.currentStatus === "RejectedWarden")) {
+                const time = formatDate(trackingData.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
                         <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
@@ -141,19 +160,19 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                     </div>
                 );
             }
-            if (tracking.wardenApprovalTime) {
-                const time = formatDate(tracking.wardenApprovalTime);
+            if (trackingData.wardenApprovalTime) {
+                const time = formatDate(trackingData.wardenApprovalTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.wardenName}>{tracking.wardenName}</div>
+                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={trackingData.wardenName}>{trackingData.wardenName}</div>
                         {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
         }
         if (stageId === "OFFICE") {
-            if (isRejected && tracking.rejectedBy === "Office") {
-                const time = formatDate(tracking.rejectedTime);
+            if (isRejected && (trackingData.rejectedBy === "Office" || trackingData.currentStatus === "RejectedOffice")) {
+                const time = formatDate(trackingData.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
                         <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
@@ -161,14 +180,14 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                     </div>
                 );
             }
-            if (tracking.officeApprovalTime) {
-                const time = formatDate(tracking.officeApprovalTime);
+            if (trackingData.officeApprovalTime) {
+                const time = formatDate(trackingData.officeApprovalTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        {tracking.isAutoAccepted ? (
+                        {trackingData.isAutoAccepted ? (
                             <div className="text-[var(--color-success)] italic font-medium mb-1">Auto Accepted</div>
                         ) : (
-                            <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.officeName}>{tracking.officeName}</div>
+                            <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={trackingData.officeName}>{trackingData.officeName}</div>
                         )}
                         {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
@@ -243,31 +262,31 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                     let dateTimeObj = null;
 
                     if (stage.id === "SUBMITTED") {
-                        dateTimeObj = formatDate(tracking.submittedTime);
+                        dateTimeObj = formatDate(trackingData.submittedTime);
                         staffName = "SYSTEM";
                     } else if (stage.id === "DEPUTY_WARDEN") {
-                        if (isRejectedState && tracking.rejectedBy === "DeputyWarden") {
-                            dateTimeObj = formatDate(tracking.rejectedTime);
-                            staffName = tracking.deputyWardenName || "Deputy Warden";
-                        } else if (tracking.deputyApprovalTime) {
-                            dateTimeObj = formatDate(tracking.deputyApprovalTime);
-                            staffName = tracking.deputyWardenName || "Deputy Warden";
+                        if (isRejectedState && (trackingData.rejectedBy === "DeputyWarden" || trackingData.currentStatus === "RejectedDeputyWarden")) {
+                            dateTimeObj = formatDate(trackingData.rejectedTime);
+                            staffName = trackingData.deputyWardenName || "Deputy Warden";
+                        } else if (trackingData.deputyApprovalTime) {
+                            dateTimeObj = formatDate(trackingData.deputyApprovalTime);
+                            staffName = trackingData.deputyWardenName || "Deputy Warden";
                         }
                     } else if (stage.id === "WARDEN") {
-                        if (isRejectedState && tracking.rejectedBy === "Warden") {
-                            dateTimeObj = formatDate(tracking.rejectedTime);
-                            staffName = tracking.wardenName || "Warden";
-                        } else if (tracking.wardenApprovalTime) {
-                            dateTimeObj = formatDate(tracking.wardenApprovalTime);
-                            staffName = tracking.wardenName || "Warden";
+                        if (isRejectedState && (trackingData.rejectedBy === "Warden" || trackingData.currentStatus === "RejectedWarden")) {
+                            dateTimeObj = formatDate(trackingData.rejectedTime);
+                            staffName = trackingData.wardenName || "Warden";
+                        } else if (trackingData.wardenApprovalTime) {
+                            dateTimeObj = formatDate(trackingData.wardenApprovalTime);
+                            staffName = trackingData.wardenName || "Warden";
                         }
                     } else if (stage.id === "OFFICE") {
-                        if (isRejectedState && tracking.rejectedBy === "Office") {
-                            dateTimeObj = formatDate(tracking.rejectedTime);
-                            staffName = tracking.officeName || "Office";
-                        } else if (tracking.officeApprovalTime) {
-                            dateTimeObj = formatDate(tracking.officeApprovalTime);
-                            staffName = tracking.isAutoAccepted ? "SYSTEM" : (tracking.officeName || "Office");
+                        if (isRejectedState && (trackingData.rejectedBy === "Office" || trackingData.currentStatus === "RejectedOffice")) {
+                            dateTimeObj = formatDate(trackingData.rejectedTime);
+                            staffName = trackingData.officeName || "Office";
+                        } else if (trackingData.officeApprovalTime) {
+                            dateTimeObj = formatDate(trackingData.officeApprovalTime);
+                            staffName = trackingData.isAutoAccepted ? "SYSTEM" : (trackingData.officeName || "Office");
                         }
                     }
 
@@ -316,10 +335,10 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
 
                                 {isRejectedState && (
                                     <div className="mt-3">
-                                        {tracking.rejectionReason && (
+                                        {trackingData.rejectionReason && (
                                             <div className="text-sm text-[var(--color-text-primary)] bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/10 rounded-xl p-3 shadow-sm">
                                                 <span className="font-semibold text-[var(--color-danger)] text-[11px] block mb-1 uppercase tracking-wider">Rejection Reason</span>
-                                                {tracking.rejectionReason}
+                                                {trackingData.rejectionReason}
                                             </div>
                                         )}
                                         {onEditRequest && activeRequest && (
@@ -339,9 +358,20 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 })}
             </div>
 
-            {isRejected && tracking.rejectionReason && (
+            {isRejected && trackingData.rejectionReason && (
                 <div className="hidden md:block mt-6 p-4 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 text-[var(--color-text-primary)] text-sm shadow-sm">
-                    <span className="font-semibold text-[var(--color-danger)]">Rejection Reason:</span> {tracking.rejectionReason}
+                    <div className="mb-2"><span className="font-semibold text-[var(--color-danger)]">Rejection Reason:</span> {trackingData.rejectionReason}</div>
+                    {onEditRequest && activeRequest && (
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => onEditRequest(activeRequest)}
+                                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] border border-[var(--color-danger)]/20 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+                            >
+                                <FiEdit3 size={16} /> Edit and Resubmit
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -383,6 +413,9 @@ function MessReductionPage() {
     const [showExtraDialog, setShowExtraDialog] = useState(false);
     const [extraReason, setExtraReason] = useState("");
     const [isRequestingExtra, setIsRequestingExtra] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isAnyProcessing = isSubmitting || isDeleting || isRequestingExtra || loading;
 
     const activeRequest = Array.isArray(studentForm) && studentForm.length > 0
         ? studentForm[0]
@@ -400,7 +433,7 @@ function MessReductionPage() {
 
     const isInvalidDateDifference = formData.leaveDate && formData.arrivalDate && getDaysDifference(formData.leaveDate, formData.arrivalDate) <= 3;
 
-    const isSubmitBlocked = isLimitReached || isSubmitting;
+    const isSubmitBlocked = isSubmitting || (!editingFormId && (isLimitReached || activeRequest));
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -456,11 +489,12 @@ function MessReductionPage() {
 
                 // Get forms from nested reductionForms if present
                 const forms = Array.isArray(currentStudent.reductionForms) ? currentStudent.reductionForms : [];
-                setStudentForm(forms);
+                const sortedForms = [...forms].sort((a, b) => (b.formId || 0) - (a.formId || 0));
+                setStudentForm(sortedForms);
                 fetchLimits(studentId);
 
-                if (forms.length > 0) {
-                    const req = forms[0];
+                if (sortedForms.length > 0) {
+                    const req = sortedForms[0];
                     const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
                     const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
                     
@@ -673,12 +707,15 @@ function MessReductionPage() {
 
     const handleDeleteRequest = async (formId) => {
         if (!window.confirm("Are you sure you want to delete this request? This action cannot be undone, and this submission will still count toward your daily limit.")) return;
+        setIsDeleting(true);
         try {
             await apiClient.delete(`/api/student-form/StudentForm/${studentId}/${formId}`);
             showToast("Request deleted successfully", "success");
             fetchStudentData(studentId);
         } catch (error) {
             showToast(error.response?.data?.message || "Failed to delete request", "error");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -750,13 +787,15 @@ function MessReductionPage() {
                     <nav className="flex items-center gap-2 bg-black/20 p-1.5 rounded-[14px] border border-white/10">
                         <button 
                             onClick={() => setActiveTab('dashboard')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all cursor-pointer ${activeTab === 'dashboard' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                            disabled={isAnyProcessing}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'dashboard' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
                         >
                             <FiHome size={18} /> Dashboard
                         </button>
                         <button 
                             onClick={() => setActiveTab('track')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all cursor-pointer ${activeTab === 'track' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                            disabled={isAnyProcessing}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'track' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
                         >
                             <FiActivity size={18} /> Track Request
                         </button>
@@ -824,7 +863,8 @@ function MessReductionPage() {
                                             {(isLimitReached || limits.extraRemaining > 0) && (
                                                 <button
                                                     onClick={() => setShowExtraDialog(true)}
-                                                    className="px-3 py-1.5 bg-[var(--color-warning)] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-[var(--color-warning)]/90 transition-all cursor-pointer"
+                                                    disabled={isAnyProcessing}
+                                                    className={`px-3 py-1.5 bg-[var(--color-warning)] text-white text-xs font-bold rounded-lg shadow-sm transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-warning)]/90 cursor-pointer'}`}
                                                 >
                                                     Request Extra
                                                 </button>
@@ -835,21 +875,22 @@ function MessReductionPage() {
                                     <div className="p-6">
                                         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                <Field
-                                                    as="select"
+                                                <CustomSelect
                                                     label="Year of Study"
                                                     icon={<FiCalendar size={18} />}
                                                     name="year"
+                                                    id="year-select"
                                                     value={formData.year}
                                                     onChange={handleChange}
                                                     required
-                                                    id="year-select"
-                                                >
-                                                    <option value="" disabled>Select Year</option>
-                                                    {["1st", "2nd", "3rd", "4th"].map(y => (
-                                                        <option key={y} value={y}>{y} Year</option>
-                                                    ))}
-                                                </Field>
+                                                    placeholder="Select Year"
+                                                    options={[
+                                                        { value: "1st", label: "1st Year" },
+                                                        { value: "2nd", label: "2nd Year" },
+                                                        { value: "3rd", label: "3rd Year" },
+                                                        { value: "4th", label: "4th Year" }
+                                                    ]}
+                                                />
                                                 <Field
                                                     label="Room Number"
                                                     icon={<FiMapPin size={18} />}
@@ -876,21 +917,21 @@ function MessReductionPage() {
                                                 <Field label="Arrival Time" icon={<FiClock size={18} />} type="time" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required id="arrival-time-input" />
                                             </div>
 
-                                            <Field
-                                                as="select"
+                                            <CustomSelect
                                                 label="Reason for Leave"
                                                 icon={<FiInfo size={18} />}
                                                 name="reason"
+                                                id="reason-select"
                                                 value={formData.reason}
                                                 onChange={handleChange}
                                                 required
-                                                id="reason-select"
-                                            >
-                                                <option value="" disabled>Select Reason</option>
-                                                <option value="Study Holidays">Study Holidays</option>
-                                                <option value="Medical Leave">Medical Leave</option>
-                                                <option value="other">Other Reason</option>
-                                            </Field>
+                                                placeholder="Select Reason"
+                                                options={[
+                                                    { value: "Study Holidays", label: "Study Holidays" },
+                                                    { value: "Medical Leave", label: "Medical Leave" },
+                                                    { value: "other", label: "Other Reason" }
+                                                ]}
+                                            />
 
                                             <AnimatePresence>
                                                 {formData.reason === "other" && (
@@ -904,18 +945,18 @@ function MessReductionPage() {
                                                 <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
                                                     <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
                                                     <p className="text-sm font-medium leading-relaxed">
-                                                        {isLimitReached
+                                                        {(isLimitReached && !activeRequest)
                                                             ? "You have reached your daily limit. Please request an extra submission."
-                                                            : "You already have an active request. New requests can be submitted after your arrival time."}
+                                                            : "You already have an active request. Please delete it or wait for processing to submit a new one."}
                                                     </p>
                                                 </div>
                                             )}
 
                                             <div className="flex flex-col sm:flex-row gap-4 mt-2">
                                                 <button
-                                                    className={`flex-1 flex items-center justify-center gap-2 rounded-[12px] py-3.5 text-[15px] font-semibold transition-all ${isSubmitting || isSubmitBlocked ? "bg-[var(--color-card)] text-[var(--color-text-secondary)] cursor-not-allowed border border-[var(--color-border)]" : "bg-[var(--color-btn-primary)] text-white hover:bg-[var(--color-btn-primary)]/90  hover:shadow-md"}`}
+                                                    className={`flex-1 flex items-center justify-center gap-2 rounded-[12px] py-3.5 text-[15px] font-semibold transition-all ${isSubmitting || isSubmitBlocked || isAnyProcessing ? "bg-[var(--color-card)] text-[var(--color-text-secondary)] cursor-not-allowed border border-[var(--color-border)]" : "bg-[var(--color-btn-primary)] text-white hover:bg-[var(--color-btn-primary)]/90  hover:shadow-md cursor-pointer"}`}
                                                     type="submit"
-                                                    disabled={isSubmitting || isSubmitBlocked}
+                                                    disabled={isSubmitting || isSubmitBlocked || isAnyProcessing}
                                                 >
                                                     {isSubmitting ? "Processing..." : (editingFormId ? "Resubmit Request" : "Submit Request")}
                                                 </button>
@@ -923,7 +964,8 @@ function MessReductionPage() {
                                                 <button
                                                     type="button"
                                                     onClick={handleReset}
-                                                    className="px-8 py-3.5 rounded-[12px] text-[15px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-card)] hover:bg-white/10 border border-[var(--color-border)] transition-all cursor-pointer"
+                                                    disabled={isAnyProcessing}
+                                                    className={`px-8 py-3.5 rounded-[12px] text-[15px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-card)] border border-[var(--color-border)] transition-all ${isAnyProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-white/10 cursor-pointer"}`}
                                                 >
                                                     Reset
                                                 </button>
@@ -973,10 +1015,15 @@ function MessReductionPage() {
                                                 <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
                                                     <button
                                                         type="button"
+                                                        disabled={isLimitReached || isAnyProcessing}
                                                         onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                                        className="px-6 py-2.5 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto cursor-pointer"
+                                                        className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
+                                                            ${isLimitReached || isAnyProcessing
+                                                                ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
+                                                                : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
+                                                            }`}
                                                     >
-                                                        Delete Request
+                                                        {isDeleting ? 'Deleting...' : (isLimitReached ? 'Limit Reached' : 'Delete Request')}
                                                     </button>
                                                 </div>
                                             )}
@@ -1000,14 +1047,16 @@ function MessReductionPage() {
                 <nav className="md:hidden shrink-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex items-center justify-around px-2 py-2 z-30">
                     <button 
                         onClick={() => setActiveTab('dashboard')} 
-                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                        disabled={isAnyProcessing}
+                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'dashboard' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                     >
                         <FiHome size={20} className="mb-1" />
                         <span className="text-[10px] font-semibold">Home</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('track')} 
-                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${activeTab === 'track' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                        disabled={isAnyProcessing}
+                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'track' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                     >
                         <FiActivity size={20} className="mb-1" />
                         <span className="text-[10px] font-semibold">Track</span>

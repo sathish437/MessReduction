@@ -28,7 +28,7 @@ const YEAR_THEME = {
 /* ── Year Selection Screen ── */
 function YearSelectScreen({ onSelect }) {
     return (
-        <div className="min-h-screen w-full bg-[var(--theme-bg)] flex flex-col items-center justify-center font-sans text-white px-6">
+        <div className="min-h-screen w-full bg-[var(--theme-bg)] flex flex-col items-center justify-center font-sans text-[var(--theme-text-primary)] px-6">
             {/* Background glow removed for professional admin dashboard */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
             </div>
@@ -43,8 +43,8 @@ function YearSelectScreen({ onSelect }) {
                 <div className="flex flex-col items-center gap-4 text-center">
                     <img src={logo} alt="GCES" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
                     <div>
-                        <p className="text-xs font-semibold tracking-wider text-teal-400/80 uppercase mb-1.5">Authority Panel</p>
-                        <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-wide uppercase px-2">Chief Warden</h1>
+                        <p className="text-xs font-semibold tracking-wider text-[var(--theme-text-secondary)] uppercase mb-1.5">Authority Panel</p>
+                        <h1 className="text-2xl sm:text-4xl font-bold text-[var(--theme-text-primary)] tracking-wide uppercase px-2">Chief Warden</h1>
                         <p className="text-sm sm:text-base text-[var(--theme-text-secondary)] font-medium mt-2">Select your year assignment to continue</p>
                     </div>
                 </div>
@@ -69,7 +69,7 @@ function YearSelectScreen({ onSelect }) {
                                 </div>
                                 <div>
                                     <p className={`text-xs font-semibold tracking-wider uppercase ${t.text} mb-1`}>Year {i + 1}</p>
-                                    <h3 className="text-2xl font-bold text-white">{yr}</h3>
+                                    <h3 className="text-2xl font-bold text-[var(--theme-text-primary)]">{yr}</h3>
                                     <p className="text-sm text-[var(--theme-text-secondary)] font-medium mt-0.5">Warden Panel</p>
                                 </div>
                                 <div className={`flex items-center gap-1.5 ${t.text} text-xs font-semibold uppercase tracking-wider mt-auto`}>
@@ -80,7 +80,7 @@ function YearSelectScreen({ onSelect }) {
                     })}
                 </div>
 
-                 <p className="text-sm text-white/15 tracking-widest uppercase">© 2025 GCES · Mess Reduction Portal</p>
+                 <p className="text-sm text-[var(--theme-text-secondary)] tracking-widest uppercase">© 2025 GCES · Mess Reduction Portal</p>
             </motion.div>
         </div>
     );
@@ -157,7 +157,7 @@ function AutoAcceptSettingsCard() {
     };
 
     const getStatusInfo = () => {
-        if (!enabled) return { label: "Disabled", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+        if (!enabled) return { label: "Disabled", color: "bg-[var(--theme-border)]/50 text-[var(--theme-text-secondary)] border-[var(--theme-border)]" };
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -217,10 +217,10 @@ function AutoAcceptSettingsCard() {
             </div>
 
             <form onSubmit={handleSave} className="space-y-6">
-                <div className="flex items-center justify-between bg-white/[0.02] border border-[var(--theme-border)] rounded-xl p-4">
+                <div className="flex items-center justify-between bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-4">
                     <div>
-                        <span className="text-sm font-semibold text-white">Enable Auto Accept</span>
-                        <p className="text-xs text-white/30 mt-0.5">Toggle this feature ON or OFF.</p>
+                        <span className="text-sm font-semibold text-[var(--theme-text-primary)]">Enable Auto Accept</span>
+                        <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">Toggle this feature ON or OFF.</p>
                     </div>
                     <button
                         type="button"
@@ -301,7 +301,7 @@ function AutoAcceptSettingsCard() {
                     <button
                         type="submit"
                         disabled={saving || isSaveDisabled}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-white/5 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]' : 'bg-teal-500 text-slate-955 hover:bg-teal-400'}`}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-[var(--theme-border)]/40 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]' : 'bg-[var(--theme-btn-primary)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary-hover)]'}`}
                     >
                         {saving ? "Saving..." : "Save Settings"}
                     </button>
@@ -578,7 +578,7 @@ const Warden = () => {
     }
 
     return (
-        <div className="min-h-screen w-full bg-[var(--theme-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-teal-500/30">
+        <div className="min-h-screen w-full bg-[var(--theme-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-[var(--theme-btn-primary)]/20">
             {/* ── Header ── */}
             <header className="w-full flex items-center justify-between px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-4 flex-wrap sm:flex-nowrap" style={{transition: 'background-color 0.3s ease'}}>
                 <div className="flex items-center gap-4">
@@ -595,13 +595,13 @@ const Warden = () => {
                 <div className="flex bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
                     <button
                         onClick={() => setView("dashboard")}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? `${t.active} text-slate-950 shadow-sm` : "text-[var(--theme-text-secondary)] hover:text-white"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? `${t.active} text-slate-950 shadow-sm` : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}
                     >
                         <FiTrendingUp size={14} /> Dashboard
                     </button>
                     <button
                         onClick={() => setView("requests")}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? `${t.active} text-slate-950 shadow-sm` : "text-[var(--theme-text-secondary)] hover:text-white"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? `${t.active} text-slate-950 shadow-sm` : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}
                     >
                         <FiFileText size={14} /> Requests
                     </button>
@@ -618,7 +618,7 @@ const Warden = () => {
                     <button
                         onClick={toggleTheme}
                         title={isDark ? "Switch to Light" : "Switch to Dark"}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-all"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/20 text-white hover:bg-[var(--theme-btn-primary)]/10 transition-all"
                     >
                         {isDark ? <FiSun size={14} /> : <FiMoon size={14} />}
                     </button>
@@ -650,7 +650,7 @@ const Warden = () => {
                                 <div className={`bg-[var(--theme-card)] border ${t.border} rounded-xl p-6 flex flex-col justify-between shadow-sm`}>
                                     <div>
                                         <p className="text-xs text-[var(--theme-text-secondary)] uppercase font-semibold tracking-wider mb-2">Pending Requests</p>
-                                        <p className="text-3xl font-bold text-white">{counts?.pendingWarden || 0}</p>
+                                        <p className="text-3xl font-bold text-[var(--theme-text-primary)]">{counts?.pendingWarden || 0}</p>
                                     </div>
                                     <div className={`mt-4 px-2.5 py-1 ${t.ring} border ${t.border} rounded-lg text-xs font-semibold ${t.text} uppercase inline-block w-fit`}>Need Action</div>
                                 </div>
@@ -682,7 +682,7 @@ const Warden = () => {
 
                                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-8 flex flex-col justify-center shadow-sm">
-                                    <h3 className="text-xl font-bold text-white mb-3">Warden Protocol</h3>
+                                    <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Warden Protocol</h3>
                                     <p className="text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal">
                                         Review requests pre-approved by Deputy Wardens. Your digital signature finalizes the reduction for the Hostel Office records.
                                     </p>
@@ -690,18 +690,18 @@ const Warden = () => {
                                         <div className={`w-10 h-10 rounded-lg ${t.ring} flex items-center justify-center`}>
                                             <FiShield className={t.text} size={18} />
                                         </div>
-                                        <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">Verified Secure Portal</span>
+                                        <span className="text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider">Verified Secure Portal</span>
                                     </div>
                                 </div>
 
                                 <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-8 flex flex-col justify-between shadow-sm">
                                     <div>
-                                        <h3 className="text-xl font-bold text-white mb-2">Review Requests</h3>
+                                        <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-2">Review Requests</h3>
                                         <p className="text-sm text-[var(--theme-text-secondary)] font-normal">Navigate to the requests table to process forms.</p>
                                     </div>
                                     <button
                                         onClick={() => setView("requests")}
-                                        className={`mt-6 flex items-center justify-center gap-2 w-full ${t.active} text-slate-950 py-3.5 rounded-xl font-semibold text-sm tracking-wider uppercase hover:bg-teal-400 transition-colors shadow-sm`}
+                                        className={`mt-6 flex items-center justify-center gap-2 w-full bg-[var(--theme-btn-primary)] text-white py-3.5 rounded-xl font-semibold text-sm tracking-wider uppercase hover:bg-teal-400 transition-colors shadow-sm`}
                                     >
                                         Process Forms <FiArrowRight />
                                     </button>
@@ -733,7 +733,7 @@ const Warden = () => {
                                             onClick={() => setSelectedYear(yr)}
                                             className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
                                                 selectedYear === yr
-                                                    ? "bg-teal-500 text-slate-950 shadow-md"
+                                                    ? "bg-[var(--theme-btn-primary)] text-white shadow-md"
                                                     : "text-[var(--theme-text-primary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10"
                                             }`}
                                         >
@@ -757,7 +757,7 @@ const Warden = () => {
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search Students..."
-                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-white placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                         />
                                         {searchQuery && (
                                             <button
@@ -770,7 +770,7 @@ const Warden = () => {
                                     </div>
 
                                     <div className="px-3.5 py-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg text-xs font-bold text-[var(--theme-text-primary)] whitespace-nowrap self-start sm:self-auto">
-                                        Total Records : <span className="text-teal-400 font-bold ml-1">{pendingForms.length}</span>
+                                        Total Records : <span className="text-[var(--theme-btn-primary)] font-bold ml-1">{pendingForms.length}</span>
                                     </div>
                                 </div>
 
@@ -847,10 +847,10 @@ const Warden = () => {
                                             <button
                                                 onClick={handleBulkAction}
                                                 disabled={isBulkProcessing}
-                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
                                             >
                                                 {isBulkProcessing ? (
-                                                    <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                                 ) : (
                                                     <FiCheck size={18} />
                                                 )}
@@ -882,7 +882,7 @@ const Warden = () => {
                                         style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
                                     >
                                         <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
-                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">
+                                            <tr className="bg-[var(--theme-bg)] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">
                                                 <th className="px-6 py-4 text-[var(--theme-text-secondary)] w-16 text-center">
                                                     <button 
                                                         disabled={isBulkProcessing || processingIds.size > 0} 
@@ -910,7 +910,7 @@ const Warden = () => {
                                                 <tr>
                                                     <td colSpan="12" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-3">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-[var(--theme-text-secondary)] mb-2">
+                                                            <div className="w-16 h-16 bg-[var(--theme-border)] rounded-full flex items-center justify-center text-[var(--theme-text-secondary)] mb-2">
                                                                 <FiFilter size={32} />
                                                             </div>
                                                             <h3 className="text-[var(--theme-text-primary)] text-xl font-bold tracking-tight">No records found</h3>
@@ -925,32 +925,32 @@ const Warden = () => {
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.02 }}
                                                     onClick={() => !processingIds.has(req.id) && !isBulkProcessing && toggleSelect(req.id)}
-                                                    className={`hover:bg-white/[0.02] transition-colors border-b border-[var(--theme-border)] cursor-pointer ${selectedIds.includes(req.id) ? `bg-${t.color}-500/5` : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+                                                    className={`hover:bg-[var(--theme-btn-primary)]/5 transition-colors border-b border-[var(--theme-border)] cursor-pointer ${selectedIds.includes(req.id) ? `bg-${t.color}-500/5` : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
                                                 >
                                                     <td className="px-6 py-4 text-center">
-                                                        <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? `bg-${t.color}-500 border-${t.color}-400 text-slate-900` : 'bg-white/5 border-white/20 text-transparent'}`}>
+                                                        <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? `bg-${t.color}-500 border-${t.color}-400 text-slate-900` : 'bg-[var(--theme-bg)] border-[var(--theme-border)] text-transparent'}`}>
                                                             <FiCheck size={12} strokeWidth={4} />
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-4 max-w-[150px]">
-                                                            <p className={`text-sm font-semibold text-white group-hover:${t.text} transition-colors truncate`}>{req.name}</p>
+                                                            <p className={`text-sm font-semibold text-[var(--theme-text-primary)] group-hover:${t.text} transition-colors truncate`}>{req.name}</p>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-semibold text-[var(--theme-text-primary)]">{req.registerNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
+                                                        <span className="px-2.5 py-1 bg-[var(--theme-bg)] rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2 py-0.5 bg-white/5 rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
+                                                        <span className="px-2 py-0.5 bg-[var(--theme-bg)] rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.gender}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-mono font-medium text-teal-400">{req.phone || req.phoneNo || "N/A"}</span>
+                                                        <span className="text-xs font-mono font-medium text-[var(--theme-btn-primary)]">{req.phone || req.phoneNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-sm font-semibold text-[var(--theme-text-primary)]">{req.roomNo}</span>
@@ -973,7 +973,7 @@ const Warden = () => {
                                                     <td className="px-6 py-4 text-right whitespace-nowrap">
                                                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                             {processingIds.has(req.id) ? (
-                                                                <div className="px-3 py-2 bg-white/5 rounded-lg border border-[var(--theme-border)] flex items-center gap-2">
+                                                                <div className="px-3 py-2 bg-[var(--theme-bg)] rounded-lg border border-[var(--theme-border)] flex items-center gap-2">
                                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
                                                                     <span className="text-[10px] uppercase tracking-widest text-[var(--theme-text-secondary)] font-semibold">Processing</span>
                                                                 </div>
@@ -982,7 +982,7 @@ const Warden = () => {
                                                                     <button
                                                                         disabled={isBulkProcessing}
                                                                         onClick={() => handleAction(req.id, "Approve")}
-                                                                        className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     >
                                                                         <FiCheck size={16} />
                                                                     </button>
@@ -1011,19 +1011,19 @@ const Warden = () => {
                                         <button
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10 hover:text-[var(--theme-text-primary)] disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             ◀ Previous
                                         </button>
                                         
-                                        <span className="px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 font-bold text-xs">
+                                        <span className="px-3 py-1.5 rounded-lg bg-[var(--theme-btn-primary)] text-white font-bold text-xs">
                                             Page {currentPage} of {totalPages || 1}
                                         </span>
 
                                         <button
                                             disabled={currentPage >= totalPages || totalPages === 0}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10 hover:text-[var(--theme-text-primary)] disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             Next ▶
                                         </button>
@@ -1055,7 +1055,7 @@ const Warden = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsRejectModalOpen(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1073,7 +1073,7 @@ const Warden = () => {
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Enter rejection reason..."
-                                className="w-full h-28 bg-black/20 border border-[var(--theme-border)] rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
+                                className="w-full h-28 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg p-3 text-xs text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-[var(--color-danger)]/50 resize-none transition-all"
                             />
 
                             <div className="flex items-center justify-end gap-3 mt-6">
@@ -1118,7 +1118,7 @@ const Warden = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedReason(null)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1126,17 +1126,17 @@ const Warden = () => {
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-md min-h-[320px] flex flex-col bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 shadow-2xl overflow-hidden"
                         >
-                            <h3 className={`text-lg font-bold text-white mb-2 flex items-center gap-2 ${t.text}`}>
-                                <span className="w-1.5 h-5 bg-teal-500 rounded-full" />
+                            <h3 className={`text-lg font-bold text-[var(--theme-text-primary)] mb-2 flex items-center gap-2 ${t.text}`}>
+                                <span className="w-1.5 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                 Request Reason
                             </h3>
-                            <div className="flex-1 text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal bg-black/20 border border-[var(--theme-border)] rounded-xl p-4 max-h-[60vh] overflow-y-auto">
+                            <div className="flex-1 text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-4 max-h-[60vh] overflow-y-auto">
                                 {selectedReason}
                             </div>
                             <div className="flex justify-end mt-6">
                                 <button
                                     onClick={() => setSelectedReason(null)}
-                                    className={`px-4 py-2 rounded-xl ${t.active} text-slate-950 text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all`}
+                                    className={`px-4 py-2 rounded-xl bg-[var(--theme-btn-primary)] text-white text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all`}
                                 >
                                     Close
                                 </button>

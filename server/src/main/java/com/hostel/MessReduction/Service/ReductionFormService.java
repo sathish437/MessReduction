@@ -212,7 +212,6 @@ public class ReductionFormService {
         if (studentDetails == null) {
             throw new StudentNotFoundException("Student details not associated with this form");
         }
-        checkSubmissionLimit(studentDetails);
         validateResubmitPayload(dto);
 
         FormStatus previousStatus = form.getCurrentStatus();
@@ -1277,6 +1276,7 @@ public class ReductionFormService {
         }
     }
 
+    @Transactional(readOnly = true)
     public RequestTrackingResDTO getTrackingDetails(Long formId) {
         ReductionForm form = reductionFormRepo.findById(formId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found"));
@@ -1306,6 +1306,9 @@ public class ReductionFormService {
         List<ReductionFormHistory> history = form.getHistory();
         if (history != null) {
             for (ReductionFormHistory h : history) {
+                if (h.getToStatus() == null) {
+                    continue;
+                }
                 // Tracking who rejected
                 if (h.getToStatus().name().startsWith("Rejected")) {
                     tracking.setRejectedBy(h.getToStatus().name().replace("Rejected", ""));

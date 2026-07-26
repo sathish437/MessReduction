@@ -31,7 +31,7 @@ function YearStatCard({ year, requests }) {
             className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200"
         >
             <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold tracking-wider uppercase text-teal-400">{year} Year</span>
+                <span className="text-xs font-bold tracking-wider uppercase text-[var(--theme-btn-primary)]">{year} Year</span>
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Pending Requests</span>
             </div>
             <div className="mt-1">
@@ -187,8 +187,8 @@ function AutoAcceptSettingsCard() {
             <form onSubmit={handleSave} className="space-y-6">
                 <div className="flex items-center justify-between bg-white/[0.02] border border-[var(--theme-border)] rounded-xl p-4">
                     <div>
-                        <span className="text-sm font-semibold text-white">Enable Auto Accept</span>
-                        <p className="text-xs text-white/30 mt-0.5">Toggle this feature ON or OFF.</p>
+                        <span className="text-sm font-semibold text-[var(--theme-text-primary)]">Enable Auto Accept</span>
+                        <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">Toggle this feature ON or OFF.</p>
                     </div>
                     <button
                         type="button"
@@ -269,7 +269,7 @@ function AutoAcceptSettingsCard() {
                     <button
                         type="submit"
                         disabled={saving || isSaveDisabled}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-white/5 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]' : 'bg-teal-500 text-slate-955 hover:bg-teal-400'}`}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-[var(--theme-border)]/40 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]' : 'bg-[var(--theme-btn-primary)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary-hover)]'}`}
                     >
                         {saving ? "Saving..." : "Save Settings"}
                     </button>
@@ -524,7 +524,7 @@ function Deputy_warden_side() {
         return (
             <div className="min-h-screen bg-[var(--theme-bg)] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+                    <div className="w-16 h-16 border-4 border-[var(--theme-btn-primary)]/20 border-t-[var(--theme-btn-primary)] rounded-full animate-spin" />
                     <p className="text-[var(--theme-btn-primary)] font-black tracking-widest uppercase text-sm">Loading requests...</p>
                 </div>
             </div>
@@ -543,7 +543,7 @@ function Deputy_warden_side() {
                             <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
                         </div>
                         <div className="flex flex-col leading-tight">
-                            <span className="text-[10px] font-semibold tracking-wider text-teal-400/80 uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
+                            <span className="text-[10px] font-semibold tracking-wider text-white/70 uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
                             <span className="text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
                         </div>
                     </div>
@@ -551,10 +551,10 @@ function Deputy_warden_side() {
 
                 {/* View Toggle */}
                 <div className="flex w-full lg:w-auto bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
-                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-[var(--theme-text-secondary)] hover:text-white"}`}>
+                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiBarChart2 size={14} /> Dashboard
                     </button>
-                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-[var(--theme-text-secondary)] hover:text-white"}`}>
+                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiList size={14} /> Requests
                     </button>
                 </div>
@@ -564,7 +564,7 @@ function Deputy_warden_side() {
                     <button
                         onClick={toggleTheme}
                         title={isDark ? "Switch to Light" : "Switch to Dark"}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-all shrink-0"
+                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/20 text-white hover:bg-[var(--theme-btn-primary)]/10 transition-all shrink-0"
                     >
                         {isDark ? <FiSun size={14} /> : <FiMoon size={14} />}
                     </button>
@@ -593,7 +593,7 @@ function Deputy_warden_side() {
                             {/* Section heading */}
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
-                                    <div className="w-1 h-5 bg-teal-500 rounded-full" />
+                                    <div className="w-1 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                     Submission Overview
                                 </h2>
                                 <p className="text-[var(--theme-text-secondary)] text-xs sm:text-sm font-normal ml-3 mt-0.5">
@@ -634,7 +634,7 @@ function Deputy_warden_side() {
                                                         setIsLogModalOpen(true);
                                                     }
                                                 }}
-                                                className={`p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-white/[0.02] transition-colors' : ''}`}
+                                                className={`p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-[var(--theme-btn-primary)]/5 transition-colors' : ''}`}
                                             >
                                                 <p className="text-xs text-[var(--theme-text-secondary)] uppercase font-semibold tracking-wider mb-1.5">{s.label}</p>
                                                 <p className={`text-3xl sm:text-4xl font-bold ${s.color}`}>{s.count}</p>
@@ -660,7 +660,7 @@ function Deputy_warden_side() {
                                      </p>
                                      <button
                                          onClick={() => setView("requests")}
-                                         className="mt-6 flex items-center justify-center gap-2 w-full bg-white text-[#0a1628] py-3 rounded-xl font-semibold text-xs tracking-wider uppercase hover:bg-teal-400 transition-colors"
+                                         className="mt-6 flex items-center justify-center gap-2 w-full bg-[var(--theme-btn-primary)] text-white py-3 rounded-xl font-semibold text-xs tracking-wider uppercase hover:bg-[var(--theme-btn-primary-hover)] transition-colors"
                                      >
                                          Manage Requests <FiArrowRight />
                                      </button>
@@ -685,7 +685,7 @@ function Deputy_warden_side() {
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
                                 <div>
                                     <h2 className="text-xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
-                                        <div className="w-1 h-5 bg-teal-500 rounded-full" />
+                                        <div className="w-1 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                         Pending Requests - Deputy Review
                                     </h2>
                                     <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">Forms awaiting deputy warden approval</p>
@@ -706,7 +706,7 @@ function Deputy_warden_side() {
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
                                             placeholder="Search Students..."
-                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-white placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                         />
                                         {search && (
                                             <button
@@ -719,7 +719,7 @@ function Deputy_warden_side() {
                                     </div>
 
                                     <div className="px-3.5 py-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg text-xs font-bold text-[var(--theme-text-primary)] whitespace-nowrap self-start sm:self-auto">
-                                        Total Records : <span className="text-teal-400 font-bold ml-1">{filteredRequests.length}</span>
+                                        Total Records : <span className="text-[var(--theme-btn-primary)] font-bold ml-1">{filteredRequests.length}</span>
                                     </div>
                                 </div>
 
@@ -781,10 +781,10 @@ function Deputy_warden_side() {
                                             <button
                                                 onClick={() => handleBulkAction("accepted")}
                                                 disabled={isBulkProcessing}
-                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                                className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
                                             >
                                                 {isBulkProcessing ? (
-                                                    <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                                 ) : (
                                                     <FiCheck size={18} />
                                                 )}
@@ -816,7 +816,7 @@ function Deputy_warden_side() {
                                         style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
                                     >
                                         <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
-                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">
+                                            <tr className="bg-[var(--theme-bg)] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">
                                                 <th className="px-6 py-4 text-[var(--theme-text-secondary)] w-16 text-center">
                                                     <button 
                                                         disabled={isBulkProcessing || processingIds.size > 0} 
@@ -844,7 +844,7 @@ function Deputy_warden_side() {
                                                 <tr>
                                                     <td colSpan="12" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-3">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-[var(--theme-text-secondary)] mb-2">
+                                                            <div className="w-16 h-16 bg-[var(--theme-border)] rounded-full flex items-center justify-center text-[var(--theme-text-secondary)] mb-2">
                                                                 <FiList size={32} />
                                                             </div>
                                                             <h3 className="text-[var(--theme-text-primary)] text-xl font-bold tracking-tight">No records found</h3>
@@ -859,10 +859,10 @@ function Deputy_warden_side() {
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
                                                     onClick={() => !processingIds.has(req.id) && !isBulkProcessing && toggleSelect(req.id)}
-                                                    className={`hover:bg-white/[0.02] transition-colors border-b border-[var(--theme-border)] cursor-pointer ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+                                                    className={`hover:bg-[var(--theme-btn-primary)]/5 transition-colors border-b border-[var(--theme-border)] cursor-pointer ${selectedIds.includes(req.id) ? 'bg-[var(--theme-btn-primary)]/5' : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
                                                 >
                                                     <td className="px-6 py-4 text-center">
-                                                        <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-teal-500 border-teal-400 text-slate-900' : 'bg-white/5 border-white/20 text-transparent'}`}>
+                                                        <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-teal-500 border-teal-400 text-slate-900' : 'bg-[var(--theme-bg)] border-[var(--theme-border)] text-transparent'}`}>
                                                             <FiCheck size={12} strokeWidth={4} />
                                                         </div>
                                                     </td>
@@ -875,16 +875,16 @@ function Deputy_warden_side() {
                                                         <span className="text-xs font-semibold text-[var(--theme-text-primary)]">{req.registerNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
+                                                        <span className="px-2.5 py-1 bg-[var(--theme-bg)] rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2 py-0.5 bg-white/5 rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year}</span>
+                                                        <span className="px-2 py-0.5 bg-[var(--theme-bg)] rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.gender}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-mono font-medium text-teal-400">{req.phone || req.phoneNo || "N/A"}</span>
+                                                        <span className="text-xs font-mono font-medium text-[var(--theme-btn-primary)]">{req.phone || req.phoneNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-sm font-semibold text-[var(--theme-text-primary)]">{req.roomNo}</span>
@@ -907,7 +907,7 @@ function Deputy_warden_side() {
                                                     <td className="px-6 py-3 text-right whitespace-nowrap">
                                                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                             {processingIds.has(req.id) ? (
-                                                                <div className="px-3 py-2 bg-white/5 rounded-lg border border-[var(--theme-border)] flex items-center gap-2">
+                                                                <div className="px-3 py-2 bg-[var(--theme-bg)] rounded-lg border border-[var(--theme-border)] flex items-center gap-2">
                                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
                                                                     <span className="text-[10px] uppercase tracking-widest text-[var(--theme-text-secondary)] font-semibold">Processing</span>
                                                                 </div>
@@ -916,7 +916,7 @@ function Deputy_warden_side() {
                                                                     <button
                                                                         disabled={isBulkProcessing}
                                                                         onClick={() => handleAction(req.id, "Approve")}
-                                                                        className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-slate-950 transition-all border border-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     >
                                                                         <FiCheck size={16} />
                                                                     </button>
@@ -945,19 +945,19 @@ function Deputy_warden_side() {
                                         <button
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10 hover:text-[var(--theme-text-primary)] disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             ◀ Previous
                                         </button>
                                         
-                                        <span className="px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 font-bold text-xs">
+                                        <span className="px-3 py-1.5 rounded-lg bg-[var(--theme-btn-primary)] text-white font-bold text-xs">
                                             Page {currentPage} of {totalPages || 1}
                                         </span>
 
                                         <button
                                             disabled={currentPage >= totalPages || totalPages === 0}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10 hover:text-[var(--theme-text-primary)] disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             Next ▶
                                         </button>
@@ -974,8 +974,8 @@ function Deputy_warden_side() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
                     <p className="text-xs text-[var(--theme-text-secondary)] tracking-wider uppercase font-semibold">© 2025 Government College of Engineering · Srirangam</p>
                     <div className="flex gap-6">
-                        <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
-                        <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">System Stable</span>
+                        <span className="text-xs text-[var(--theme-text-secondary)] font-semibold tracking-wider uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
+                        <span className="text-xs text-[var(--theme-text-secondary)] font-semibold tracking-wider uppercase">System Stable</span>
                     </div>
                 </div>
             </footer>
@@ -989,7 +989,7 @@ function Deputy_warden_side() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsRejectModalOpen(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1007,7 +1007,7 @@ function Deputy_warden_side() {
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Enter rejection reason..."
-                                className="w-full h-28 bg-black/20 border border-[var(--theme-border)] rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
+                                className="w-full h-28 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg p-3 text-xs text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-[var(--color-danger)]/50 resize-none transition-all"
                             />
 
                             <div className="flex items-center justify-end gap-3 mt-6">
@@ -1052,7 +1052,7 @@ function Deputy_warden_side() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedReason(null)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1060,17 +1060,17 @@ function Deputy_warden_side() {
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-md min-h-[320px] flex flex-col bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 shadow-2xl overflow-hidden"
                         >
-                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 text-teal-400">
-                                <span className="w-1.5 h-5 bg-teal-500 rounded-full" />
+                            <h3 className="text-lg font-bold text-[var(--theme-btn-primary)] mb-2 flex items-center gap-2">
+                                <span className="w-1.5 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                 Request Reason
                             </h3>
-                            <div className="flex-1 text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal bg-black/20 border border-[var(--theme-border)] rounded-xl p-4 max-h-[60vh] overflow-y-auto">
+                            <div className="flex-1 text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-4 max-h-[60vh] overflow-y-auto">
                                 {selectedReason}
                             </div>
                             <div className="flex justify-end mt-6">
                                 <button
                                     onClick={() => setSelectedReason(null)}
-                                    className="px-4 py-2 rounded-xl bg-teal-500 text-slate-950 text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all"
+                                    className="px-4 py-2 rounded-xl bg-[var(--theme-btn-primary)] text-white text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all"
                                 >
                                     Close
                                 </button>

@@ -114,25 +114,49 @@
 }
 
 
-/* Dropdown Filter High-Contrast Readability */
+/* Dropdown Filter — Theme-Aware */
 select {
-  color: #ffffff !important;
-  background-color: #0f1f38;
+  color: var(--theme-text-primary) !important;
+  background-color: var(--theme-bg) !important;
+  border-color: var(--theme-border) !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+select:focus {
+  outline: 2px solid var(--theme-btn-primary);
+  outline-offset: 1px;
 }
 
 select option {
-  background-color: #0f1f38 !important;
-  color: #ffffff !important;
+  background-color: var(--theme-card) !important;
+  color: var(--theme-text-primary) !important;
   font-weight: 500;
-  padding: 8px 12px;
+  padding: 8px 14px;
 }
 
-select option:hover,
-select option:focus,
-select option:checked {
-  background-color: #1d4ed8 !important;
+/* Light mode hover */
+:root select option:hover,
+:root select option:focus,
+:root select option:checked {
+  background: linear-gradient(0deg, #2563EB 0%, #2563EB 100%) !important;
+  background-color: #2563EB !important;
   color: #ffffff !important;
 }
+
+/* Dark mode hover */
+.dark select option:hover,
+.dark select option:focus,
+.dark select option:checked {
+  background-color: #1D4ED8 !important;
+  color: #ffffff !important;
+}
+
+/* Nav Tab buttons — hover fix for light mode */
+button.tab-btn-inactive:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--theme-text-primary);
+}
+
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

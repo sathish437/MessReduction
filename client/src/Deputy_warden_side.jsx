@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    FiUsers, FiCheck, FiX, FiPieChart, FiList, 
-    FiCheckSquare, FiSquare, FiTrendingUp, FiArrowRight,
-    FiClock, FiBarChart2, FiActivity, FiLogOut, FiSearch
-} from "react-icons/fi";
+import { FiUsers, FiCheck, FiX, FiPieChart, FiList, FiCheckSquare, FiSquare, FiTrendingUp, FiArrowRight, FiClock, FiBarChart2, FiActivity, FiLogOut, FiSearch, FiSun, FiMoon } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
+import { useTheme } from "./context/ThemeContext";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
@@ -19,9 +16,9 @@ const handleLogout = () => {
 const YEARS = ["1st", "2nd", "3rd", "4th"];
 
 const YEAR_COLORS = {
-    "1st": { accent: "teal", bg: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", glow: "shadow-sm", ring: "bg-teal-500/10" },
+    "1st": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
     "2nd": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-sm", ring: "bg-blue-500/10" },
-    "3rd": { accent: "teal", bg: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", glow: "shadow-sm", ring: "bg-teal-500/10" },
+    "3rd": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
     "4th": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-sm", ring: "bg-blue-500/10" },
 };
 
@@ -31,7 +28,7 @@ function YearStatCard({ year, requests }) {
     return (
         <motion.div
             whileHover={{ y: -2 }}
-            className="bg-[#0f1f38] border border-white/10 rounded-xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200"
+            className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200"
         >
             <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold tracking-wider uppercase text-teal-400">{year} Year</span>
@@ -157,21 +154,21 @@ function AutoAcceptSettingsCard() {
 
     if (loading) {
         return (
-            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 shadow-sm flex items-center justify-center">
+            <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 shadow-sm flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-t-teal-500 border-teal-500/20 rounded-full animate-spin mr-3" />
-                <span className="text-white/60 text-sm">Loading auto-accept settings...</span>
+                <span className="text-[var(--theme-text-secondary)] text-sm">Loading auto-accept settings...</span>
             </div>
         );
     }
 
     return (
-        <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-6">
+        <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--theme-border)] pb-4 mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <FiClock className="text-teal-400" /> Auto Accept / Auto Forward
+                    <h3 className="text-lg font-bold text-[var(--theme-text-primary)] flex items-center gap-2">
+                        <FiClock className="text-[var(--theme-btn-primary)]" /> Auto Accept / Auto Forward
                     </h3>
-                    <p className="text-white/40 text-xs font-normal mt-1">
+                    <p className="text-[var(--theme-text-secondary)] text-xs font-normal mt-1">
                         Automatically forward incoming requests during your leave or unavailability.
                     </p>
                 </div>
@@ -188,7 +185,7 @@ function AutoAcceptSettingsCard() {
             </div>
 
             <form onSubmit={handleSave} className="space-y-6">
-                <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between bg-white/[0.02] border border-[var(--theme-border)] rounded-xl p-4">
                     <div>
                         <span className="text-sm font-semibold text-white">Enable Auto Accept</span>
                         <p className="text-xs text-white/30 mt-0.5">Toggle this feature ON or OFF.</p>
@@ -208,7 +205,7 @@ function AutoAcceptSettingsCard() {
                                 }
                             }
                         }}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${enabled ? 'bg-teal-500' : 'bg-slate-700'}`}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${enabled ? 'bg-[var(--theme-btn-primary)]' : 'bg-slate-700'}`}
                     >
                         <span
                             className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'}`}
@@ -218,7 +215,7 @@ function AutoAcceptSettingsCard() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">From Date</label>
+                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">From Date</label>
                         <input
                             type="date"
                             disabled={!enabled || saving}
@@ -229,30 +226,30 @@ function AutoAcceptSettingsCard() {
                                 setFromDate(newFrom);
                                 if (toDate && toDate < newFrom) setToDate(newFrom);
                             }}
-                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">To Date</label>
+                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">To Date</label>
                         <input
                             type="date"
                             disabled={!enabled || saving}
                             min={fromDate || new Date().toISOString().split('T')[0]}
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
-                            className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Reason / Description</label>
+                    <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">Reason / Description</label>
                     <input
                         type="text"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         placeholder="e.g. Official Duty / Out of Station / Medical Leave"
-                        className="w-full bg-[#0a1628] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-teal-500/50 transition-colors"
+                        className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/50 transition-colors"
                     />
                 </div>
 
@@ -272,7 +269,7 @@ function AutoAcceptSettingsCard() {
                     <button
                         type="submit"
                         disabled={saving || isSaveDisabled}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' : 'bg-teal-500 text-slate-955 hover:bg-teal-400'}`}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors ${isSaveDisabled ? 'bg-white/5 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]' : 'bg-teal-500 text-slate-955 hover:bg-teal-400'}`}
                     >
                         {saving ? "Saving..." : "Save Settings"}
                     </button>
@@ -283,6 +280,7 @@ function AutoAcceptSettingsCard() {
 }
 
 function Deputy_warden_side() {
+    const { isDark, toggleTheme } = useTheme();
     const username = getCookie('staffUsername');
     const deputyDetails = getDeputyDetails(username);
     const deputyYearLabel = deputyDetails ? (deputyDetails.year === 1 ? "1st" : deputyDetails.year === 2 ? "2nd" : deputyDetails.year === 3 ? "3rd" : "4th") : "all";
@@ -524,21 +522,21 @@ function Deputy_warden_side() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+            <div className="min-h-screen bg-[var(--theme-bg)] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
-                    <p className="text-teal-400 font-black tracking-widest uppercase text-sm">Loading requests...</p>
+                    <p className="text-[var(--theme-btn-primary)] font-black tracking-widest uppercase text-sm">Loading requests...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white">
-            <div className="fixed inset-0 bg-[#0a1628] -z-10" />
+        <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
+            <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 
             {/* ── Header ── */}
-            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-white/10 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50 gap-4">
+            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-4" style={{transition: "background-color 0.3s ease"}}>
                 <div className="flex items-center gap-4 justify-between w-full lg:w-auto">
                     <div className="flex items-center gap-4">
                         <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
@@ -552,17 +550,24 @@ function Deputy_warden_side() {
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex w-full lg:w-auto bg-[#0f1f38] p-1 rounded-xl border border-white/10 shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
-                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-white/40 hover:text-white"}`}>
+                <div className="flex w-full lg:w-auto bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-[var(--theme-text-secondary)] hover:text-white"}`}>
                         <FiBarChart2 size={14} /> Dashboard
                     </button>
-                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-white/40 hover:text-white"}`}>
+                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-teal-500 text-slate-950 shadow-sm" : "text-[var(--theme-text-secondary)] hover:text-white"}`}>
                         <FiList size={14} /> Requests
                     </button>
                 </div>
 
-                {/* Logout Button */}
+                {/* Theme Toggle + Logout */}
                 <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <button
+                        onClick={toggleTheme}
+                        title={isDark ? "Switch to Light" : "Switch to Dark"}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-all shrink-0"
+                    >
+                        {isDark ? <FiSun size={14} /> : <FiMoon size={14} />}
+                    </button>
                     <button
                         onClick={handleLogout}
                         className="w-full lg:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-semibold tracking-wider uppercase"
@@ -587,11 +592,11 @@ function Deputy_warden_side() {
                         >
                             {/* Section heading */}
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                                <h2 className="text-xl sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
                                     <div className="w-1 h-5 bg-teal-500 rounded-full" />
                                     Submission Overview
                                 </h2>
-                                <p className="text-white/40 text-xs sm:text-sm font-normal ml-3 mt-0.5">
+                                <p className="text-[var(--theme-text-secondary)] text-xs sm:text-sm font-normal ml-3 mt-0.5">
                                     Submissions for your assigned year.
                                 </p>
                             </div>
@@ -610,9 +615,9 @@ function Deputy_warden_side() {
                             {/* ── Overall Status + Total ── */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Overall Status Tracking */}
-                                <div className="lg:col-span-2 bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
-                                    <h3 className="text-lg font-bold text-white mb-4 sm:mb-6 flex items-center gap-2">
-                                        <FiTrendingUp className="text-teal-400" /> Overall Status Tracking
+                                <div className="lg:col-span-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+                                    <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-4 sm:mb-6 flex items-center gap-2">
+                                        <FiTrendingUp className="text-[var(--theme-btn-primary)]" /> Overall Status Tracking
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
                                         {[
@@ -631,7 +636,7 @@ function Deputy_warden_side() {
                                                 }}
                                                 className={`p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-white/[0.02] transition-colors' : ''}`}
                                             >
-                                                <p className="text-xs text-white/40 uppercase font-semibold tracking-wider mb-1.5">{s.label}</p>
+                                                <p className="text-xs text-[var(--theme-text-secondary)] uppercase font-semibold tracking-wider mb-1.5">{s.label}</p>
                                                 <p className={`text-3xl sm:text-4xl font-bold ${s.color}`}>{s.count}</p>
                                             </div>
                                         ))}
@@ -639,12 +644,12 @@ function Deputy_warden_side() {
                                 </div>
  
                                  {/* Total Forms */}
-                                 <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
+                                 <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
                                      <div>
-                                         <h3 className="text-lg font-bold text-white mb-1">Total Forms</h3>
-                                         <p className="text-white/40 text-xs font-normal">Cumulative submissions received.</p>
+                                         <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-1">Total Forms</h3>
+                                         <p className="text-[var(--theme-text-secondary)] text-xs font-normal">Cumulative submissions received.</p>
                                      </div>
-                                     <p className="text-4xl sm:text-5xl font-bold text-white mt-4">
+                                     <p className="text-4xl sm:text-5xl font-bold text-[var(--theme-text-primary)] mt-4">
                                          {(dashboardStats.pendingDeputyWarden || 0) + 
                                           (dashboardStats.pendingWarden || 0) + 
                                           (dashboardStats.pendingOffice || 0) + 
@@ -679,21 +684,21 @@ function Deputy_warden_side() {
                         >
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
                                         <div className="w-1 h-5 bg-teal-500 rounded-full" />
                                         Pending Requests - Deputy Review
                                     </h2>
-                                    <p className="text-xs text-white/40 mt-0.5">Forms awaiting deputy warden approval</p>
+                                    <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">Forms awaiting deputy warden approval</p>
                                 </div>
                             </div>
 
                             {/* Table Toolbar Above Table: Split into 3 logical sections */}
-                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-4 shadow-sm space-y-4">
+                            <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-4 shadow-sm space-y-4">
                                 {/* Row 1: Search Students (Left) & Total Records (Right) */}
                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                                     <div className="relative flex-1 min-w-[240px]">
                                         <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                                            <FiSearch size={15} className="text-white/40" />
+                                            <FiSearch size={15} className="text-[var(--theme-text-secondary)]" />
                                         </div>
                                         <input
                                             id="deputy-search"
@@ -701,47 +706,47 @@ function Deputy_warden_side() {
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
                                             placeholder="Search Students..."
-                                            className="w-full bg-[#0a1628] border border-white/10 rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-white placeholder:text-white/35 focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-white placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                         />
                                         {search && (
                                             <button
                                                 onClick={() => setSearch("")}
-                                                className="absolute inset-y-0 right-3 flex items-center text-white/40 hover:text-white transition-colors text-xs font-semibold"
+                                                className="absolute inset-y-0 right-3 flex items-center text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors text-xs font-semibold"
                                             >
                                                 Clear
                                             </button>
                                         )}
                                     </div>
 
-                                    <div className="px-3.5 py-2 bg-[#0a1628] border border-white/10 rounded-lg text-xs font-bold text-white/90 whitespace-nowrap self-start sm:self-auto">
+                                    <div className="px-3.5 py-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg text-xs font-bold text-[var(--theme-text-primary)] whitespace-nowrap self-start sm:self-auto">
                                         Total Records : <span className="text-teal-400 font-bold ml-1">{filteredRequests.length}</span>
                                     </div>
                                 </div>
 
                                 {/* Row 2: Filtering Controls (Department, Records Per Page) */}
-                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-white/5">
+                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--theme-border)]">
                                     {/* Department Filter */}
-                                    <div className="flex items-center gap-2 bg-[#0a1628] border border-white/10 rounded-lg px-3 py-1.5">
-                                        <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider whitespace-nowrap">Department</span>
+                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                        <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Department</span>
                                         <select
                                             id="deputy-dept-filter"
                                             value={deptFilter}
                                             onChange={(e) => setDeptFilter(e.target.value)}
-                                            className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[#0f1f38] text-white">All</option>
-                                            <option value="CSE" className="bg-[#0f1f38] text-white">CSE</option>
-                                            <option value="ECE" className="bg-[#0f1f38] text-white">ECE</option>
-                                            <option value="EEE" className="bg-[#0f1f38] text-white">EEE</option>
-                                            <option value="MECH" className="bg-[#0f1f38] text-white">MECH</option>
-                                            <option value="CIVIL" className="bg-[#0f1f38] text-white">CIVIL</option>
-                                            <option value="MECHATRONICS" className="bg-[#0f1f38] text-white">MECHATRONICS</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
+                                            <option value="CSE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CSE</option>
+                                            <option value="ECE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">ECE</option>
+                                            <option value="EEE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">EEE</option>
+                                            <option value="MECH" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECH</option>
+                                            <option value="CIVIL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CIVIL</option>
+                                            <option value="MECHATRONICS" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECHATRONICS</option>
                                         </select>
                                     </div>
 
                                     {/* Records Per Page Filter */}
-                                    <div className="flex items-center gap-2 bg-[#0a1628] border border-white/10 rounded-lg px-3 py-1.5">
-                                        <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
+                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                        <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
                                         <select
                                             id="deputy-records-per-page"
                                             value={itemsPerPage}
@@ -749,13 +754,13 @@ function Deputy_warden_side() {
                                                 setItemsPerPage(Number(e.target.value));
                                                 setCurrentPage(1);
                                             }}
-                                            className="bg-transparent text-xs font-bold text-teal-400 focus:outline-none cursor-pointer"
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-btn-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value={20} className="bg-[#0f1f38] text-white">20</option>
-                                            <option value={40} className="bg-[#0f1f38] text-white">40</option>
-                                            <option value={60} className="bg-[#0f1f38] text-white">60</option>
-                                            <option value={80} className="bg-[#0f1f38] text-white">80</option>
-                                            <option value={100} className="bg-[#0f1f38] text-white">100</option>
+                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">20</option>
+                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">40</option>
+                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">60</option>
+                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">80</option>
+                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">100</option>
                                         </select>
                                     </div>
                                 </div>
@@ -767,7 +772,7 @@ function Deputy_warden_side() {
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
-                                        className="relative z-20 shadow-2xl sm:shadow-none bg-[#0f1f38]/95 sm:bg-emerald-500/10 backdrop-blur-xl sm:backdrop-blur-none border border-emerald-500/30 sm:border-emerald-500/20 rounded-2xl sm:rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4"
+                                        className="relative z-20 shadow-2xl sm:shadow-none bg-[var(--theme-card)]/95 sm:bg-emerald-500/10 backdrop-blur-xl sm:backdrop-blur-none border border-emerald-500/30 sm:border-emerald-500/20 rounded-2xl sm:rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4"
                                     >
                                         <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-wider uppercase text-center sm:text-left">
                                             {selectedIds.length} Form{selectedIds.length > 1 ? 's' : ''} Selected
@@ -799,7 +804,7 @@ function Deputy_warden_side() {
                             </AnimatePresence>
 
                             {/* Requests Table (Desktop) & Cards (Mobile) */}
-                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                            <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl overflow-hidden shadow-sm">
                                 
                                 {/* 💻 TABLE VIEW */}
                                 <div 
@@ -810,28 +815,28 @@ function Deputy_warden_side() {
                                         className="w-full text-left border-collapse"
                                         style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
                                     >
-                                        <thead className="sticky top-0 bg-[#0f1f38] z-10">
-                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
-                                                <th className="px-6 py-4 text-white/40 w-16 text-center">
+                                        <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
+                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">
+                                                <th className="px-6 py-4 text-[var(--theme-text-secondary)] w-16 text-center">
                                                     <button 
                                                         disabled={isBulkProcessing || processingIds.size > 0} 
                                                         onClick={toggleSelectAll} 
-                                                        className="text-white/40 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         {paginatedForms.length > 0 && paginatedForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
-                                                <th className="px-4 py-4 text-white/40">Student Name</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Register No</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Department</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Year</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Gender</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Phone Number</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Room No</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Leave Date</th>
-                                                <th className="px-4 py-4 text-white/40 text-center">Arrival Date</th>
-                                                <th className="px-4 py-4 text-white/40">Reason</th>
-                                                <th className="px-6 py-4 text-white/40 text-right w-40">Action</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)]">Student Name</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Register No</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Department</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Year</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Gender</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Phone Number</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Room No</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Leave Date</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center">Arrival Date</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)]">Reason</th>
+                                                <th className="px-6 py-4 text-[var(--theme-text-secondary)] text-right w-40">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
@@ -839,10 +844,10 @@ function Deputy_warden_side() {
                                                 <tr>
                                                     <td colSpan="12" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-3">
-                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-2">
+                                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-[var(--theme-text-secondary)] mb-2">
                                                                 <FiList size={32} />
                                                             </div>
-                                                            <h3 className="text-white text-xl font-bold tracking-tight">No records found</h3>
+                                                            <h3 className="text-[var(--theme-text-primary)] text-xl font-bold tracking-tight">No records found</h3>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -854,7 +859,7 @@ function Deputy_warden_side() {
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.04 }}
                                                     onClick={() => !processingIds.has(req.id) && !isBulkProcessing && toggleSelect(req.id)}
-                                                    className={`hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] cursor-pointer ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+                                                    className={`hover:bg-white/[0.02] transition-colors border-b border-[var(--theme-border)] cursor-pointer ${selectedIds.includes(req.id) ? 'bg-white/[0.01]' : ''} ${processingIds.has(req.id) || isBulkProcessing ? 'opacity-50 pointer-events-none' : ''}`}
                                                 >
                                                     <td className="px-6 py-4 text-center">
                                                         <div className={`w-5 h-5 mx-auto rounded flex items-center justify-center border transition-colors ${selectedIds.includes(req.id) ? 'bg-teal-500 border-teal-400 text-slate-900' : 'bg-white/5 border-white/20 text-transparent'}`}>
@@ -863,38 +868,38 @@ function Deputy_warden_side() {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-4 max-w-[150px]">
-                                                            <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors truncate">{req.name}</p>
+                                                            <p className="text-sm font-semibold text-[var(--theme-text-primary)] group-hover:text-[var(--theme-btn-primary)] transition-colors truncate">{req.name}</p>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-semibold text-white/80">{req.registerNo || "N/A"}</span>
+                                                        <span className="text-xs font-semibold text-[var(--theme-text-primary)]">{req.registerNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/70 border border-white/5 tracking-wider block truncate max-w-[120px]">{req.dept}</span>
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2 py-0.5 bg-white/5 rounded text-xs font-medium text-white/70">{req.year}</span>
+                                                        <span className="px-2 py-0.5 bg-white/5 rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-medium text-white/70">{req.gender}</span>
+                                                        <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.gender}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-mono font-medium text-teal-400">{req.phone || req.phoneNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-sm font-semibold text-white/80">{req.roomNo}</span>
+                                                        <span className="text-sm font-semibold text-[var(--theme-text-primary)]">{req.roomNo}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-medium text-white/60">{req.leaveDate}</span>
+                                                        <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.leaveDate}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-medium text-white/60">{req.arrivalDate}</span>
+                                                        <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <p 
                                                             title={req.reason} 
                                                             onClick={(e) => { e.stopPropagation(); setSelectedReason(req.reason); }}
-                                                            className="text-xs font-medium text-white/50 leading-tight max-w-[150px] truncate cursor-pointer hover:text-white transition-colors"
+                                                            className="text-xs font-medium text-[var(--theme-text-secondary)] leading-tight max-w-[150px] truncate cursor-pointer hover:text-[var(--theme-btn-primary)] transition-colors"
                                                         >
                                                             {req.reason && req.reason.length > 35 ? req.reason.substring(0, 35) + "..." : req.reason}
                                                         </p>
@@ -902,9 +907,9 @@ function Deputy_warden_side() {
                                                     <td className="px-6 py-3 text-right whitespace-nowrap">
                                                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                             {processingIds.has(req.id) ? (
-                                                                <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2">
+                                                                <div className="px-3 py-2 bg-white/5 rounded-lg border border-[var(--theme-border)] flex items-center gap-2">
                                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
-                                                                    <span className="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Processing</span>
+                                                                    <span className="text-[10px] uppercase tracking-widest text-[var(--theme-text-secondary)] font-semibold">Processing</span>
                                                                 </div>
                                                             ) : (
                                                                 <>
@@ -931,8 +936,8 @@ function Deputy_warden_side() {
                                         </tbody>
                                     </table>
                                 </div>
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/10 bg-[#0f1f38]">
-                                    <div className="text-xs font-semibold text-white/70">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-[var(--theme-border)] bg-[var(--theme-card)]">
+                                    <div className="text-xs font-semibold text-[var(--theme-text-secondary)]">
                                         Displaying {filteredRequests.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} Requests
                                     </div>
 
@@ -940,7 +945,7 @@ function Deputy_warden_side() {
                                         <button
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             ◀ Previous
                                         </button>
@@ -952,7 +957,7 @@ function Deputy_warden_side() {
                                         <button
                                             disabled={currentPage >= totalPages || totalPages === 0}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
+                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-[var(--theme-border)] text-[var(--theme-text-primary)] hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
                                             Next ▶
                                         </button>
@@ -965,9 +970,9 @@ function Deputy_warden_side() {
             </main>
 
             {/* ── Footer ── */}
-            <footer className="px-8 py-4 text-center border-t border-white/5 bg-[#0a1628]/80 backdrop-blur-md">
+            <footer className="px-8 py-4 text-center border-t border-[var(--theme-border)] bg-[var(--theme-header)] backdrop-blur-md">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
-                    <p className="text-xs text-white/20 tracking-wider uppercase font-semibold">© 2025 Government College of Engineering · Srirangam</p>
+                    <p className="text-xs text-[var(--theme-text-secondary)] tracking-wider uppercase font-semibold">© 2025 Government College of Engineering · Srirangam</p>
                     <div className="flex gap-6">
                         <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
                         <span className="text-xs text-teal-400/35 font-semibold tracking-wider uppercase">System Stable</span>
@@ -990,26 +995,26 @@ function Deputy_warden_side() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-lg bg-[#0f1f38] border border-white/10 rounded-xl p-6 shadow-xl overflow-hidden"
+                            className="relative w-full max-w-lg bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 shadow-xl overflow-hidden"
                         >
-                            <h3 className="text-lg font-bold text-white mb-1.5 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-1.5 flex items-center gap-2">
                                 <span className="w-1 h-5 bg-rose-500 rounded-full" />
                                 Reason for Rejection <span className="text-rose-500">*</span>
                             </h3>
-                            <p className="text-xs text-white/40 mb-4 font-normal">Please provide a clear reason for rejecting this request.</p>
+                            <p className="text-xs text-[var(--theme-text-secondary)] mb-4 font-normal">Please provide a clear reason for rejecting this request.</p>
                             
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Enter rejection reason..."
-                                className="w-full h-28 bg-black/20 border border-white/15 rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
+                                className="w-full h-28 bg-black/20 border border-[var(--theme-border)] rounded-lg p-3 text-xs text-white placeholder-white/20 focus:outline-none focus:border-rose-500/50 resize-none transition-all"
                             />
 
                             <div className="flex items-center justify-end gap-3 mt-6">
                                 <button
                                     disabled={isRejecting}
                                     onClick={() => !isRejecting && setIsRejectModalOpen(false)}
-                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-white/40 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 rounded-lg font-semibold tracking-wider uppercase text-xs text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>
@@ -1053,13 +1058,13 @@ function Deputy_warden_side() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md min-h-[320px] flex flex-col bg-[#0f1f38] border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-md min-h-[320px] flex flex-col bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 shadow-2xl overflow-hidden"
                         >
                             <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 text-teal-400">
                                 <span className="w-1.5 h-5 bg-teal-500 rounded-full" />
                                 Request Reason
                             </h3>
-                            <div className="flex-1 text-sm text-white/70 leading-relaxed font-normal bg-black/20 border border-white/10 rounded-xl p-4 max-h-[60vh] overflow-y-auto">
+                            <div className="flex-1 text-sm text-[var(--theme-text-secondary)] leading-relaxed font-normal bg-black/20 border border-[var(--theme-border)] rounded-xl p-4 max-h-[60vh] overflow-y-auto">
                                 {selectedReason}
                             </div>
                             <div className="flex justify-end mt-6">

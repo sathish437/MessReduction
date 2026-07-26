@@ -109,6 +109,27 @@
   }
 }
 
+
+/* Dropdown Filter High-Contrast Readability */
+select {
+  color: #ffffff !important;
+  background-color: #0f1f38;
+}
+
+select option {
+  background-color: #0f1f38 !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

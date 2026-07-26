@@ -25,33 +25,20 @@ const YEAR_COLORS = {
     "4th": { accent: "amber", bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", glow: "shadow-md", ring: "bg-amber-500/10" },
 };
 
-function YearStatCard({ year, requests, yearStats }) {
-    const c = YEAR_COLORS[year];
-    const yearKeyMap = { "1st": "firstYear", "2nd": "secondYear", "3rd": "thirdYear", "4th": "fourthYear" };
-    const total = yearStats[yearKeyMap[year]] || 0;
+function YearStatCard({ year, requests }) {
     const pending = requests.filter(r => r.year === year).length;
 
     return (
         <motion.div
             whileHover={{ y: -2 }}
-            className={`bg-[#0f1f38] border ${c.border} rounded-xl p-6 shadow-sm relative overflow-hidden group transition-all duration-200`}
+            className="bg-[#0f1f38] border border-white/10 rounded-xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200"
         >
-            <div className="flex items-center justify-between mb-4 relative z-10">
-                <div className={`px-3 py-1 rounded-lg ${c.ring} border ${c.border}`}>
-                    <span className={`text-xs font-semibold tracking-wider uppercase ${c.text}`}>{year} Year</span>
-                </div>
-                <span className={`text-3xl font-bold ${c.text}`}>{total}</span>
+            <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold tracking-wider uppercase text-teal-400">{year} Year</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Pending</span>
             </div>
-            <div className="grid grid-cols-2 gap-2 relative z-10 border-t border-white/5 pt-3">
-                {[
-                    { label: "Pending", val: pending, color: "text-amber-400" },
-                    { label: "Total Rec.", val: total, color: "text-emerald-400" },
-                ].map(({ label, val, color }) => (
-                    <div key={label} className="text-center">
-                        <p className={`text-lg font-bold ${color}`}>{val}</p>
-                        <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">{label}</p>
-                    </div>
-                ))}
+            <div className="mt-1">
+                <p className="text-3xl font-bold text-amber-400">{pending}</p>
             </div>
         </motion.div>
     );
@@ -76,6 +63,7 @@ function HostelOffice() {
     const [view, setView] = useState("dashboard");
     const [selectedYear, setSelectedYear] = useState("all");
     const [genderFilter, setGenderFilter] = useState("ALL");
+    const [deptFilter, setDeptFilter] = useState("ALL");
     const [requests, setRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -88,13 +76,13 @@ function HostelOffice() {
 
     // Pagination & Expand Reason Modal States
     const [currentPage, setCurrentPage]   = useState(1);
-    const itemsPerPage                    = 15;
+    const [itemsPerPage, setItemsPerPage] = useState(20);
     const [selectedReason, setSelectedReason] = useState(null);
 
     // Reset pagination on search change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, selectedYear, genderFilter]);
+    }, [searchQuery, selectedYear, genderFilter, deptFilter, itemsPerPage]);
 
     const handleGenerateReport = async () => {
         try {
@@ -209,6 +197,7 @@ function HostelOffice() {
                 id: r.formId,
                 year: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : "4th",
                 dept: r.department,
+                phone: r.phoneNo || r.phone || r.studentPhone || r.mobile || "N/A",
                 status: r.currentStatus || "PendingOffice",
                 gender: r.gender || "ALL"
             }));
@@ -253,7 +242,7 @@ function HostelOffice() {
 
     useEffect(() => {
         setSelectedIds([]);
-    }, [genderFilter, selectedYear, view]);
+    }, [genderFilter, selectedYear, deptFilter, view]);
 
     const [dashboardStats, setDashboardStats] = useState({
         pendingOffice: 0,
@@ -374,6 +363,7 @@ function HostelOffice() {
     const filteredRequests = requests.filter(req => {
         let matchGender = true;
         let matchYear = true;
+        let matchDept = true;
 
         if (genderFilter && genderFilter !== "ALL") {
             matchGender = req.gender === genderFilter;
@@ -381,13 +371,17 @@ function HostelOffice() {
         if (selectedYear && selectedYear !== "all") {
             matchYear = req.year === selectedYear;
         }
+        if (deptFilter && deptFilter !== "ALL") {
+            matchDept = (req.dept || req.department) === deptFilter;
+        }
         if (normalizedOfficeSearch) {
             const nameMatch = req.name?.toLowerCase().includes(normalizedOfficeSearch);
             const regNoMatch = req.registerNo?.toLowerCase().includes(normalizedOfficeSearch);
-            if (!nameMatch && !regNoMatch) return false;
+            const phoneMatch = (req.phone || req.phoneNo || "").toLowerCase().includes(normalizedOfficeSearch);
+            if (!nameMatch && !regNoMatch && !phoneMatch) return false;
         }
 
-        return matchGender && matchYear;
+        return matchGender && matchYear && matchDept;
     });
 
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -435,29 +429,18 @@ function HostelOffice() {
 
                 {/* Filters Row */}
                 {(view === "dashboard" || view === "requests") && (
-                    <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full lg:w-auto no-print">
-                        {/* Gender Filter */}
-                        <select
-                            value={genderFilter}
-                            onChange={(e) => setGenderFilter(e.target.value)}
-                            className="w-full lg:w-auto bg-[#0f1f38] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-white/60 focus:outline-none focus:border-teal-500/55 cursor-pointer order-1 lg:order-2"
-                        >
-                            <option value="ALL">Gender: All</option>
-                            <option value="MALE">Male</option>
-                            <option value="FEMALE">Female</option>
-                        </select>
-
+                    <div className="flex items-center gap-3 w-full lg:w-auto no-print">
                         {/* Year Tabs */}
-                        <div className="flex items-center gap-1 bg-[#112240] p-1 rounded-xl border border-white/10 overflow-x-auto w-full lg:w-auto justify-between sm:justify-start [&::-webkit-scrollbar]:hidden order-2 lg:order-1">
+                        <div className="flex items-center gap-1 bg-[#0f1f38] p-1.5 rounded-xl border border-white/15 overflow-x-auto w-full lg:w-auto justify-between sm:justify-start [&::-webkit-scrollbar]:hidden">
                             {["all", ...YEARS].map(yr => (
                                 <button
                                     key={yr}
                                     onClick={() => setSelectedYear(yr)}
-                                    className={`flex-1 lg:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap text-center ${selectedYear === yr
-                                            ? yr === "all" ? "bg-white text-slate-955 shadow-sm"
-                                                : `${YEAR_COLORS[yr]?.bg ?? ""} text-slate-955 shadow-sm`
-                                            : "text-white/40 hover:text-white"
-                                        }`}
+                                    className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
+                                        selectedYear === yr
+                                            ? "bg-teal-500 text-slate-950 shadow-md"
+                                            : "text-white/80 hover:text-white hover:bg-white/10"
+                                    }`}
                                 >
                                     {yr === "all" ? "All" : yr}
                                 </button>
@@ -568,36 +551,7 @@ function HostelOffice() {
                                 </div>
                             </div>
 
-                            {/* ── Year-wise Bar Visual ── */}
-                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-8 shadow-sm">
-                                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                                    <FiBarChart2 className="text-teal-400" /> Submission Count by Year
-                                </h3>
-                                <div className="flex items-end gap-6 h-36 max-w-2xl">
-                                    {YEARS.map(yr => {
-                                        const yearKeyMap = { "1st": "firstYear", "2nd": "secondYear", "3rd": "thirdYear", "4th": "fourthYear" };
-                                        const count = yearStats[yearKeyMap[yr]] || 0;
-                                        const max = Math.max(yearStats.firstYear, yearStats.secondYear, yearStats.thirdYear, yearStats.fourthYear, 1);
-                                        const pct = Math.round((count / max) * 100);
-                                        const c = YEAR_COLORS[yr];
-                                        return (
-                                            <div key={yr} className="flex-1 flex flex-col items-center gap-2">
-                                                <span className={`text-sm font-semibold ${c.text}`}>{count}</span>
-                                                <div className="w-full bg-white/5 rounded-lg overflow-hidden" style={{ height: "70px" }}>
-                                                    <motion.div
-                                                        initial={{ height: 0 }}
-                                                        animate={{ height: `${pct}%` }}
-                                                        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1], delay: YEARS.indexOf(yr) * 0.1 }}
-                                                        className={`w-full ${c.bg} rounded-lg`}
-                                                        style={{ marginTop: `${100 - pct}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">{yr} Yr</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+
                         </motion.div>
                     )}
 
@@ -622,27 +576,93 @@ function HostelOffice() {
                                 </div>
                             </div>
 
-                            {/* Search Box */}
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                    <FiSearch size={15} className="text-white/30" />
+                            {/* Table Toolbar Above Table: Split into 3 logical sections */}
+                            <div className="bg-[#0f1f38] border border-white/10 rounded-xl p-4 shadow-sm space-y-4">
+                                {/* Row 1: Search Students (Left) & Total Records (Right) */}
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                                    <div className="relative flex-1 min-w-[240px]">
+                                        <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                                            <FiSearch size={15} className="text-white/40" />
+                                        </div>
+                                        <input
+                                            id="office-search"
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search Students..."
+                                            className="w-full bg-[#0a1628] border border-white/10 rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-white placeholder:text-white/35 focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery("")}
+                                                className="absolute inset-y-0 right-3 flex items-center text-white/40 hover:text-white transition-colors text-xs font-semibold"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="px-3.5 py-2 bg-[#0a1628] border border-white/10 rounded-lg text-xs font-bold text-white/90 whitespace-nowrap self-start sm:self-auto">
+                                        Total Records : <span className="text-teal-400 font-bold ml-1">{filteredRequests.length}</span>
+                                    </div>
                                 </div>
-                                <input
-                                    id="office-search"
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search by Student Name or Register Number"
-                                    className="w-full bg-[#0f1f38] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white/80 placeholder:text-white/25 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery("")}
-                                        className="absolute inset-y-0 right-4 flex items-center text-white/30 hover:text-white/60 transition-colors text-xs font-semibold"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
+
+                                {/* Row 2: Filtering Controls (Gender, Department, Records Per Page) */}
+                                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-white/5">
+                                    {/* Gender Filter */}
+                                    <div className="flex items-center gap-2 bg-[#0a1628] border border-white/10 rounded-lg px-3 py-1.5">
+                                        <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider whitespace-nowrap">Gender</span>
+                                        <select
+                                            id="office-gender-filter"
+                                            value={genderFilter}
+                                            onChange={(e) => setGenderFilter(e.target.value)}
+                                            className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+                                        >
+                                            <option value="ALL" className="bg-[#0f1f38] text-white">All</option>
+                                            <option value="MALE" className="bg-[#0f1f38] text-white">Male</option>
+                                            <option value="FEMALE" className="bg-[#0f1f38] text-white">Female</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Department Filter */}
+                                    <div className="flex items-center gap-2 bg-[#0a1628] border border-white/10 rounded-lg px-3 py-1.5">
+                                        <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider whitespace-nowrap">Department</span>
+                                        <select
+                                            id="office-dept-filter"
+                                            value={deptFilter}
+                                            onChange={(e) => setDeptFilter(e.target.value)}
+                                            className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+                                        >
+                                            <option value="ALL" className="bg-[#0f1f38] text-white">All</option>
+                                            <option value="CSE" className="bg-[#0f1f38] text-white">CSE</option>
+                                            <option value="ECE" className="bg-[#0f1f38] text-white">ECE</option>
+                                            <option value="EEE" className="bg-[#0f1f38] text-white">EEE</option>
+                                            <option value="MECH" className="bg-[#0f1f38] text-white">MECH</option>
+                                            <option value="CIVIL" className="bg-[#0f1f38] text-white">CIVIL</option>
+                                            <option value="MECHATRONICS" className="bg-[#0f1f38] text-white">MECHATRONICS</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Records Per Page Filter */}
+                                    <div className="flex items-center gap-2 bg-[#0a1628] border border-white/10 rounded-lg px-3 py-1.5">
+                                        <span className="text-[11px] font-bold text-white/60 uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
+                                        <select
+                                            id="office-records-per-page"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                            className="bg-transparent text-xs font-bold text-teal-400 focus:outline-none cursor-pointer"
+                                        >
+                                            <option value={20} className="bg-[#0f1f38] text-white">20</option>
+                                            <option value={40} className="bg-[#0f1f38] text-white">40</option>
+                                            <option value={60} className="bg-[#0f1f38] text-white">60</option>
+                                            <option value={80} className="bg-[#0f1f38] text-white">80</option>
+                                            <option value={100} className="bg-[#0f1f38] text-white">100</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <AnimatePresence>
@@ -695,7 +715,7 @@ function HostelOffice() {
                                         style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
                                     >
                                         <thead className="sticky top-0 bg-[#0f1f38] z-10">
-                                            <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
+                                             <tr className="bg-white/[0.02] text-xs uppercase tracking-wider font-semibold border-b border-white/10">
                                                 <th className="px-6 py-4 text-white/40 w-16 text-center">
                                                     <button 
                                                         disabled={isBulkProcessing || processingIds.size > 0} 
@@ -705,8 +725,12 @@ function HostelOffice() {
                                                         {paginatedForms.length > 0 && paginatedForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
-                                                <th className="px-6 py-4 text-white/40">Student Name</th>
+                                                <th className="px-4 py-4 text-white/40">Student Name</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Register No</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Department</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Year</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Gender</th>
+                                                <th className="px-4 py-4 text-white/40 text-center">Phone Number</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Room No</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Leave Date</th>
                                                 <th className="px-4 py-4 text-white/40 text-center">Arrival Date</th>
@@ -717,7 +741,7 @@ function HostelOffice() {
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {paginatedForms.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="8" className="px-6 py-24 text-center">
+                                                    <td colSpan="12" className="px-6 py-24 text-center">
                                                         <div className="flex flex-col items-center justify-center gap-3">
                                                             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-white/20 mb-2">
                                                                 <FiList size={32} />
@@ -741,28 +765,40 @@ function HostelOffice() {
                                                             <FiCheck size={12} strokeWidth={4} />
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-4 max-w-[150px]">
                                                             <p className="text-sm font-semibold text-white group-hover:text-teal-400 transition-colors truncate">{req.name}</p>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/50 border border-white/5 tracking-wider block truncate max-w-[120px]">{req.dept}</span>
+                                                        <span className="text-xs font-semibold text-white/80">{req.registerNo || "N/A"}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-semibold text-white/70 border border-white/5 tracking-wider block truncate max-w-[120px]">{req.dept}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                        <span className="px-2 py-0.5 bg-white/5 rounded text-xs font-medium text-white/70">{req.year}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                        <span className="text-xs font-medium text-white/70">{req.gender}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                        <span className="text-xs font-mono font-medium text-teal-400">{req.phone || req.phoneNo || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-sm font-semibold text-white/80">{req.roomNo}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-medium text-white/50">{req.leaveDate}</span>
+                                                        <span className="text-xs font-medium text-white/60">{req.leaveDate}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="text-xs font-medium text-white/50">{req.arrivalDate}</span>
+                                                        <span className="text-xs font-medium text-white/60">{req.arrivalDate}</span>
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <p 
                                                             title={req.reason} 
                                                             onClick={(e) => { e.stopPropagation(); setSelectedReason(req.reason); }}
-                                                            className="text-xs font-medium text-white/40 leading-tight max-w-[150px] truncate cursor-pointer hover:text-white transition-colors"
+                                                            className="text-xs font-medium text-white/50 leading-tight max-w-[150px] truncate cursor-pointer hover:text-white transition-colors"
                                                         >
                                                             {req.reason && req.reason.length > 35 ? req.reason.substring(0, 35) + "..." : req.reason}
                                                         </p>
@@ -799,38 +835,33 @@ function HostelOffice() {
                                         </tbody>
                                     </table>
                                 </div>
-                                {totalPages > 1 && (
-                                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-t border-white/5 bg-white/[0.01]">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/10 bg-[#0f1f38]">
+                                    <div className="text-xs font-semibold text-white/70">
+                                        Displaying {filteredRequests.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} Requests
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
                                         <button
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
-                                            Previous
+                                            ◀ Previous
                                         </button>
                                         
-                                        <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-md [&::-webkit-scrollbar]:hidden">
-                                            {Array.from({ length: totalPages }, (_, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => setCurrentPage(idx + 1)}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
-                                                    style={currentPage === idx + 1 ? { backgroundColor: '#f59e0b', color: '#0f1f38' } : {}}
-                                                >
-                                                    {idx + 1}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <span className="px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 font-bold text-xs">
+                                            Page {currentPage} of {totalPages || 1}
+                                        </span>
 
                                         <button
-                                            disabled={currentPage === totalPages}
+                                            disabled={currentPage >= totalPages || totalPages === 0}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold uppercase text-xs tracking-widest"
+                                            className="px-3.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all font-bold text-xs tracking-wider flex items-center gap-1"
                                         >
-                                            Next
+                                            Next ▶
                                         </button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </motion.div>
                     )}

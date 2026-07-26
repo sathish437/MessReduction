@@ -105,26 +105,34 @@ public class ReductionFormController {
     }
 
     @GetMapping("/limits/{studentId}")
-    public ResponseEntity<java.util.Map<String, Object>> getStudentLimits(@PathVariable Long studentId) {
-        StudentDetails student = reductionFormService.getStudentDetails(studentId);
-        java.time.LocalDate today = java.time.LocalDate.now();
-        
-        int count = 0;
-        int granted = 0;
-        int used = 0;
-        if (student.getLastSubmissionDate() != null && !student.getLastSubmissionDate().isBefore(today)) {
-            count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
-            granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
-            used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+    public ResponseEntity<?> getStudentLimits(@PathVariable Long studentId) {
+        try {
+            StudentDetails student = reductionFormService.getStudentDetails(studentId);
+            java.time.LocalDate today = java.time.LocalDate.now();
+            
+            int count = 0;
+            int granted = 0;
+            int used = 0;
+            if (student.getLastSubmissionDate() != null && !student.getLastSubmissionDate().isBefore(today)) {
+                count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+                granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+                used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+            }
+            
+            int extraRemaining = granted - used;
+            
+            return ResponseEntity.ok(java.util.Map.of(
+                "dailyCount", count,
+                "extraRemaining", Math.max(0, extraRemaining),
+                "limitReached", count >= 3 && extraRemaining <= 0
+            ));
+        } catch (com.hostel.MessReduction.CustomException.StudentNotFoundException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(java.util.Map.of("message", e.getMessage(), "statusCode", 404));
+        } catch (Exception e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("message", "An error occurred fetching limits", "statusCode", 500));
         }
-        
-        int extraRemaining = granted - used;
-        
-        return ResponseEntity.ok(java.util.Map.of(
-            "dailyCount", count,
-            "extraRemaining", Math.max(0, extraRemaining),
-            "limitReached", count >= 3 && extraRemaining <= 0
-        ));
     }
     
     @PostMapping("/extra-submission/{studentId}")

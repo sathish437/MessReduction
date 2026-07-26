@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react"
+import { useTheme } from './context/ThemeContext';
 import { motion } from "framer-motion"
-import { FiHash, FiArrowRight, FiArrowLeft, FiShield } from "react-icons/fi"
+import { FiSun, FiMoon, FiHash, FiArrowRight, FiArrowLeft, FiShield } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
 import PasswordInput from "./PasswordInput"
 import { getHostelVerificationEnabled } from "./services/authService"
 
 function HostelVerification({ onNavigate }) {
+  const { isDark, toggleTheme } = useTheme();
   const [rollNo, setRollNo] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -91,32 +93,25 @@ function HostelVerification({ onNavigate }) {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white selection:bg-teal-500/30 relative overflow-hidden" style={{ fontFamily: "'Inter', 'Poppins', 'Source Sans Pro', 'Segoe UI', sans-serif" }}>
-      <div className="fixed inset-0 bg-[#0a1628] -z-20" />
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-teal-600/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-
+    <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] selection:bg-teal-500/30 relative overflow-hidden" style={{ fontFamily: "'Inter', 'Poppins', 'Source Sans Pro', 'Segoe UI', sans-serif" }}>
+                  
       {/* Header */}
-      <header className="w-full flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <img src={image} alt="GCES Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            <header className="w-full flex items-center justify-between px-4 sm:px-8 py-5 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-4">
+          <img src={image} alt="GCES Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
           <div className="flex flex-col leading-tight">
-            <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-teal-400/80 uppercase">
-              Government College of Engineering
-            </span>
-            <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">
-              SRIRANGAM
-            </span>
+            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-white/80 uppercase mb-0.5">Government College of Engineering</span>
+            <span className="text-lg sm:text-2xl font-bold tracking-tight">SRIRANGAM</span>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold hover:bg-white/5 transition-all text-sm cursor-pointer border border-transparent hover:border-white/10"
-        >
-          <FiArrowLeft size={16} /> Back
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2.5 bg-white/10 hover:bg-white/20 rounded-[10px] border border-[var(--color-border)] shadow-sm transition-all cursor-pointer">
+              {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+          </button>
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-white/90 hover:text-white font-semibold bg-white/10 hover:bg-white/20 transition-all text-sm cursor-pointer border border-[var(--color-border)] shadow-sm"><FiArrowLeft size={16} /> Back</button>
+        </div>
       </header>
-      <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-500/50 to-transparent shrink-0" />
+      
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 z-10">
@@ -125,20 +120,20 @@ function HostelVerification({ onNavigate }) {
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl overflow-hidden relative p-6 sm:p-10 group"
+            className="w-full rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]  shadow-2xl overflow-hidden relative p-6 sm:p-10 group"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             <div className="relative z-10">
               
               {/* Header Icon & Titles */}
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-teal-500/10 text-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-teal-500/20 shadow-inner">
+                <div className="w-16 h-16 bg-[var(--color-btn-primary)]/10 text-[var(--color-btn-primary)] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-teal-500/20 shadow-inner">
                   <FiShield size={32} />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">
                   College Hostel Verification
                 </h1>
-                <p className="text-sm sm:text-base text-white/60 mt-2 font-medium">
+                <p className="text-sm sm:text-base text-[var(--color-text-primary)]/60 mt-2 font-medium">
                   Verify your Hostel Account before creating a Mess Reduction account.
                 </p>
               </div>
@@ -146,11 +141,11 @@ function HostelVerification({ onNavigate }) {
               <form onSubmit={handleVerify} className="flex flex-col gap-5">
                 {/* Roll Number Field */}
                 <div className="flex flex-col gap-2 w-full text-left">
-                  <label htmlFor="hostel-rollNo" className="text-sm font-semibold tracking-wide text-white/80 select-none">
+                  <label htmlFor="hostel-rollNo" className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
                     Roll Number
                   </label>
-                  <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 focus-within:border-teal-500/60 focus-within:bg-teal-950/10 transition-all duration-300">
-                    <FiHash className="text-teal-400/60 text-lg shrink-0" />
+                  <div className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-bg)] px-4 py-3.5 focus-within:border-[var(--color-btn-primary)] focus-within:bg-[var(--color-btn-primary)]/5 transition-all duration-300">
+                    <FiHash className="text-[var(--color-text-secondary)] text-lg shrink-0" />
                     <input
                       id="hostel-rollNo"
                       type="text"
@@ -159,14 +154,14 @@ function HostelVerification({ onNavigate }) {
                       onChange={handleRollNoChange}
                       onKeyDown={handleAlphaNumKey}
                       required
-                      className="flex-1 min-w-0 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium uppercase"
+                      className="flex-1 min-w-0 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium uppercase"
                     />
                   </div>
                 </div>
 
                 {/* Password Field */}
                 <div className="flex flex-col gap-2 w-full text-left">
-                  <label htmlFor="hostel-password" className="text-sm font-semibold tracking-wide text-white/80 select-none">
+                  <label htmlFor="hostel-password" className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
                     Password
                   </label>
                   <PasswordInput
@@ -199,7 +194,7 @@ function HostelVerification({ onNavigate }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-bold text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all duration-500 tracking-wide group cursor-pointer ${
+                    className={`mt-4 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-bold text-white bg-[var(--color-btn-primary)] hover:bg-[var(--color-btn-primary-hover)] hover:bg-right shadow-sm hover:shadow-md transition-all duration-500 tracking-wide group cursor-pointer ${
                       loading ? "opacity-50 cursor-not-allowed shadow-none" : ""
                     }`}
                   >
@@ -214,13 +209,13 @@ function HostelVerification({ onNavigate }) {
               </form>
 
               {/* Login Link */}
-              <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                <p className="text-sm text-white/50 font-medium">
+              <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-center">
+                <p className="text-sm text-[var(--color-text-secondary)] font-medium">
                   Already registered?{" "}
                   <button
                     type="button"
                     onClick={() => navigate("/student-login")}
-                    className="text-teal-400 font-bold hover:text-teal-300 transition-colors cursor-pointer ml-1"
+                    className="text-[var(--color-btn-primary)] font-bold hover:text-[var(--color-btn-primary-hover)] transition-colors cursor-pointer ml-1"
                   >
                     Sign in to your account
                   </button>
@@ -233,7 +228,7 @@ function HostelVerification({ onNavigate }) {
       </main>
 
       <footer className="pb-8 text-center mt-auto z-10">
-        <p className="text-xs text-white/20 tracking-widest uppercase font-bold">© 2025 GCES · Hostel Verification</p>
+        <p className="text-xs text-[var(--color-text-secondary)]/50 tracking-widest uppercase font-bold">© 2025 GCES · Hostel Verification</p>
       </footer>
     </div>
   )

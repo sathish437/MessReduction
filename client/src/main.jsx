@@ -11,13 +11,15 @@ import Office from './Hostel_office.jsx'
 import AuthWrapper from './AuthWrapper.jsx'
 import MessReductionPage from './MessReductionPage.jsx'
 import Deputy_warden_side from './Deputy_warden_side.jsx'
-
+import { ThemeProvider } from './context/ThemeContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ThemeProvider>
   </StrictMode>
 )
 

@@ -76,7 +76,27 @@ public class ReductionForm {
     @Column(length = 1000)
     private String rejectReason;
 
+    @Schema(type = "string", example = "2026-04-27")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate toDate;
 
+    @Column(length = 1000)
+    private String additionalRemarks;
+
+    @Column(nullable = false, columnDefinition = "int default 0")
+    private int resubmissionCount = 0;
+
+    @Enumerated(EnumType.STRING)
+    private FormStatus rejectedStage;
+
+    @Enumerated(EnumType.STRING)
+    private FormStatus resumeStage;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deletedByStudent = false;
+
+    @Column
+    private LocalDateTime deletedAt;
 
     @CreationTimestamp
     @Column(updatable = false)

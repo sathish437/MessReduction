@@ -63,59 +63,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/students/import")
-    public ResponseEntity<Void> importStudents(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
-        adminService.importStudents(file);
-        return ResponseEntity.ok().build();
-    }
 
-    @GetMapping("/students/export")
-    public ResponseEntity<byte[]> exportStudents() {
-        byte[] data = adminService.exportStudents();
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-        headers.set(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=students.xlsx");
-        headers.setContentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        return ResponseEntity.ok().headers(headers).body(data);
-    }
-
-    @GetMapping("/dashboard")
-    public ResponseEntity<com.hostel.MessReduction.DTO.ResDTO.AdminDashboardStatsDTO> getDashboardStats() {
-        return ResponseEntity.ok(adminService.getDashboardStats());
-    }
-
-    @GetMapping("/requests")
-    public ResponseEntity<PaginatedResponseDTO<com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO>> getRequests(
-            @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "status", required = false) com.hostel.MessReduction.Entity.FormStatus status,
-            @RequestParam(value = "department", required = false) Department department,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(adminService.getRequests(search, status, department, page, size));
-    }
-
-    @PostMapping("/requests/{id}/force-approve")
-    public ResponseEntity<Void> forceApproveRequest(@PathVariable Long id) {
-        adminService.forceApproveRequest(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/requests/{id}/force-reject")
-    public ResponseEntity<Void> forceRejectRequest(@PathVariable Long id) {
-        adminService.forceRejectRequest(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/settings")
-    public ResponseEntity<java.util.Map<String, Object>> getSettings() {
-        return ResponseEntity.ok(adminService.getSettings());
-    }
-
-    @PutMapping("/settings")
-    public ResponseEntity<Void> updateSettings(@RequestBody java.util.Map<String, Object> settings) {
-        adminService.updateSettings(settings);
-        return ResponseEntity.ok().build();
-    }
 
     @PutMapping("/profile/password")
     public ResponseEntity<Void> updatePassword(@RequestBody java.util.Map<String, String> passwords) {
@@ -141,14 +89,15 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/logs")
-    public ResponseEntity<org.springframework.data.domain.Page<com.hostel.MessReduction.Entity.ActivityLog>> getActivityLogs(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size
-    ) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
-                page, size, org.springframework.data.domain.Sort.by("timestamp").descending()
-        );
-        return ResponseEntity.ok(adminService.getActivityLogs(pageable));
+    @PostMapping("/extra-submissions/bulk-approve")
+    public ResponseEntity<Void> bulkApproveExtraSubmissions(@RequestBody List<Long> ids) {
+        extraSubmissionService.bulkApproveRequests(ids, "MasterAdmin");
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/extra-submissions/bulk-reject")
+    public ResponseEntity<Void> bulkRejectExtraSubmissions(@RequestBody List<Long> ids) {
+        extraSubmissionService.bulkRejectRequests(ids, "MasterAdmin");
+        return ResponseEntity.ok().build();
     }
 }

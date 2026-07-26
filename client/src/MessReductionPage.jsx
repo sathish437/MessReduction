@@ -1,3 +1,5 @@
+import { useTheme } from './context/ThemeContext';
+import { FiSun, FiMoon } from 'react-icons/fi';
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,23 +14,34 @@ import image from "./assets/1000088399.png";
 
 const TITLE = "MESS REDUCTION";
 
+const getMinArrivalDate = (leaveDate) => {
+    if (!leaveDate) {
+        const today = new Date();
+        today.setDate(today.getDate() + 3);
+        return today.toISOString().split('T')[0];
+    }
+    const leave = new Date(leaveDate);
+    leave.setDate(leave.getDate() + 3);
+    return leave.toISOString().split('T')[0];
+};
+
 function Field({ label, icon, as: Component = "input", readOnly = false, children, error, ...props }) {
     const id = props.id || props.name;
     const isSelect = Component === "select";
     return (
-        <div className="flex flex-col gap-1.5 w-full text-left">
+        <div className="flex flex-col gap-2 w-full text-left">
             {label && (
-                <label htmlFor={id} className="text-sm font-semibold tracking-wide text-white/80 select-none">
-                    {label}
+                <label htmlFor={id} className="text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
+                    {label} {props.required && <span className="text-[var(--color-danger)]">*</span>}
                 </label>
             )}
-            <div className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 relative group 
-                ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/40 border-white/5' : 'bg-black/20'} 
-                ${error ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' : 'border-white/8 focus-within:border-teal-500/60 focus-within:bg-teal-950/10 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)]'}`}>
-                {icon && <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}>{icon}</span>}
+            <div className={`flex items-center gap-3 rounded-[12px] border px-4 py-3.5 transition-all duration-200 relative group 
+                ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/20 border-[var(--color-border)]' : 'bg-[var(--color-surface)]'} 
+                ${error ? 'border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 focus-within:border-[var(--color-danger)] focus-within:ring-2 focus-within:ring-[var(--color-danger)]/20' : 'border-[var(--color-border)] hover:border-white/20 focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)]/20'}`}>
+                {icon && <span className={`shrink-0 text-lg transition-colors ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>{icon}</span>}
                 <Component
                     id={id}
-                    className={`flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
+                    className={`flex-1 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
                     readOnly={readOnly}
                     {...props}
                 >
@@ -36,12 +49,12 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
                 </Component>
                 {isSelect && (
                     <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                        <svg className="w-4 h-4 text-white/30 group-focus-within:text-teal-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg className="w-4 h-4 text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                 )}
             </div>
             {error && (
-                <span className="text-xs font-semibold text-rose-400 tracking-wide mt-1 pl-1">
+                <span className="text-xs font-medium text-[var(--color-danger)] mt-1">
                     {error}
                 </span>
             )}
@@ -63,7 +76,6 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
     const currentStageIndex = stages.findIndex(s => s.id === tracking.currentStage);
     const isRejected = tracking.currentStage === "REJECTED";
 
-    // Format date beautifully
     const formatDate = (dateString) => {
         if (!dateString) return null;
         const date = new Date(dateString);
@@ -75,26 +87,17 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
 
     const getStageState = (index) => {
         if (isRejected) {
-            // Find which stage rejected
-            let rejectedIndex = 1; // Default deputy
+            let rejectedIndex = 1;
             if (tracking.rejectedBy === "Warden") rejectedIndex = 2;
             if (tracking.rejectedBy === "Office") rejectedIndex = 3;
-
             if (index < rejectedIndex) return "completed";
             if (index === rejectedIndex) return "rejected";
             return "pending";
         }
-
-        if (currentStageIndex === -1 && tracking.currentStatus === "Approved") {
-            return "completed";
-        }
-
-        // If it's completed, everything is completed (green)
+        if (currentStageIndex === -1 && tracking.currentStatus === "Approved") return "completed";
         if (tracking.currentStage === "COMPLETED") return "completed";
-
         if (index < currentStageIndex) return "completed";
         if (index === currentStageIndex) return "current";
-
         return "pending";
     };
 
@@ -103,8 +106,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
             const time = formatDate(tracking.submittedTime);
             return time ? (
                 <div className="mt-2 text-center text-xs">
-                    <div className="text-white/80 font-medium">{time.date}</div>
-                    <div className="text-white/50">{time.time}</div>
+                    <div className="text-[var(--color-text-primary)] font-medium">{time.date}</div>
+                    <div className="text-[var(--color-text-secondary)]">{time.time}</div>
                 </div>
             ) : null;
         }
@@ -113,8 +116,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 const time = formatDate(tracking.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
@@ -122,8 +125,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 const time = formatDate(tracking.deputyApprovalTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.deputyWardenName}>{tracking.deputyWardenName}</div>
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.deputyWardenName}>{tracking.deputyWardenName}</div>
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
@@ -133,8 +136,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 const time = formatDate(tracking.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
@@ -142,8 +145,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 const time = formatDate(tracking.wardenApprovalTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.wardenName}>{tracking.wardenName}</div>
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.wardenName}>{tracking.wardenName}</div>
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
@@ -153,8 +156,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 const time = formatDate(tracking.rejectedTime);
                 return (
                     <div className="mt-2 text-center text-xs">
-                        <div className="text-rose-400 font-bold mb-1">Rejected</div>
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        <div className="text-[var(--color-danger)] font-semibold mb-1">Rejected</div>
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
@@ -163,34 +166,36 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 return (
                     <div className="mt-2 text-center text-xs">
                         {tracking.isAutoAccepted ? (
-                            <div className="text-emerald-400/80 italic font-medium mb-1">Auto Accepted</div>
+                            <div className="text-[var(--color-success)] italic font-medium mb-1">Auto Accepted</div>
                         ) : (
-                            <div className="text-emerald-400 font-medium mb-1 truncate max-w-[100px]" title={tracking.officeName}>{tracking.officeName}</div>
+                            <div className="text-[var(--color-success)] font-medium mb-1 truncate max-w-[100px]" title={tracking.officeName}>{tracking.officeName}</div>
                         )}
-                        {time && <><div className="text-white/70">{time.date}</div><div className="text-white/50">{time.time}</div></>}
+                        {time && <><div className="text-[var(--color-text-secondary)]">{time.date}</div><div className="text-[var(--color-text-secondary)]/70">{time.time}</div></>}
                     </div>
                 );
             }
         }
-
         return null;
     };
 
     return (
-        <div className="w-full mt-2 mb-6">
-            {/* Desktop and Tablet Horizontal Workflow (screens >= 768px) */}
-            <div className="hidden md:block">
-                <div className="tracking-container scrollbar-hide">
+        <div className="w-full mt-4 mb-8">
+            {/* Desktop Horizontal Workflow */}
+            <div className="hidden md:block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[12px] p-6 shadow-soft">
+                <div className="tracking-container">
                     {stages.map((stage, index) => {
                         const state = getStageState(index);
-
                         let circleContent = state === "completed" ? "✓" : (index + 1);
                         if (state === "rejected") circleContent = "✕";
-
                         let nextState = "pending";
                         if (index < stages.length - 1) {
                             nextState = getStageState(index + 1);
                         }
+                        
+                        let labelColor = 'text-[var(--color-text-secondary)]';
+                        if (state === 'rejected') labelColor = 'text-[var(--color-danger)]';
+                        if (state === 'completed') labelColor = 'text-[var(--color-success)]';
+                        if (state === 'current') labelColor = 'text-[var(--color-btn-primary)]';
 
                         return (
                             <React.Fragment key={stage.id}>
@@ -198,12 +203,11 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                                     <div className={`circle ${state}`}>
                                         {circleContent}
                                     </div>
-                                    <div className={`mt-1 text-[11px] font-bold uppercase tracking-wider ${state === 'rejected' ? 'text-rose-400' : (state === 'completed' ? 'text-emerald-400' : (state === 'current' ? 'text-amber-400' : 'text-white/40'))}`}>
+                                    <div className={`mt-2 text-[11px] font-bold uppercase tracking-wider ${labelColor}`}>
                                         {stage.label}
                                     </div>
                                     {getStageDetails(stage.id)}
                                 </div>
-
                                 {index < stages.length - 1 && (
                                     <div className={`line ${nextState}`}></div>
                                 )}
@@ -213,28 +217,26 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                 </div>
             </div>
 
-            {/* Mobile Vertical Timeline (screens < 768px) */}
-            <div className="block md:hidden space-y-6 pl-2">
+            {/* Mobile Vertical Timeline */}
+            <div className="block md:hidden space-y-0 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[12px] p-5 shadow-soft">
                 {stages.map((stage, index) => {
                     const state = getStageState(index);
                     const isCompleted = state === "completed";
                     const isCurrent = state === "current";
                     const isRejectedState = state === "rejected";
 
-                    let dotColorClass = "bg-white/10 text-white/30 border-white/5";
-                    let checkIcon = null;
+                    let dotColorClass = "bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-card)]";
+                    let checkIcon = index + 1;
 
                     if (isCompleted) {
-                        dotColorClass = "bg-emerald-500 text-white border-emerald-400";
+                        dotColorClass = "bg-[var(--color-success)] text-white border-[var(--color-success)]";
                         checkIcon = "✓";
                     } else if (isRejectedState) {
-                        dotColorClass = "bg-rose-500 text-white border-rose-400";
+                        dotColorClass = "bg-[var(--color-danger)] text-white border-[var(--color-danger)]";
                         checkIcon = "✕";
                     } else if (isCurrent) {
-                        dotColorClass = "bg-amber-500 text-slate-900 border-amber-400 font-bold";
+                        dotColorClass = "bg-[var(--color-surface)] text-[var(--color-btn-primary)] border-[var(--color-accent)] font-bold";
                         checkIcon = "⏳";
-                    } else {
-                        checkIcon = index + 1;
                     }
 
                     let staffName = "";
@@ -269,41 +271,43 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                         }
                     }
 
+                    let labelColor = 'text-[var(--color-text-secondary)]';
+                    if (isRejectedState) labelColor = 'text-[var(--color-danger)]';
+                    if (isCompleted) labelColor = 'text-[var(--color-success)]';
+                    if (isCurrent) labelColor = 'text-[var(--color-btn-primary)]';
+
                     return (
-                        <div key={stage.id} className="flex gap-4 items-start relative">
-                            {/* Connector Line behind the dot */}
+                        <div key={stage.id} className="flex gap-4 items-start relative pb-6 last:pb-0">
                             {index < stages.length - 1 && (
                                 <div 
-                                    className="absolute left-[11px] top-6 w-0.5 transition-all"
+                                    className="absolute left-[15px] top-8 w-[2px] transition-all"
                                     style={{ 
-                                        height: 'calc(100% + 12px)',
+                                        height: 'calc(100% - 16px)',
                                         background: getStageState(index + 1) === "completed" 
-                                            ? "#10b981" 
-                                            : (getStageState(index + 1) === "current" ? "#f59e0b" : "rgba(255, 255, 255, 0.1)")
+                                            ? "var(--color-success)" 
+                                            : "var(--color-card)"
                                     }}
                                 />
                             )}
                             
-                            {/* Dot */}
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors z-10 flex-shrink-0 ${dotColorClass}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors z-10 flex-shrink-0 ${dotColorClass}`}>
                                 {checkIcon}
                             </div>
 
-                            {/* Right text layout directly next to the dot (no border boxes) */}
-                            <div className="flex-1 min-w-0 pt-0.5 text-left">
-                                <div className="flex flex-col gap-0.5">
+                            <div className="flex-1 min-w-0 pt-1.5 text-left">
+                                <div className="flex flex-col gap-1">
                                     <div className="flex items-center flex-wrap gap-2">
-                                        <span className={`text-sm font-semibold tracking-wide ${isRejectedState ? 'text-rose-400' : (isCompleted ? 'text-emerald-400' : (isCurrent ? 'text-amber-400' : 'text-white/40'))}`}>
+                                        <span className={`text-sm font-semibold tracking-wide ${labelColor}`}>
                                             {stage.label}
                                         </span>
                                         {staffName && (
-                                            <span className="text-xs text-white/40 font-normal">
+                                            <span className="text-xs text-[var(--color-text-secondary)]/60 font-medium">
                                                 • {staffName}
                                             </span>
                                         )}
                                     </div>
                                     {dateTimeObj && (
-                                        <div className="text-[11px] text-white/30 flex gap-2">
+                                        <div className="text-[12px] text-[var(--color-text-secondary)] flex gap-2">
                                             <span>{dateTimeObj.date}</span>
                                             <span>{dateTimeObj.time}</span>
                                         </div>
@@ -311,10 +315,10 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                                 </div>
 
                                 {isRejectedState && (
-                                    <div className="mt-2 max-w-sm">
+                                    <div className="mt-3">
                                         {tracking.rejectionReason && (
-                                            <div className="text-xs text-rose-300 bg-rose-500/5 border border-rose-500/10 rounded-xl p-3">
-                                                <span className="font-bold text-rose-400/80 uppercase tracking-wider text-[10px] block mb-1">Reason:</span>
+                                            <div className="text-sm text-[var(--color-text-primary)] bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/10 rounded-xl p-3 shadow-sm">
+                                                <span className="font-semibold text-[var(--color-danger)] text-[11px] block mb-1 uppercase tracking-wider">Rejection Reason</span>
                                                 {tracking.rejectionReason}
                                             </div>
                                         )}
@@ -322,9 +326,9 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                                             <button
                                                 type="button"
                                                 onClick={() => onEditRequest(activeRequest)}
-                                                className="mt-2 flex items-center justify-center gap-1.5 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                                className="mt-3 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] border border-[var(--color-danger)]/20 rounded-xl text-sm font-semibold transition-all w-full"
                                             >
-                                                <FiEdit3 size={13} /> Edit and Resubmit
+                                                <FiEdit3 size={16} /> Edit and Resubmit
                                             </button>
                                         )}
                                     </div>
@@ -336,8 +340,8 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
             </div>
 
             {isRejected && tracking.rejectionReason && (
-                <div className="hidden md:block mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">
-                    <span className="font-bold">Rejection Reason:</span> {tracking.rejectionReason}
+                <div className="hidden md:block mt-6 p-4 rounded-xl bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 text-[var(--color-text-primary)] text-sm shadow-sm">
+                    <span className="font-semibold text-[var(--color-danger)]">Rejection Reason:</span> {tracking.rejectionReason}
                 </div>
             )}
         </div>
@@ -345,6 +349,9 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
 }
 
 function MessReductionPage() {
+    const { isDark, toggleTheme } = useTheme();
+
+
     const [formData, setFormData] = useState({
         name: "",
         id: "",
@@ -358,6 +365,7 @@ function MessReductionPage() {
         arrivalTime: "",
         reason: "",
         otherReason: "",
+        additionalRemarks: "",
         isEmergency: false
     });
 
@@ -376,12 +384,23 @@ function MessReductionPage() {
     const [extraReason, setExtraReason] = useState("");
     const [isRequestingExtra, setIsRequestingExtra] = useState(false);
 
-    const activeRequest = Array.isArray(studentForm)
-        ? studentForm.find(form => form.active === true || form.isActive === true)
+    const activeRequest = Array.isArray(studentForm) && studentForm.length > 0
+        ? studentForm[0]
         : null;
 
     const isLimitReached = limits.limitReached && limits.extraRemaining <= 0;
-    const isSubmitBlocked = (!!activeRequest && !editingFormId) || isLimitReached;
+    const totalAllowed = Math.max(3, limits.dailyCount + limits.extraRemaining);
+
+    const getDaysDifference = (start, end) => {
+        if (!start || !end) return 0;
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return (endDate - startDate) / (1000 * 60 * 60 * 24);
+    };
+
+    const isInvalidDateDifference = formData.leaveDate && formData.arrivalDate && getDaysDifference(formData.leaveDate, formData.arrivalDate) <= 3;
+
+    const isSubmitBlocked = isLimitReached || isSubmitting;
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -439,6 +458,27 @@ function MessReductionPage() {
                 const forms = Array.isArray(currentStudent.reductionForms) ? currentStudent.reductionForms : [];
                 setStudentForm(forms);
                 fetchLimits(studentId);
+
+                if (forms.length > 0) {
+                    const req = forms[0];
+                    const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
+                    const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        year: yearStrMap[req.year] || "1st",
+                        room: req.roomNo?.toString() || "",
+                        leaveDate: req.leaveDate || "",
+                        leaveTime: req.leaveTime || "",
+                        arrivalDate: req.arrivalDate || "",
+                        arrivalTime: req.arrivalTime || "",
+                        reason: isStandardReason ? req.reason : "other",
+                        otherReason: isStandardReason ? "" : req.reason
+                    }));
+                    
+                    // Default to track tab if there's an active request
+                    setActiveTab('track');
+                }
             } else {
                 setStudentDetails(null);
                 setStudentForm([]);
@@ -482,8 +522,10 @@ function MessReductionPage() {
         if (status === 'Approved') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
         if (status?.startsWith('Rejected')) return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
         if (status?.startsWith('Pending')) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-        return 'bg-white/5 text-white/60 border-white/10';
+        return 'bg-white/5 text-white/60 border-[var(--color-border)]';
     };
+
+
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -517,6 +559,7 @@ function MessReductionPage() {
             arrivalTime: req.arrivalTime || "",
             reason: isStandardReason ? req.reason : "other",
             otherReason: isStandardReason ? "" : req.reason,
+            additionalRemarks: req.additionalRemarks || "",
             isEmergency: req.isEmergency || false
         }));
 
@@ -531,10 +574,12 @@ function MessReductionPage() {
             year: "",
             leaveDate: "",
             leaveTime: "",
+            toDate: "",
             arrivalDate: "",
             arrivalTime: "",
             reason: "",
             otherReason: "",
+            additionalRemarks: "",
             isEmergency: false
         }));
         setEditingFormId(null);
@@ -555,8 +600,13 @@ function MessReductionPage() {
             setFormErrors({});
         }
 
+        if (isInvalidDateDifference) {
+            showToast("Mess reduction is not applicable for leaves of 3 days or less.", 'error');
+            return;
+        }
+
         if (isSubmitBlocked) {
-            showToast("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.", 'error');
+            showToast("You already have an active request. New requests can be submitted after your arrival time.", 'error');
             return;
         }
 
@@ -574,9 +624,11 @@ function MessReductionPage() {
             roomNo: parseInt(formData.room),
             leaveDate: formData.leaveDate,
             leaveTime: formData.leaveTime?.substring(0, 5),
+            toDate: formData.toDate,
             arrivalDate: formData.arrivalDate,
             arrivalTime: formData.arrivalTime?.substring(0, 5),
             reason: formData.reason === 'other' ? formData.otherReason : formData.reason,
+            additionalRemarks: formData.additionalRemarks,
             isEmergency: false
         };
 
@@ -598,10 +650,12 @@ function MessReductionPage() {
                     year: "",
                     leaveDate: "",
                     leaveTime: "",
+                    toDate: "",
                     arrivalDate: "",
                     arrivalTime: "",
                     reason: "",
                     otherReason: "",
+                    additionalRemarks: "",
                     isEmergency: false
                 }));
                 // Refresh forms list
@@ -650,469 +704,316 @@ function MessReductionPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen w-full flex items-center justify-center bg-[#0a1628] text-white">
+            <div className="min-h-[100dvh] w-full flex items-center justify-center bg-[var(--color-primary-bg)] text-[var(--color-text-primary)]">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white/40 text-sm font-bold tracking-widest">Fetching data...</p>
+                    <div className="w-10 h-10 border-2 border-[var(--color-accent)]/30 border-t-[var(--color-accent)] rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-[var(--color-text-secondary)] text-sm font-semibold">Loading Portal...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen w-full flex flex-col font-sans bg-[#0a1628] text-white selection:bg-teal-500/30 relative overflow-hidden">
-            <div className="fixed inset-0 bg-[#0a1628] -z-20" />
-            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-teal-600/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
-            <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-
+        <div className="min-h-[100dvh] w-full flex flex-col bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-btn-primary)]/30">
             {/* Toast Notification */}
             <AnimatePresence>
                 {toast && (
                     <motion.div
-                        initial={{ opacity: 0, y: -60 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -60 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-start sm:items-center gap-3 px-4 sm:px-6 py-4 rounded-2xl shadow-2xl border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[350px] max-w-md
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-soft border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
                             ${toast.type === 'success'
-                                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-300 backdrop-blur-xl'
-                                : 'bg-rose-950/80 border-rose-500/30 text-rose-300 backdrop-blur-xl'}`}
+                                ? 'bg-[var(--color-surface)] border-[var(--color-success)]/30 text-[var(--color-success)]'
+                                : 'bg-[var(--color-surface)] border-[var(--color-danger)]/30 text-[var(--color-danger)]'}`}
                     >
                         {toast.type === 'success'
-                            ? <FiCheckCircle size={22} className="shrink-0 text-emerald-400" />
-                            : <FiXCircle size={22} className="shrink-0 text-rose-400" />}
-                        <p className="font-bold text-sm">{toast.message}</p>
+                            ? <FiCheckCircle size={20} className="shrink-0" />
+                            : <FiXCircle size={20} className="shrink-0" />}
+                        <p className="font-medium text-sm text-[var(--color-text-primary)]">{toast.message}</p>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Header */}
-            <header className="w-full flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-white/5 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="flex items-center gap-3">
-                    <img src={image} alt="GCES Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-                    <div className="flex flex-col leading-tight">
-                        <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-teal-400/80 uppercase">
-                            Government College of Engineering
-                        </span>
-                        <span className="text-xl sm:text-2xl font-bold text-white tracking-widest">
-                            SRIRANGAM
-                        </span>
+            {/* Desktop Top Navbar */}
+            <header className="hidden md:flex items-center justify-between px-8 py-5 bg-[var(--color-header)] text-white shadow-md z-20 shrink-0">
+                <div className="flex items-center gap-4">
+                    <img src={image} alt="GCES Logo" className="w-16 h-16 object-contain drop-shadow-md" />
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold tracking-widest text-white/80 uppercase mb-0.5">GCES Srirangam</span>
+                        <span className="text-2xl font-bold tracking-tight">Student Portal</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => logout()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                    >
-                        <FiLogOut size={14} /> Logout
-                    </button>
-                </div>
-            </header>
 
-            <div className="h-[2px] bg-gradient-to-r from-transparent via-teal-500/50 to-transparent shrink-0" />
-
-            {/* Main Content */}
-            <main className="flex-1 w-full flex flex-col items-center px-4 py-8 sm:py-12 z-10">
-                <div className="w-full flex justify-center mb-8">
-                    <div className="flex bg-white/[0.02] border border-white/10 rounded-xl p-1 backdrop-blur-xl shadow-lg">
+                <div className="flex items-center gap-8">
+                    <nav className="flex items-center gap-2 bg-black/20 p-1.5 rounded-[14px] border border-white/10">
                         <button 
                             onClick={() => setActiveTab('dashboard')}
-                            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 cursor-pointer ${activeTab === 'dashboard' ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.02]'}`}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all cursor-pointer ${activeTab === 'dashboard' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
                         >
-                            Dashboard
+                            <FiHome size={18} /> Dashboard
                         </button>
                         <button 
                             onClick={() => setActiveTab('track')}
-                            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 cursor-pointer ${activeTab === 'track' ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : 'text-white/50 hover:text-white/80 hover:bg-white/[0.02]'}`}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all cursor-pointer ${activeTab === 'track' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
                         >
-                            Track Request
+                            <FiActivity size={18} /> Track Request
+                        </button>
+                    </nav>
+
+                    <div className="flex items-center gap-4 pl-6 border-l border-white/20">
+                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2.5 bg-white/10 hover:bg-white/20 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
+                            {isDark ? <FiSun size={20} /> : <FiMoon size={20} />}
+                        </button>
+                        <button onClick={() => logout()} className="text-white/90 hover:text-white flex items-center gap-2 px-4 py-2.5 bg-[var(--color-danger)]/80 hover:bg-[var(--color-danger)] rounded-[10px] border border-[var(--color-danger)]/50 shadow-sm transition-all cursor-pointer font-semibold text-sm">
+                            <FiLogOut size={18} /> Logout
                         </button>
                     </div>
                 </div>
+            </header>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, staggerChildren: 0.1 }}
-                    className="w-full max-w-[650px] space-y-6"
-                >
+            {/* Mobile Layout Container */}
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+                
+                {/* Mobile Header */}
+                <header className="md:hidden flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
+                    <div className="flex items-center gap-3">
+                        <img src={image} alt="GCES Logo" className="w-8 h-8 object-contain" />
+                        <span className="text-base font-bold tracking-tight">Student Portal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2 bg-white/10 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
+                            {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+                        </button>
+                        <button onClick={() => logout()} className="text-white/80 hover:text-white p-2 bg-white/10 rounded-[10px] cursor-pointer transition-all">
+                            <FiLogOut size={18} />
+                        </button>
+                    </div>
+                </header>
 
-                    {/* 1. Student Details (Auto-filled) & Limits */}
-                    {activeTab === 'dashboard' && (
-                        <>
-                        {/* Daily Limit Tracker */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="w-full rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6 shadow-sm relative overflow-hidden mb-6"
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-sm font-bold text-teal-400 uppercase tracking-wider">Today's Requests</h4>
-                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${limits.limitReached ? 'bg-rose-500/20 text-rose-400' : 'bg-teal-500/20 text-teal-400'}`}>
-                                    {limits.dailyCount} / 3 Used
-                                </span>
-                            </div>
-                            
-                            {/* Progress bar */}
-                            <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden mb-4">
-                                <div 
-                                    className={`h-full transition-all duration-500 ${limits.limitReached ? 'bg-rose-500' : 'bg-gradient-to-r from-teal-500 to-emerald-400'}`} 
-                                    style={{ width: `${Math.min((limits.dailyCount / 3) * 100, 100)}%` }}
-                                ></div>
-                            </div>
 
-                            {limits.extraRemaining > 0 && (
-                                <div className="text-sm text-emerald-400 font-medium bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/20 mb-4">
-                                    Extra Submissions Available: {limits.extraRemaining}
-                                </div>
-                            )}
+                {/* Main Scrollable Area */}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8">
+                    <div className="w-full max-w-5xl mx-auto space-y-6">
 
-                            {limits.limitReached && limits.extraRemaining === 0 && (
-                                <div className="mt-4 flex flex-col gap-3">
-                                    <p className="text-sm text-rose-400 font-medium">You have reached the maximum number of requests for today.</p>
-                                    <button
-                                        onClick={() => setShowExtraDialog(true)}
-                                        className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-xl text-sm font-bold transition-all"
-                                    >
-                                        Request Extra Submission Permission
-                                    </button>
-                                </div>
-                            )}
-                        </motion.div>
-
-                        <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden group"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        <div className="flex items-center gap-3 mb-6 relative z-10">
-                            <div className="p-2 bg-teal-500/20 rounded-lg">
-                                <FiUser className="text-teal-400" size={20} />
-                            </div>
-                            <h4 className="text-base font-semibold text-white/90 uppercase tracking-wider">Student Profile</h4>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
-                            <Field label="Full Name" icon={<FiUser />} type="text" placeholder="Full Name" name="name" value={formData.name?.toUpperCase()} readOnly />
-                            <Field label="Register No" icon={<FiCreditCard />} type="text" placeholder="Register No" name="id" value={formData.id?.toUpperCase()} readOnly />
-                            <Field label="Roll No" icon={<FiHash />} type="text" placeholder="Roll No" name="rollNo" value={formData.rollNo ? formData.rollNo.toUpperCase() : ""} readOnly />
-                            <Field label="Department" icon={<FiBookOpen />} type="text" placeholder="Department" name="dept" value={formData.dept?.toUpperCase()} readOnly />
-                            <Field label="Mobile Number" icon={<FiPhone />} type="tel" placeholder="Mobile Number" name="mobile" value={formData.mobile} readOnly />
-                        </div>
-                    </motion.div>
-                    </>
-                    )}
-
-                    {/* 2. Active Request Status */}
-                    {activeTab === 'track' && (
-                        <>
-                            {activeRequest ? (
-                                <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="w-full rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6 sm:p-8 shadow-sm relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-400" />
-                            <div className="flex items-center justify-between mb-6 relative z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-teal-500/20 rounded-lg">
-                                        <FiActivity className="text-teal-400" size={20} />
-                                    </div>
-                                    <h4 className="text-base font-semibold text-teal-400 uppercase tracking-wider">Active Request</h4>
-                                </div>
-                                <span className={`px-4 py-1.5 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm ${getStatusColor(activeRequest.currentStatus)}`}>
-                                    {getStatusDisplay(activeRequest.currentStatus)}
-                                </span>
-                            </div>
-
-                            <RequestTimeline tracking={trackingDetails} activeRequest={activeRequest} onEditRequest={handleEditRequest} />
-
-                            {/* Desktop Details Layout */}
-                            <div className="hidden md:grid grid-cols-3 gap-6 bg-black/20 p-5 rounded-2xl border border-white/5 relative z-10">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12} /> Deputy Warden</span>
-                                    <span className="text-base font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Leave Date</span>
-                                    <span className="text-base font-semibold text-white/90">{activeRequest.leaveDate}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Arrival Date</span>
-                                    <span className="text-base font-semibold text-white/90">{activeRequest.arrivalDate}</span>
-                                </div>
-                            </div>
-
-                            {/* Mobile Details Layout */}
-                            <div className="block md:hidden space-y-3 relative z-10">
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiUser size={12} /> Assigned Deputy Warden</span>
-                                    <span className="text-sm font-semibold text-white/90">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
-                                </div>
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Leave Date</span>
-                                    <span className="text-sm font-semibold text-white/90">{activeRequest.leaveDate}</span>
-                                </div>
-                                <div className="bg-black/20 p-4 rounded-xl border border-white/5 flex flex-col gap-1.5">
-                                    <span className="text-xs font-bold text-white/40 uppercase tracking-wider flex items-center gap-1.5"><FiCalendar size={12} /> Arrival Date</span>
-                                    <span className="text-sm font-semibold text-white/90">{activeRequest.arrivalDate}</span>
-                                </div>
-                            </div>
-
-                            {((activeRequest.currentStatus)?.startsWith('Rejected')) && (
-                                <div className="hidden md:flex flex-col sm:flex-row items-center justify-between gap-4 bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 relative z-10 mt-5 pt-4 border-t border-white/10">
-                                    <div className="flex flex-col gap-1.5 text-left">
-                                        <div className="flex items-center gap-3 text-rose-400">
-                                            <FiAlertTriangle size={18} className="shrink-0" />
-                                            <span className="text-sm font-bold">Request rejected. You can edit and resubmit.</span>
+                        {activeTab === 'dashboard' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto">
+                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-hidden">
+                                    <div className="px-6 py-5 border-b border-[var(--color-border)] flex justify-between items-center flex-wrap gap-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                                                {editingFormId ? "Edit Request" : "New Reduction Request"}
+                                            </h3>
+                                            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                                                {editingFormId ? "Update your details and resubmit." : "Fill in your leave details below."}
+                                            </p>
                                         </div>
-                                        {activeRequest.rejectReason && (
-                                            <div className="pl-[30px] text-sm font-medium text-rose-300/80">
-                                                <span className="text-rose-400/70 font-bold uppercase tracking-wider text-xs">Reason: </span>
-                                                {activeRequest.rejectReason}
+                                        <div className="flex items-center gap-4 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-[12px] p-3 shadow-sm">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Daily Limit</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex gap-1">
+                                                        {[...Array(totalAllowed)].map((_, i) => (
+                                                            <div key={i} className={`w-3 h-3 rounded-full ${i < limits.dailyCount ? 'bg-[var(--color-btn-primary)]' : 'bg-[var(--color-border)]'}`}></div>
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">{limits.dailyCount}/{totalAllowed} used</span>
+                                                </div>
                                             </div>
-                                        )}
+                                            {(isLimitReached || limits.extraRemaining > 0) && (
+                                                <button
+                                                    onClick={() => setShowExtraDialog(true)}
+                                                    className="px-3 py-1.5 bg-[var(--color-warning)] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-[var(--color-warning)]/90 transition-all cursor-pointer"
+                                                >
+                                                    Request Extra
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleEditRequest(activeRequest)}
-                                        className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
-                                    >
-                                        <FiEdit3 size={16} /> Edit and Resubmit
-                                    </button>
-                                </div>
-                            )}
 
-                            {activeRequest.currentStatus === 'PendingDeputyWarden' && (
-                                <div className="flex justify-end mt-5 pt-4 border-t border-white/10 relative z-10">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                        className="w-full sm:w-auto flex justify-center items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-bold transition-all"
-                                    >
-                                        <FiXCircle size={16} /> Delete Request
-                                    </button>
-                                </div>
-                            )}
-                        </motion.div>
-                            ) : (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="w-full rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center shadow-sm"
-                                >
-                                    <FiCheckCircle size={48} className="mx-auto text-teal-400/50 mb-4" />
-                                    <h3 className="text-xl font-bold text-white/90 mb-2">No Active Requests</h3>
-                                    <p className="text-white/50 text-sm">You don't have any pending or active mess reduction requests to track.</p>
-                                </motion.div>
-                            )}
-                        </>
-                    )}
+                                    <div className="p-6">
+                                        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                                <Field
+                                                    as="select"
+                                                    label="Year of Study"
+                                                    icon={<FiCalendar size={18} />}
+                                                    name="year"
+                                                    value={formData.year}
+                                                    onChange={handleChange}
+                                                    required
+                                                    id="year-select"
+                                                >
+                                                    <option value="" disabled>Select Year</option>
+                                                    {["1st", "2nd", "3rd", "4th"].map(y => (
+                                                        <option key={y} value={y}>{y} Year</option>
+                                                    ))}
+                                                </Field>
+                                                <Field
+                                                    label="Room Number"
+                                                    icon={<FiMapPin size={18} />}
+                                                    type="number"
+                                                    placeholder="e.g. 4012"
+                                                    name="room"
+                                                    value={formData.room}
+                                                    onChange={handleChange}
+                                                    min="1"
+                                                    required
+                                                    id="room-input"
+                                                    error={formErrors.room}
+                                                    className="flex-1 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 font-medium w-full appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                />
+                                            </div>
 
-                    {/* 3. New Request Form */}
-                    {activeTab === 'dashboard' && (
-                        <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        id="form-section"
-                        className="w-full rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl overflow-hidden scroll-mt-24 relative"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] via-transparent to-white/[0.01] pointer-events-none" />
-                        <div className="p-6 sm:p-8 border-b border-white/5 bg-white/[0.01] relative z-10">
-                            <div className="flex items-center gap-4 mb-2">
-                                <div className="p-3 bg-teal-500 text-slate-950 rounded-xl border border-teal-400/20 shadow-sm">
-                                    {editingFormId ? <FiEdit3 size={24} /> : <FiFileText size={24} />}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                                        {editingFormId ? "EDIT REQUEST" : "NEW REQUEST"}
-                                    </h3>
-                                    <p className="text-sm text-white/50 font-medium">
-                                        {editingFormId ? "Update details and resubmit." : "Fill in your leave details below"}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                                <Field label="Leave Date" icon={<FiCalendar size={18} />} type="date" name="leaveDate" value={formData.leaveDate} onChange={handleChange} min={new Date().toISOString().split('T')[0]} required id="leave-date-input" />
+                                                <Field label="Leave Time" icon={<FiClock size={18} />} type="time" name="leaveTime" value={formData.leaveTime} onChange={handleChange} required id="leave-time-input" />
+                                            </div>
 
-                        <div className="p-6 sm:p-8 relative z-10">
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                                <Field label="Arrival Date" icon={<FiCalendar size={18} />} type="date" name="arrivalDate" value={formData.arrivalDate} onChange={handleChange} min={formData.leaveDate || new Date().toISOString().split('T')[0]} required id="arrival-date-input" />
+                                                <Field label="Arrival Time" icon={<FiClock size={18} />} type="time" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required id="arrival-time-input" />
+                                            </div>
 
-                                {/* Editable Leave Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <Field
-                                        as="select"
-                                        label="Year of Study"
-                                        icon={<FiCalendar size={18} />}
-                                        name="year"
-                                        value={formData.year}
-                                        onChange={handleChange}
-                                        required
-                                        id="year-select"
-                                    >
-                                        <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Year</option>
-                                        {["1st", "2nd", "3rd", "4th"].map(y => (
-                                            <option key={y} value={y} className="bg-[#0f1f38] text-white">{y} Year</option>
-                                        ))}
-                                    </Field>
-                                    <Field
-                                        label="Room Number"
-                                        icon={<FiMapPin />}
-                                        type="number"
-                                        placeholder="Room No"
-                                        name="room"
-                                        value={formData.room}
-                                        onChange={handleChange}
-                                        min="1"
-                                        required
-                                        id="room-input"
-                                        error={formErrors.room}
-                                    />
-                                </div>
-
-                                {/* Leave Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <Field
-                                        label="Leave Date"
-                                        icon={<FiCalendar />}
-                                        type="date"
-                                        name="leaveDate"
-                                        value={formData.leaveDate}
-                                        onChange={handleChange}
-                                        min={new Date().toISOString().split('T')[0]}
-                                        required
-                                        id="leave-date-input"
-                                    />
-                                    <Field
-                                        label="Leave Time"
-                                        icon={<FiClock />}
-                                        type="time"
-                                        name="leaveTime"
-                                        value={formData.leaveTime}
-                                        onChange={handleChange}
-                                        required
-                                        id="leave-time-input"
-                                    />
-                                </div>
-
-                                {/* Arrival Date & Time */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <Field
-                                        label="Arrival Date"
-                                        icon={<FiCalendar />}
-                                        type="date"
-                                        name="arrivalDate"
-                                        value={formData.arrivalDate}
-                                        onChange={handleChange}
-                                        min={formData.leaveDate || new Date().toISOString().split('T')[0]}
-                                        required
-                                        id="arrival-date-input"
-                                    />
-                                    <Field
-                                        label="Arrival Time"
-                                        icon={<FiClock />}
-                                        type="time"
-                                        name="arrivalTime"
-                                        value={formData.arrivalTime}
-                                        onChange={handleChange}
-                                        required
-                                        id="arrival-time-input"
-                                    />
-                                </div>
-
-                                {/* Reason */}
-                                <Field
-                                    as="select"
-                                    label="Reason for Leave"
-                                    icon={<FiInfo size={18} />}
-                                    name="reason"
-                                    value={formData.reason}
-                                    onChange={handleChange}
-                                    required
-                                    id="reason-select"
-                                >
-                                    <option value="" disabled className="text-white/40 bg-[#0f1f38]">Select Reason</option>
-                                    <option value="Study Holidays" className="bg-[#0f1f38]">Study Holidays</option>
-                                    <option value="Medical Leave" className="bg-[#0f1f38]">Medical Leave</option>
-                                    <option value="other" className="bg-[#0f1f38]">Other Reason</option>
-                                </Field>
-
-                                {/* Other Reason (conditional) */}
-                                <AnimatePresence>
-                                    {formData.reason === "other" && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                        >
                                             <Field
-                                                label="Specify Reason"
-                                                icon={<FiFileText />}
-                                                type="text"
-                                                placeholder="Enter your reason"
-                                                name="otherReason"
-                                                value={formData.otherReason}
+                                                as="select"
+                                                label="Reason for Leave"
+                                                icon={<FiInfo size={18} />}
+                                                name="reason"
+                                                value={formData.reason}
                                                 onChange={handleChange}
                                                 required
-                                                id="other-reason-input"
-                                            />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                                id="reason-select"
+                                            >
+                                                <option value="" disabled>Select Reason</option>
+                                                <option value="Study Holidays">Study Holidays</option>
+                                                <option value="Medical Leave">Medical Leave</option>
+                                                <option value="other">Other Reason</option>
+                                            </Field>
 
+                                            <AnimatePresence>
+                                                {formData.reason === "other" && (
+                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                                                        <Field label="Specify Reason" icon={<FiFileText size={18} />} type="text" placeholder="Enter your detailed reason" name="otherReason" value={formData.otherReason} onChange={handleChange} required id="other-reason-input" />
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
 
-                                {/* Restriction Warning Block */}
-                                {isSubmitBlocked && (
-                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-amber-400">
-                                        <FiAlertTriangle size={20} className="shrink-0 mt-0.5" />
-                                        <p className="text-sm font-bold leading-normal">
-                                            {isLimitReached
-                                                ? "You have reached your daily limit of 3 submissions. Please request an extra submission to submit another request."
-                                                : "You already have an active mess reduction request. New requests can be submitted after your arrival date and time."}
-                                        </p>
+                                            {isSubmitBlocked && (
+                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
+                                                    <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                                    <p className="text-sm font-medium leading-relaxed">
+                                                        {isLimitReached
+                                                            ? "You have reached your daily limit. Please request an extra submission."
+                                                            : "You already have an active request. New requests can be submitted after your arrival time."}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                                                <button
+                                                    className={`flex-1 flex items-center justify-center gap-2 rounded-[12px] py-3.5 text-[15px] font-semibold transition-all ${isSubmitting || isSubmitBlocked ? "bg-[var(--color-card)] text-[var(--color-text-secondary)] cursor-not-allowed border border-[var(--color-border)]" : "bg-[var(--color-btn-primary)] text-white hover:bg-[var(--color-btn-primary)]/90  hover:shadow-md"}`}
+                                                    type="submit"
+                                                    disabled={isSubmitting || isSubmitBlocked}
+                                                >
+                                                    {isSubmitting ? "Processing..." : (editingFormId ? "Resubmit Request" : "Submit Request")}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={handleReset}
+                                                    className="px-8 py-3.5 rounded-[12px] text-[15px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-card)] hover:bg-white/10 border border-[var(--color-border)] transition-all cursor-pointer"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
-                                )}
-
-                                {/* Buttons Container */}
-                                <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 w-full">
-                                    <motion.button
-                                        whileHover={isSubmitBlocked || isSubmitting ? {} : { scale: 1.01, y: -1 }}
-                                        whileTap={isSubmitBlocked || isSubmitting ? {} : { scale: 0.99 }}
-                                        className={`flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-semibold text-slate-900 bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-[length:200%_auto] hover:bg-right shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all duration-500 tracking-wide ${isSubmitting || isSubmitBlocked ? "opacity-50 cursor-not-allowed shadow-none hover:shadow-none hover:bg-left" : ""}`}
-                                        type="submit"
-                                        disabled={isSubmitting || isSubmitBlocked}
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                PROCESSING...
-                                            </>
-                                        ) : (
-                                            <>
-                                                {editingFormId ? "RESUBMIT REQUEST" : "SUBMIT REQUEST"} <FiArrowRight size={18} />
-                                            </>
-                                        )}
-                                    </motion.button>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.01, y: -1 }}
-                                        whileTap={{ scale: 0.99 }}
-                                        type="button"
-                                        onClick={handleReset}
-                                        className="flex-1 flex items-center justify-center gap-3 w-full rounded-xl py-4 text-base font-semibold text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-teal-500/40 transition-all duration-300 tracking-wide cursor-pointer"
-                                    >
-                                        RESET
-                                    </motion.button>
                                 </div>
-                            </form>
-                        </div>
-                    </motion.div>
-                    )}
+                            </motion.div>
+                        )}
 
-                </motion.div>
-            </main>
+
+                        {activeTab === 'track' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto">
+                                <div className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft p-6 sm:p-8">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">Track Request</h2>
+                                            <p className="text-sm text-[var(--color-text-secondary)]">Monitor the real-time status of your active application.</p>
+                                        </div>
+                                        {activeRequest && (
+                                            <span className={`px-4 py-2 rounded-full text-xs font-bold border shrink-0 inline-flex items-center justify-center ${getStatusColor(activeRequest.currentStatus)}`}>
+                                                {getStatusDisplay(activeRequest.currentStatus)}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {activeRequest ? (
+                                        <>
+                                            <RequestTimeline tracking={trackingDetails} activeRequest={activeRequest} onEditRequest={handleEditRequest} />
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
+                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Deputy Warden</span>
+                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
+                                                </div>
+                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
+                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Leave Date</span>
+                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.leaveDate}</span>
+                                                </div>
+                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
+                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Arrival Date</span>
+                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.arrivalDate}</span>
+                                                </div>
+                                            </div>
+
+                                            {(activeRequest.currentStatus === 'PendingDeputyWarden' || activeRequest.currentStatus.startsWith('Rejected')) && (
+                                                <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteRequest(activeRequest.formId)}
+                                                        className="px-6 py-2.5 bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto cursor-pointer"
+                                                    >
+                                                        Delete Request
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="py-16 text-center">
+                                            <div className="w-16 h-16 bg-[var(--color-card)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
+                                                <FiCheckCircle size={24} className="text-[var(--color-text-secondary)]" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">No Active Requests</h3>
+                                            <p className="text-[var(--color-text-secondary)] text-sm max-w-sm mx-auto">You don't have any pending or active mess reduction requests to track.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+                </main>
+
+                {/* Mobile Bottom Navigation */}
+                <nav className="md:hidden shrink-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex items-center justify-around px-2 py-2 z-30">
+                    <button 
+                        onClick={() => setActiveTab('dashboard')} 
+                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                    >
+                        <FiHome size={20} className="mb-1" />
+                        <span className="text-[10px] font-semibold">Home</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('track')} 
+                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${activeTab === 'track' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                    >
+                        <FiActivity size={20} className="mb-1" />
+                        <span className="text-[10px] font-semibold">Track</span>
+                    </button>
+                </nav>
+            </div>
 
             {/* Extra Submission Request Dialog */}
             <AnimatePresence>
@@ -1121,16 +1022,16 @@ function MessReductionPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-primary-bg)]/80 backdrop-blur-sm p-4"
                     >
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-md bg-[#0a1628] border border-white/10 rounded-3xl shadow-2xl overflow-hidden p-6 relative"
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[20px] shadow-soft overflow-hidden p-8"
                         >
-                            <h3 className="text-xl font-bold text-white mb-2">Request Extra Submission</h3>
-                            <p className="text-white/60 text-sm mb-6">
+                            <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Request Extra Limit</h3>
+                            <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
                                 Please provide a valid reason for why you need an extra submission limit today. 
                                 The administration will review your request.
                             </p>
@@ -1138,8 +1039,8 @@ function MessReductionPage() {
                             <textarea
                                 value={extraReason}
                                 onChange={(e) => setExtraReason(e.target.value)}
-                                placeholder="Enter reason here..."
-                                className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-amber-500/50 resize-none mb-6"
+                                placeholder="Enter detailed reason here..."
+                                className="w-full h-32 bg-[var(--color-card)] border border-[var(--color-border)] rounded-[12px] p-4 text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)] resize-none mb-6 text-sm"
                             />
                             
                             <div className="flex gap-4">
@@ -1148,7 +1049,7 @@ function MessReductionPage() {
                                         setShowExtraDialog(false);
                                         setExtraReason("");
                                     }}
-                                    className="flex-1 py-3 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-all text-sm font-bold"
+                                    className="flex-1 py-3 rounded-[12px] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-white/5 transition-all text-sm font-semibold cursor-pointer"
                                     disabled={isRequestingExtra}
                                 >
                                     Cancel
@@ -1156,7 +1057,7 @@ function MessReductionPage() {
                                 <button
                                     onClick={handleRequestExtraSubmission}
                                     disabled={isRequestingExtra || !extraReason.trim()}
-                                    className="flex-1 py-3 rounded-xl bg-amber-500 text-[#0a1628] hover:bg-amber-400 transition-all text-sm font-bold disabled:opacity-50 flex justify-center items-center gap-2"
+                                    className="flex-1 py-3 rounded-[12px] bg-[var(--color-warning)] text-white hover:bg-[var(--color-warning)]/90 transition-all text-sm font-semibold disabled:opacity-50 flex justify-center items-center gap-2 shadow-soft cursor-pointer"
                                 >
                                     {isRequestingExtra ? "Submitting..." : "Submit Request"}
                                 </button>
@@ -1165,13 +1066,6 @@ function MessReductionPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Footer */}
-            <footer className="shrink-0 pb-4 pt-2 text-center">
-                <p className="text-xs text-white/15 tracking-widest uppercase font-bold">
-                    © 2025 GCES · Mess Reduction Portal
-                </p>
-            </footer>
         </div>
     );
 }

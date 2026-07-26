@@ -22,6 +22,8 @@ public class ReductionFormMapper {
         reductionForm.setPresentDate(presentDate);
         reductionForm.setTotalHolidays(totalHolidays);
         reductionForm.setReason(reductionFormReqDTO.getReason());
+        reductionForm.setToDate(reductionFormReqDTO.getToDate());
+        reductionForm.setAdditionalRemarks(reductionFormReqDTO.getAdditionalRemarks());
 
         return reductionForm;
     }
@@ -57,6 +59,13 @@ public class ReductionFormMapper {
         reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
         reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
         reductionFormResDTO.setSubmittedAt(reductionForm.getSubmittedAt());
+        reductionFormResDTO.setToDate(reductionForm.getToDate());
+        reductionFormResDTO.setAdditionalRemarks(reductionForm.getAdditionalRemarks());
+        reductionFormResDTO.setResubmissionCount(reductionForm.getResubmissionCount());
+        reductionFormResDTO.setDeletedByStudent(reductionForm.isDeletedByStudent());
+        reductionFormResDTO.setDeletedAt(reductionForm.getDeletedAt());
+        reductionFormResDTO.setRejectedStage(reductionForm.getRejectedStage() != null ? reductionForm.getRejectedStage().name() : null);
+        reductionFormResDTO.setResumeStage(reductionForm.getResumeStage() != null ? reductionForm.getResumeStage().name() : null);
         return reductionFormResDTO;
     }
 }

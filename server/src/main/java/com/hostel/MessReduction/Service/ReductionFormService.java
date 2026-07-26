@@ -220,9 +220,11 @@ public class ReductionFormService {
         form.setRoomNo(dto.getRoomNo());
         form.setLeaveDate(dto.getLeaveDate());
         form.setLeaveTime(dto.getLeaveTime());
+        form.setToDate(dto.getToDate());
         form.setArrivalDate(dto.getArrivalDate());
         form.setArrivalTime(dto.getArrivalTime());
         form.setReason(dto.getReason());
+        form.setAdditionalRemarks(dto.getAdditionalRemarks());
         form.setPresentDate(LocalDate.now());
         form.setTotalHolidays(calculateTotalLeaves(dto));
         
@@ -232,6 +234,10 @@ public class ReductionFormService {
         } else if (previousStatus == FormStatus.RejectedOffice) {
             newStatus = FormStatus.PendingOffice;
         }
+        
+        form.setRejectedStage(previousStatus);
+        form.setResumeStage(newStatus);
+        form.setResubmissionCount(form.getResubmissionCount() + 1);
         form.setCurrentStatus(newStatus);
         
         form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(studentDetails.getGender(), form.getYear()));
@@ -251,13 +257,19 @@ public class ReductionFormService {
         ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
-        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
-            throw new InvalidStatusException("Only requests pending at Deputy Warden can be deleted.");
+        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden && !isRejectedStatus(form.getCurrentStatus())) {
+            throw new InvalidStatusException("Only pending or rejected requests can be deleted.");
         }
 
         form.setActive(false);
+        form.setDeletedByStudent(true);
+        form.setDeletedAt(LocalDateTime.now());
         reductionFormRepo.save(form);
+        
+        StudentDetails student = form.getStudentDetails();
+        
         saveFormHistory(form, "Student Deleted Request", form.getCurrentStatus(), null, "student", "Request deleted by student. Limit not restored.");
+        notificationService.createNotification(student.getEmailId(), "Your request was successfully deleted.", "DELETED", form.getFormId());
     }
 
     public List<ReductionFormHistoryResDTO> getFormHistory(Long formId, Long studentId) {
@@ -870,16 +882,15 @@ public class ReductionFormService {
     }
 
     private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
-        com.hostel.MessReduction.Entity.SystemSettings settings = systemSettingsRepo.findById("systemActive").orElse(null);
-        if (settings != null && "false".equalsIgnoreCase(settings.getSettingValue())) {
-            throw new BadRequestException("Form submission is currently disabled by the administration.");
-        }
 
         autoDeactivateAllExpiredForms();
 
-        // Check if there is any active form for this student
+        // Check if there is any active form for this student that is NOT rejected
         List<ReductionForm> activeForms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
-        if (!activeForms.isEmpty()) {
+        boolean hasPendingOrApproved = activeForms.stream()
+                .anyMatch(form -> !isRejectedStatus(form.getCurrentStatus()));
+
+        if (hasPendingOrApproved) {
             throw new StatusAlreadyPendingException("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.");
         }
 
@@ -931,14 +942,21 @@ public class ReductionFormService {
     }
 
     private void validateResubmitPayload(ReductionFormReqDTO dto) {
-        if (dto.getArrivalDate().isBefore(dto.getLeaveDate()) || dto.getArrivalDate().isEqual(dto.getLeaveDate())) {
-            throw new DateNotValidException("Arrival date must be after leave date");
+        if (dto.getLeaveDate().isBefore(LocalDate.now())) {
+            throw new DateNotValidException("From Date cannot be before today");
+        }
+        if (dto.getToDate() != null && dto.getToDate().isBefore(dto.getLeaveDate())) {
+            throw new DateNotValidException("To Date cannot be before From Date");
+        }
+        if (dto.getToDate() != null && dto.getArrivalDate().isBefore(dto.getToDate())) {
+            throw new DateNotValidException("Arrival Date must be greater than or equal to To Date");
         }
         calculateTotalLeaves(dto);
     }
 
     private long calculateTotalLeaves(ReductionFormReqDTO dto) {
-        long totalDays = ChronoUnit.DAYS.between(dto.getLeaveDate(), dto.getArrivalDate());
+        LocalDate endDate = dto.getToDate() != null ? dto.getToDate() : dto.getArrivalDate();
+        long totalDays = ChronoUnit.DAYS.between(dto.getLeaveDate(), endDate);
         if (totalDays > 3) {
             return totalDays - 3;
         }

@@ -6,17 +6,17 @@ function DobInputComponent({ value, onChange, error }) {
 
   return (
     <div className="flex flex-col gap-1.5 w-full text-left">
-      <label htmlFor="dob-input" className="text-sm font-semibold tracking-wide text-white/80 select-none">
+      <label htmlFor="dob-input" className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)] select-none">
         Date of Birth
       </label>
       <div 
-        className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 relative group bg-black/20 w-full 
+        className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 relative group bg-[var(--color-primary-bg)] w-full 
           ${error 
             ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' 
-            : 'border-white/8 focus-within:border-teal-500/60 focus-within:bg-teal-950/10 focus-within:shadow-[0_0_15px_rgba(20,184,166,0.1)]'
+            : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)] focus-within:bg-[var(--color-btn-primary)]/5 focus-within:ring-2 focus-within:ring-[var(--color-btn-primary)]/20'
           }`}
       >
-        <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-teal-400/60 group-focus-within:text-teal-400'}`}>
+        <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>
           <FiCalendar />
         </span>
         <input
@@ -27,7 +27,7 @@ function DobInputComponent({ value, onChange, error }) {
           onChange={onChange}
           max={today}
           required
-          className="flex-1 bg-transparent focus:outline-none text-base text-white placeholder:text-white/40 font-medium appearance-none w-full cursor-pointer"
+          className="flex-1 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium appearance-none w-full cursor-pointer"
         />
       </div>
     </div>

@@ -64,7 +64,19 @@ public class ReductionFormResDTO {
     private Long totalHolidays;
     @NotBlank
     private String reason;
+    private String additionalRemarks;
     
+    @NotNull
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate toDate;
+
+    private int resubmissionCount;
+    private boolean deletedByStudent;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime deletedAt;
+    private String rejectedStage;
+    private String resumeStage;
+
     private String registerNo;
     private Gender gender;
     private String rollNo;

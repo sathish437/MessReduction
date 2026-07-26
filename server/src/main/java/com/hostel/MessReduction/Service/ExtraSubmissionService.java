@@ -83,6 +83,26 @@ public class ExtraSubmissionService {
         notificationService.createNotification(request.getStudentDetails().getEmailId(), "Your extra submission request was rejected.", "EXTRA_REJECTED", requestId);
     }
 
+    public void bulkApproveRequests(List<Long> requestIds, String adminUsername) {
+        for (Long id : requestIds) {
+            try {
+                approveRequest(id, adminUsername);
+            } catch (BadRequestException e) {
+                // Skip if already processed or not found to continue bulk operation
+            }
+        }
+    }
+
+    public void bulkRejectRequests(List<Long> requestIds, String adminUsername) {
+        for (Long id : requestIds) {
+            try {
+                rejectRequest(id, adminUsername);
+            } catch (BadRequestException e) {
+                // Skip if already processed or not found to continue bulk operation
+            }
+        }
+    }
+
     public List<ExtraSubmissionRequest> getAllPendingRequests() {
         return extraSubmissionRequestRepo.findByStatus(RequestStatus.PENDING);
     }

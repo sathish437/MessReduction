@@ -35,9 +35,8 @@ public class StudentDetails {
     @NotBlank
     @Column(nullable = false, unique = true, length = 20)
     private String rollNo;
-    @Enumerated(EnumType.STRING)
-    @NotNull
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id", nullable = false)
     private Department department;
     @Enumerated(EnumType.STRING)
     private Gender gender;

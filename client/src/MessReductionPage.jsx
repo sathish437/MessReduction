@@ -774,12 +774,12 @@ function MessReductionPage() {
             </AnimatePresence>
 
             {/* Desktop Top Navbar */}
-            <header className="hidden md:flex items-center justify-between px-8 py-5 bg-[var(--color-header)] text-white shadow-md z-20 shrink-0">
-                <div className="flex items-center gap-4">
-                    <img src={image} alt="GCES Logo" className="w-16 h-16 object-contain drop-shadow-md" />
+            <header className="hidden md:flex items-center justify-between px-6 py-3.5 bg-[var(--color-header)] text-white shadow-md z-20 shrink-0">
+                <div className="flex items-center gap-3">
+                    <img src={image} alt="GCES Logo" className="w-12 h-12 object-contain drop-shadow-md" />
                     <div className="flex flex-col">
-                        <span className="text-xs font-bold tracking-widest text-white/80 uppercase mb-0.5">GCES Srirangam</span>
-                        <span className="text-2xl font-bold tracking-tight">Student Portal</span>
+                        <span className="text-[11px] font-bold tracking-widest text-white/80 uppercase mb-0.5">GCES Srirangam</span>
+                        <span className="text-xl font-bold tracking-tight">Student Portal</span>
                     </div>
                 </div>
 
@@ -816,35 +816,84 @@ function MessReductionPage() {
             <div className="flex-1 flex flex-col overflow-hidden relative">
                 
                 {/* Mobile Header */}
-                <header className="md:hidden flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
-                    <div className="flex items-center gap-3">
-                        <img src={image} alt="GCES Logo" className="w-8 h-8 object-contain" />
-                        <span className="text-base font-bold tracking-tight">Student Portal</span>
+                <header className="md:hidden flex items-center justify-between px-3 py-3 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
+                    <div className="flex items-center gap-2.5">
+                        <img src={image} alt="GCES Logo" className="w-7 h-7 object-contain" />
+                        <span className="text-sm font-bold tracking-tight">Student Portal</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2 bg-white/10 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
-                            {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-1.5 bg-white/10 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
+                            {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
                         </button>
-                        <button onClick={() => logout()} className="text-white/80 hover:text-white p-2 bg-white/10 rounded-[10px] cursor-pointer transition-all">
-                            <FiLogOut size={18} />
+                        <button onClick={() => logout()} className="text-white/80 hover:text-white p-1.5 bg-white/10 rounded-[10px] cursor-pointer transition-all">
+                            <FiLogOut size={16} />
                         </button>
                     </div>
                 </header>
 
 
                 {/* Main Scrollable Area */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8">
-                    <div className="w-full max-w-5xl mx-auto space-y-6">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-6">
+                    <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-5">
 
                         {activeTab === 'dashboard' && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto">
-                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-hidden">
-                                    <div className="px-6 py-5 border-b border-[var(--color-border)] flex justify-between items-center flex-wrap gap-4">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5">
+                                {/* Student Profile Information Card */}
+                                <div className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft p-4 sm:p-5">
+                                    <div className="flex items-center gap-3 pb-2.5 mb-3 border-b border-[var(--color-border)]">
+                                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--color-btn-primary)]/10 text-[var(--color-btn-primary)] flex items-center justify-center font-bold text-lg border border-[var(--color-btn-primary)]/20">
+                                            <FiUser size={20} />
+                                        </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                                            <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
+                                                Student Information
+                                            </h3>
+                                            <p className="text-xs text-[var(--color-text-secondary)] font-normal">
+                                                Verified student profile details
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Name</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)] truncate">{studentDetails?.name || formData.name || "N/A"}</span>
+                                        </div>
+
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Register Number</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.registerNo || formData.id || "N/A"}</span>
+                                        </div>
+
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Roll Number</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.rollNo || formData.rollNo || "N/A"}</span>
+                                        </div>
+
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Department</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)]">{studentDetails?.department || formData.dept || "N/A"}</span>
+                                        </div>
+
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Gender</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)] capitalize">{studentDetails?.gender ? (studentDetails.gender.toLowerCase() === 'male' ? 'Male' : studentDetails.gender.toLowerCase() === 'female' ? 'Female' : studentDetails.gender) : "N/A"}</span>
+                                        </div>
+
+                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
+                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Phone Number</span>
+                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.phoneNo || studentDetails?.phone || formData.mobile || "N/A"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-hidden">
+                                    <div className="px-4 py-3.5 sm:px-6 sm:py-5 border-b border-[var(--color-border)] flex justify-between items-center flex-wrap gap-3 sm:gap-4">
+                                        <div>
+                                            <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
                                                 {editingFormId ? "Edit Request" : "New Reduction Request"}
                                             </h3>
-                                            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                                            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-0.5 sm:mt-1">
                                                 {editingFormId ? "Update your details and resubmit." : "Fill in your leave details below."}
                                             </p>
                                         </div>
@@ -872,9 +921,9 @@ function MessReductionPage() {
                                         </div>
                                     </div>
 
-                                    <div className="p-6">
-                                        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div className="p-4 sm:p-5">
+                                        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 sm:gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                                                 <CustomSelect
                                                     label="Year of Study"
                                                     icon={<FiCalendar size={18} />}

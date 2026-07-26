@@ -36,10 +36,11 @@ public class AdminService {
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
     private final com.hostel.MessReduction.Repo.ActivityLogRepository activityLogRepository;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
+    private final DepartmentService departmentService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public PaginatedResponseDTO<StudentResponseDTO> getStudents(
-            String search, Department department, Gender gender, Integer year,
+            String search, String department, Gender gender, Integer year,
             int page, int size, String sortBy, String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
@@ -61,8 +62,13 @@ public class AdminService {
                 ));
             }
 
-            if (department != null) {
-                predicates.add(cb.equal(root.get("department"), department));
+            if (department != null && !department.trim().isEmpty()) {
+                String d = department.trim().toLowerCase();
+                predicates.add(cb.or(
+                        cb.equal(cb.lower(root.get("department").get("departmentCode")), d),
+                        cb.equal(cb.lower(root.get("department").get("shortName")), d),
+                        cb.equal(cb.lower(root.get("department").get("departmentName")), d)
+                ));
             }
 
             if (gender != null) {
@@ -149,7 +155,9 @@ public class AdminService {
         student.setName(dto.getName());
         student.setRegisterNo(dto.getRegisterNo());
         student.setRollNo(dto.getRollNo());
-        student.setDepartment(dto.getDepartment());
+        if (dto.getDepartment() != null && !dto.getDepartment().trim().isEmpty()) {
+            student.setDepartment(departmentService.findEntityByCode(dto.getDepartment()));
+        }
         student.setGender(dto.getGender());
         student.setDob(dto.getDob());
         student.setEmailId(dto.getEmailId());
@@ -163,7 +171,7 @@ public class AdminService {
                 student.getName(),
                 student.getRegisterNo(),
                 student.getRollNo(),
-                student.getDepartment(),
+                student.getDepartment() != null ? student.getDepartment().getDepartmentCode() : null,
                 student.getGender(),
                 student.getDob(),
                 student.getEmailId(),

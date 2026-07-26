@@ -1,6 +1,5 @@
 package com.hostel.MessReduction.DTO.ReqDTO;
 
-import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,8 +23,8 @@ public class StudentRequestDTO {
     @NotBlank(message = "Roll number is required")
     private String rollNo;
 
-    @NotNull(message = "Department is required")
-    private Department department;
+    @NotBlank(message = "Department is required")
+    private String department;
 
     @NotNull(message = "Gender is required")
     private Gender gender;

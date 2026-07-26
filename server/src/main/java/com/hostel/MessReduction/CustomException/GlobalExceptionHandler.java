@@ -1,6 +1,6 @@
 package com.hostel.MessReduction.CustomException;
 
-import com.hostel.MessReduction.CustomException.BadRequestException;
+import com.hostel.MessReduction.utils.TelegramNotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +18,12 @@ import org.slf4j.LoggerFactory;
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private final TelegramNotificationService telegram;
+
+    public GlobalExceptionHandler(TelegramNotificationService telegram) {
+        this.telegram = telegram;
+    }
+
     private ResponseEntity<HashMap<String, Object>> buildErrorResponse(String message, HttpStatus status) {
         HashMap<String, Object> map = new HashMap<>();
         map.put("message", message);
@@ -30,56 +36,67 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
+        telegram.sendExceptionAlert(ex, "Validation failed: " + message);
         return buildErrorResponse("Validation failed: " + message, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(StudentNotFoundException.class)
     public ResponseEntity<HashMap<String, Object>> handleStudentNotFound(StudentNotFoundException exp) {
+        telegram.sendExceptionAlert(exp, "StudentNotFoundException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(StatusAlreadyPendingException.class)
     public ResponseEntity<HashMap<String, Object>> handleStatusAlreadyPending(StatusAlreadyPendingException exp) {
+        telegram.sendExceptionAlert(exp, "StatusAlreadyPendingException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
     
     @ExceptionHandler(DateNotValidException.class)
     public ResponseEntity<HashMap<String, Object>> handleDateNotValid(DateNotValidException exp) {
+        telegram.sendExceptionAlert(exp, "DateNotValidException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(TotalLeaveDateCountException.class)
     public ResponseEntity<HashMap<String, Object>> handleTotalLeaveDateCount(TotalLeaveDateCountException exp) {
+        telegram.sendExceptionAlert(exp, "TotalLeaveDateCountException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(UnauthorizedUserException.class)
     public ResponseEntity<HashMap<String, Object>> handleUnauthorizedUser(UnauthorizedUserException exp) {
+        telegram.sendExceptionAlert(exp, "UnauthorizedUserException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<HashMap<String, Object>> handleBadRequest(BadRequestException exp) {
+        telegram.sendExceptionAlert(exp, "BadRequestException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ReductionFormNotFoundException.class)
     public ResponseEntity<HashMap<String, Object>> handleReductionFormNotFound(ReductionFormNotFoundException exp) {
+        telegram.sendExceptionAlert(exp, "ReductionFormNotFoundException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(InvalidStatusException.class)
     public ResponseEntity<HashMap<String, Object>> handleInvalidStatus(InvalidStatusException exp) {
+        telegram.sendExceptionAlert(exp, "InvalidStatusException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(InvalidActionException.class)
     public ResponseEntity<HashMap<String, Object>> handleInvalidAction(InvalidActionException exp) {
+        telegram.sendExceptionAlert(exp, "InvalidActionException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(StudentVerificationFailedException.class)
     public ResponseEntity<HashMap<String, Object>> handleStudentVerificationFailed(StudentVerificationFailedException exp) {
+        telegram.sendExceptionAlert(exp, "StudentVerificationFailedException");
         HashMap<String, Object> map = new HashMap<>();
         map.put("message", exp.getMessage());
         return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
@@ -87,6 +104,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StudentVerificationServiceUnavailableException.class)
     public ResponseEntity<HashMap<String, Object>> handleStudentVerificationServiceUnavailable(StudentVerificationServiceUnavailableException exp) {
+        telegram.sendExceptionAlert(exp, "StudentVerificationServiceUnavailableException");
         HashMap<String, Object> map = new HashMap<>();
         map.put("message", exp.getMessage());
         return new ResponseEntity<>(map, HttpStatus.SERVICE_UNAVAILABLE);
@@ -95,18 +113,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<HashMap<String, Object>> handleIllegalArgument(IllegalArgumentException exp) {
         logger.error("IllegalArgumentException: ", exp);
+        telegram.sendExceptionAlert(exp, "IllegalArgumentException");
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<HashMap<String, Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException exp) {
         logger.error("HttpMessageNotReadableException: ", exp);
+        telegram.sendExceptionAlert(exp, "HttpMessageNotReadableException");
         return buildErrorResponse("Invalid JSON payload or missing required fields", HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<HashMap<String, Object>> handleGeneralException(Exception exp) {
         logger.error("Unhandled Exception: ", exp);
+        telegram.sendExceptionAlert(exp, "Unhandled Exception");
         return buildErrorResponse(exp.getMessage() != null ? exp.getMessage() : "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

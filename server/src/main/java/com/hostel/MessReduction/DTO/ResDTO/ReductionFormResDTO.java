@@ -1,7 +1,6 @@
 package com.hostel.MessReduction.DTO.ResDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +33,7 @@ public class ReductionFormResDTO {
     @Max(4)
     private Integer year;
     @NotNull
-    private Department department;
+    private String department;
     @NotNull
     private Long roomNo;
     @NotBlank

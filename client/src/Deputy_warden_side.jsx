@@ -7,6 +7,7 @@ import { useTheme } from "./context/ThemeContext";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
+import { getActiveDepartments } from "./api/departmentService";
 
 
 const handleLogout = () => {
@@ -17,9 +18,9 @@ const YEARS = ["1st", "2nd", "3rd", "4th"];
 
 const YEAR_COLORS = {
     "1st": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
-    "2nd": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-sm", ring: "bg-blue-500/10" },
+    "2nd": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
     "3rd": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
-    "4th": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-sm", ring: "bg-blue-500/10" },
+    "4th": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-sm", ring: "bg-[var(--theme-btn-primary)]/10" },
 };
 
 function YearStatCard({ year, requests }) {
@@ -32,10 +33,10 @@ function YearStatCard({ year, requests }) {
         >
             <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold tracking-wider uppercase text-[var(--theme-btn-primary)]">{year} Year</span>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Pending Requests</span>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-[var(--theme-btn-primary)]/10 text-[var(--theme-btn-primary)] border border-[var(--theme-btn-primary)]/20 uppercase tracking-wider">Pending</span>
             </div>
             <div className="mt-1">
-                <p className="text-3xl font-bold text-amber-400">{pending}</p>
+                <p className="text-3xl font-bold text-[var(--theme-btn-primary)]">{pending}</p>
             </div>
         </motion.div>
     );
@@ -290,6 +291,15 @@ function Deputy_warden_side() {
     const [requests, setRequests]       = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [deptFilter, setDeptFilter]   = useState("ALL");
+    const [activeDepts, setActiveDepts] = useState([]);
+
+    useEffect(() => {
+        getActiveDepartments().then(depts => {
+            if (Array.isArray(depts)) {
+                setActiveDepts(depts);
+            }
+        });
+    }, []);
     const [isLoading, setIsLoading]     = useState(true);
     const [search, setSearch]           = useState("");
 
@@ -536,25 +546,25 @@ function Deputy_warden_side() {
             <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 
             {/* ── Header ── */}
-            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-4" style={{transition: "background-color 0.3s ease"}}>
-                <div className="flex items-center gap-4 justify-between w-full lg:w-auto">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
-                            <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-2.5 sm:gap-4" style={{transition: "background-color 0.3s ease"}}>
+                <div className="flex items-center gap-3 sm:gap-4 justify-between w-full lg:w-auto">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-1.5 sm:p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
+                            <img src={logo} alt="GCES Logo" className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
                         </div>
                         <div className="flex flex-col leading-tight">
-                            <span className="text-[10px] font-semibold tracking-wider text-white/70 uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
-                            <span className="text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
+                            <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider text-white/70 uppercase">{deputyDetails ? deputyDetails.label : "Deputy Warden Panel"}</span>
+                            <span className="text-lg sm:text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
                         </div>
                     </div>
                 </div>
 
                 {/* View Toggle */}
                 <div className="flex w-full lg:w-auto bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden">
-                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
+                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiBarChart2 size={14} /> Dashboard
                     </button>
-                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
+                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiList size={14} /> Requests
                     </button>
                 </div>
@@ -578,7 +588,7 @@ function Deputy_warden_side() {
             </header>
 
             {/* ── Main Content ── */}
-            <main className="flex-1 p-4 sm:p-8 lg:p-12">
+            <main className="flex-1 p-3 sm:p-6 lg:p-6">
                 <AnimatePresence mode="wait">
                     {/* ════ DASHBOARD VIEW ════ */}
                     {view === "dashboard" && (
@@ -588,12 +598,12 @@ function Deputy_warden_side() {
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
                             transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-                            className="max-w-7xl mx-auto space-y-10"
+                            className="max-w-7xl mx-auto space-y-4 sm:space-y-6"
                         >
                             {/* Section heading */}
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
-                                    <div className="w-1 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
+                                <h2 className="text-lg sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
+                                    <div className="w-1 h-4 sm:h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                     Submission Overview
                                 </h2>
                                 <p className="text-[var(--theme-text-secondary)] text-xs sm:text-sm font-normal ml-3 mt-0.5">
@@ -726,7 +736,7 @@ function Deputy_warden_side() {
                                 {/* Row 2: Filtering Controls (Department, Records Per Page) */}
                                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--theme-border)]">
                                     {/* Department Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Department</span>
                                         <select
                                             id="deputy-dept-filter"
@@ -734,18 +744,21 @@ function Deputy_warden_side() {
                                             onChange={(e) => setDeptFilter(e.target.value)}
                                             className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
-                                            <option value="CSE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CSE</option>
-                                            <option value="ECE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">ECE</option>
-                                            <option value="EEE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">EEE</option>
-                                            <option value="MECH" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECH</option>
-                                            <option value="CIVIL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CIVIL</option>
-                                            <option value="MECHATRONICS" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECHATRONICS</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            {activeDepts.length > 0 ? (
+                                                activeDepts.map(d => (
+                                                    <option key={d.id} value={d.departmentCode} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{d.departmentCode}</option>
+                                                ))
+                                            ) : (
+                                                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                                                    <option key={code} value={code} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{code}</option>
+                                                ))
+                                            )}
                                         </select>
                                     </div>
 
                                     {/* Records Per Page Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
                                         <select
                                             id="deputy-records-per-page"
@@ -754,13 +767,13 @@ function Deputy_warden_side() {
                                                 setItemsPerPage(Number(e.target.value));
                                                 setCurrentPage(1);
                                             }}
-                                            className="bg-transparent text-xs font-bold text-[var(--theme-btn-primary)] focus:outline-none cursor-pointer"
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">20</option>
-                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">40</option>
-                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">60</option>
-                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">80</option>
-                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">100</option>
+                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">20</option>
+                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">40</option>
+                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">60</option>
+                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">80</option>
+                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">100</option>
                                         </select>
                                     </div>
                                 </div>
@@ -809,11 +822,10 @@ function Deputy_warden_side() {
                                 {/* 💻 TABLE VIEW */}
                                 <div 
                                     className="overflow-x-auto max-h-[600px] overflow-y-auto"
-                                    style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
+                                    style={{ WebkitOverflowScrolling: 'touch' }}
                                 >
                                     <table 
-                                        className="w-full text-left border-collapse"
-                                        style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
+                                        className="w-full text-left border-collapse min-w-[750px] lg:min-w-0 lg:table-auto lg:whitespace-normal"
                                     >
                                         <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
                                             <tr className="bg-[var(--theme-bg)] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">

@@ -9,7 +9,8 @@ import {
 import { logout } from './services/authService';
 import AdminStudents from './AdminStudents';
 import AdminExtraSubmissions from './AdminExtraSubmissions';
-import { MdPerson, MdLockOutline } from 'react-icons/md';
+import AdminDepartments from './AdminDepartments';
+import { MdPerson, MdLockOutline, MdSchool } from 'react-icons/md';
 
 const AdminLayout = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -36,6 +37,7 @@ const AdminLayout = () => {
 
   const menuItems = [
     { path: '/admin/students', icon: <MdPeople size={24} />, label: 'Students' },
+    { path: '/admin/departments', icon: <MdSchool size={24} />, label: 'Departments' },
     { path: '/admin/extra-submissions', icon: <MdPendingActions size={24} />, label: 'Extra Submissions' }
   ];
 
@@ -44,6 +46,7 @@ const AdminLayout = () => {
   };
 
   const renderAdminContent = () => {
+    if (location.pathname.startsWith('/admin/departments')) return <AdminDepartments />;
     if (location.pathname.startsWith('/admin/extra-submissions')) return <AdminExtraSubmissions />;
     // Default to Students
     return <AdminStudents />;
@@ -146,7 +149,7 @@ const AdminLayout = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         {/* Top Header (Optional) */}
-        <header className="h-16 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-4 md:px-6 z-10 shrink-0">
+        <header className="h-14 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-4 md:px-6 z-10 shrink-0">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setSidebarOpen(true)} 
@@ -154,26 +157,26 @@ const AdminLayout = () => {
             >
               <MdMenu size={24} />
             </button>
-            <div className="text-xl font-bold truncate">
+            <div className="text-lg md:text-xl font-bold truncate">
               {menuItems.find(item => location.pathname.startsWith(item.path))?.label || 'Students'}
             </div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <button onClick={toggleTheme} className="p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer">
-              {isDark ? <FiSun size={20} /> : <FiMoon size={20} />}
+              {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
             </button>
             <div className="text-sm text-right hidden sm:block">
-              <div className="font-medium">Master Admin</div>
-              <div className="text-[var(--color-text-secondary)] text-xs">Administrator</div>
+              <div className="font-medium text-xs md:text-sm">Master Admin</div>
+              <div className="text-[var(--color-text-secondary)] text-[11px] md:text-xs">Administrator</div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold shadow-lg shadow-purple-500/20 shrink-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold shadow-lg shadow-purple-500/20 shrink-0">
               A
             </div>
           </div>
         </header>
 
         {/* Content Outlet */}
-        <div className="flex-1 overflow-auto p-4 md:p-6 z-0 w-full relative">
+        <div className="flex-1 overflow-auto p-3 md:p-4 lg:p-5 z-0 w-full relative">
           {renderAdminContent()}
         </div>
 

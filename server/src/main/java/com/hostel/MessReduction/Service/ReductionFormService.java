@@ -117,7 +117,7 @@ public class ReductionFormService {
         response.put("name", studentDetails.getName());
         response.put("registerNo", studentDetails.getRegisterNo());
         response.put("rollNo", studentDetails.getRollNo());
-        response.put("department", studentDetails.getDepartment());
+        response.put("department", studentDetails.getDepartment() != null ? studentDetails.getDepartment().getDepartmentCode() : null);
         response.put("gender", studentDetails.getGender());
         response.put("dob", studentDetails.getDob());
         response.put("emailId", studentDetails.getEmailId());
@@ -816,7 +816,7 @@ public class ReductionFormService {
             activityLogRequest.setStudentId(studentDetails.getStudentId());
             activityLogRequest.setStudentName(studentDetails.getName());
             if (studentDetails.getDepartment() != null) {
-                activityLogRequest.setDepartment(studentDetails.getDepartment().name());
+                activityLogRequest.setDepartment(studentDetails.getDepartment().getDepartmentCode());
             }
         }
         activityLogRequest.setStaffRole(staffRole);

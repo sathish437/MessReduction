@@ -80,6 +80,6 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
 
     Long countBySubmittedAtBetween(java.time.LocalDateTime startOfDay, java.time.LocalDateTime endOfDay);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r.studentDetails.department, COUNT(r) FROM ReductionForm r GROUP BY r.studentDetails.department")
+    @org.springframework.data.jpa.repository.Query("SELECT r.studentDetails.department.departmentCode, COUNT(r) FROM ReductionForm r GROUP BY r.studentDetails.department.departmentCode")
     List<Object[]> countRequestsByDepartment();
 }

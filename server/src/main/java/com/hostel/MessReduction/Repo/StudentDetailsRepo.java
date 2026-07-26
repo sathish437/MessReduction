@@ -23,6 +23,6 @@ public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long>, 
 
     Long countByCreatedAtBetween(java.time.LocalDateTime startOfDay, java.time.LocalDateTime endOfDay);
 
-    @org.springframework.data.jpa.repository.Query("SELECT s.department, COUNT(s) FROM StudentDetails s GROUP BY s.department")
+    @org.springframework.data.jpa.repository.Query("SELECT s.department.departmentCode, COUNT(s) FROM StudentDetails s GROUP BY s.department.departmentCode")
     List<Object[]> countStudentsByDepartment();
 }

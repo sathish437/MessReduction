@@ -1,6 +1,5 @@
 package com.hostel.MessReduction.DTO.ResDTO;
 
-import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.Gender;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +15,7 @@ public class StudentResponseDTO {
     private String name;
     private String registerNo;
     private String rollNo;
-    private Department department;
+    private String department;
     private Gender gender;
     private LocalDate dob;
     private String emailId;

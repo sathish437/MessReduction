@@ -7,6 +7,7 @@ import { useTheme } from "./context/ThemeContext";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
+import { getActiveDepartments } from "./api/departmentService";
 
 
 const handleLogout = () => {
@@ -16,14 +17,15 @@ const handleLogout = () => {
 const YEARS = ["1st", "2nd", "3rd", "4th"];
 
 const YEAR_COLORS = {
-    "1st": { accent: "teal", bg: "bg-[var(--theme-btn-primary)]", text: "text-[var(--theme-btn-primary)]", border: "border-[var(--theme-btn-primary)]/20", glow: "shadow-md", ring: "bg-[var(--theme-btn-primary)]/10" },
-    "2nd": { accent: "blue", bg: "bg-blue-500", text: "text-blue-400", border: "border-blue-500/20", glow: "shadow-md", ring: "bg-blue-500/10" },
-    "3rd": { accent: "violet", bg: "bg-violet-500", text: "text-violet-400", border: "border-violet-500/20", glow: "shadow-md", ring: "bg-violet-500/10" },
-    "4th": { accent: "amber", bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", glow: "shadow-md", ring: "bg-amber-500/10" },
+    "1st": { text: "text-[var(--theme-btn-primary)]", bg: "bg-[var(--theme-btn-primary)]/10", border: "border-[var(--theme-btn-primary)]/20" },
+    "2nd": { text: "text-[var(--theme-btn-primary)]", bg: "bg-[var(--theme-btn-primary)]/10", border: "border-[var(--theme-btn-primary)]/20" },
+    "3rd": { text: "text-[var(--theme-btn-primary)]", bg: "bg-[var(--theme-btn-primary)]/10", border: "border-[var(--theme-btn-primary)]/20" },
+    "4th": { text: "text-[var(--theme-btn-primary)]", bg: "bg-[var(--theme-btn-primary)]/10", border: "border-[var(--theme-btn-primary)]/20" },
 };
 
 function YearStatCard({ year, requests }) {
     const pending = requests.filter(r => r.year === year).length;
+    const colors = YEAR_COLORS[year] || YEAR_COLORS["1st"];
 
     return (
         <motion.div
@@ -31,11 +33,11 @@ function YearStatCard({ year, requests }) {
             className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-5 shadow-sm relative overflow-hidden group transition-all duration-200"
         >
             <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold tracking-wider uppercase text-[var(--theme-btn-primary)]">{year} Year</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">Pending</span>
+                <span className={`text-xs font-bold tracking-wider uppercase ${colors.text}`}>{year} Year</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${colors.bg} ${colors.text} border ${colors.border} uppercase tracking-wider`}>Pending</span>
             </div>
             <div className="mt-1">
-                <p className="text-3xl font-bold text-amber-400">{pending}</p>
+                <p className={`text-3xl font-bold ${colors.text}`}>{pending}</p>
             </div>
         </motion.div>
     );
@@ -62,6 +64,15 @@ function HostelOffice() {
     const [selectedYear, setSelectedYear] = useState("all");
     const [genderFilter, setGenderFilter] = useState("ALL");
     const [deptFilter, setDeptFilter] = useState("ALL");
+    const [activeDepts, setActiveDepts] = useState([]);
+
+    useEffect(() => {
+        getActiveDepartments().then(depts => {
+            if (Array.isArray(depts)) {
+                setActiveDepts(depts);
+            }
+        });
+    }, []);
     const [requests, setRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -412,15 +423,15 @@ function HostelOffice() {
         <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
             <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 
-            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-4" style={{transition: "background-color 0.3s ease"}}>
-                <div className="flex items-center gap-4 justify-between w-full lg:w-auto">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
-                            <img src={logo} alt="GCES Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+            <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-2.5 sm:gap-4" style={{transition: "background-color 0.3s ease"}}>
+                <div className="flex items-center gap-3 sm:gap-4 justify-between w-full lg:w-auto">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-1.5 sm:p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">
+                            <img src={logo} alt="GCES Logo" className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
                         </div>
                         <div className="flex flex-col leading-tight">
-                            <span className="text-[10px] font-semibold tracking-wider text-white/70 uppercase">Hostel Office Panel</span>
-                            <span className="text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
+                            <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider text-white/70 uppercase">Hostel Office Panel</span>
+                            <span className="text-lg sm:text-xl font-bold text-white tracking-normal uppercase">Mess Reduction</span>
                         </div>
                     </div>
                 </div>
@@ -437,7 +448,7 @@ function HostelOffice() {
                                     className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
                                         selectedYear === yr
                                             ? "bg-[var(--theme-btn-primary)] text-white shadow-md"
-                                            : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"
+                                            : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"
                                     }`}
                                 >
                                     {yr === "all" ? "All" : yr}
@@ -449,13 +460,13 @@ function HostelOffice() {
 
                 {/* View Toggle */}
                 <div className="flex w-full lg:w-auto bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden no-print">
-                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
+                    <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiBarChart2 size={14} /> Dashboard
                     </button>
-                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
+                    <button onClick={() => setView("requests")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiList size={14} /> Pending Requests
                     </button>
-                    <button onClick={() => setView("reports")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "reports" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}>
+                    <button onClick={() => setView("reports")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "reports" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
                         <FiPieChart size={14} /> Reports
                     </button>
                 </div>
@@ -479,7 +490,7 @@ function HostelOffice() {
             </header>
 
             {/* ── Main Content ── */}
-            <main className="flex-1 p-4 sm:p-8 lg:p-12">
+            <main className="flex-1 p-3 sm:p-6 lg:p-6">
                 <AnimatePresence mode="wait">
                     {/* ════ DASHBOARD VIEW ════ */}
                     {view === "dashboard" && (
@@ -489,12 +500,12 @@ function HostelOffice() {
                             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                             exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
                             transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-                            className="max-w-7xl mx-auto space-y-10"
+                            className="max-w-7xl mx-auto space-y-4 sm:space-y-6"
                         >
                             {/* Section heading */}
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
-                                    <div className="w-1 h-5 bg-[var(--theme-btn-primary)] rounded-full" />
+                                <h2 className="text-lg sm:text-2xl font-bold text-[var(--theme-text-primary)] tracking-tight flex items-center gap-2">
+                                    <div className="w-1 h-4 sm:h-5 bg-[var(--theme-btn-primary)] rounded-full" />
                                     Submission Overview
                                 </h2>
                                 <p className="text-[var(--theme-text-secondary)] text-xs sm:text-sm font-normal ml-3 mt-0.5">
@@ -503,20 +514,20 @@ function HostelOffice() {
                             </div>
 
                             {/* ── Year Stat Cards ── */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
                                 {YEARS.map(yr => (
                                     <YearStatCard key={yr} year={yr} requests={requests} yearStats={yearStats} />
                                 ))}
                             </div>
 
                             {/* ── Overall Status + Total ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
                                 {/* Overall Status Tracking */}
-                                <div className="lg:col-span-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
-                                    <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-4 sm:mb-6 flex items-center gap-3">
+                                <div className="lg:col-span-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm relative overflow-hidden group">
+                                    <h3 className="text-base sm:text-lg font-bold text-[var(--theme-text-primary)] mb-3 sm:mb-4 flex items-center gap-2.5 sm:gap-3">
                                         <FiTrendingUp className="text-[var(--theme-btn-primary)]" /> Overall Status Tracking
                                     </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 relative z-10">
                                         {[
                                             { label: "Pending Office", count: dashboardStats.pendingOffice || 0, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/10" },
                                             { label: "Approved", count: dashboardStats.approved || 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/10", action: "Approved", title: "Office Approved" },
@@ -531,25 +542,25 @@ function HostelOffice() {
                                                         setIsLogModalOpen(true);
                                                     }
                                                 }}
-                                                className={`p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-[var(--theme-btn-primary)]/5 transition-colors' : ''}`}
+                                                className={`p-3.5 sm:p-5 rounded-xl ${s.bg} border ${s.border} ${s.action ? 'cursor-pointer hover:bg-[var(--theme-btn-primary)]/5 transition-colors' : ''}`}
                                             >
-                                                <p className="text-xs text-[var(--theme-text-secondary)] uppercase font-semibold tracking-wider mb-1.5">{s.label}</p>
-                                                <p className={`text-3xl sm:text-4xl font-bold ${s.color}`}>{s.count}</p>
+                                                <p className="text-[11px] sm:text-xs text-[var(--theme-text-secondary)] uppercase font-semibold tracking-wider mb-1">{s.label}</p>
+                                                <p className={`text-2xl sm:text-4xl font-bold ${s.color}`}>{s.count}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Total Forms */}
-                                <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
+                                <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between shadow-sm">
                                     <div>
-                                        <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-1">Total Forms</h3>
+                                        <h3 className="text-base sm:text-lg font-bold text-[var(--theme-text-primary)] mb-1">Total Forms</h3>
                                         <p className="text-[var(--theme-text-secondary)] text-xs font-normal">Cumulative submissions received.</p>
                                     </div>
-                                    <p className="text-4xl sm:text-5xl font-bold text-[var(--theme-text-primary)] mt-4">{(dashboardStats.pendingOffice || 0) + (dashboardStats.approved || 0) + (dashboardStats.rejectedOffice || 0)}</p>
+                                    <p className="text-3xl sm:text-5xl font-bold text-[var(--theme-text-primary)] mt-3 sm:mt-4">{(dashboardStats.pendingOffice || 0) + (dashboardStats.approved || 0) + (dashboardStats.rejectedOffice || 0)}</p>
                                     <button
                                         onClick={() => setView("requests")}
-                                        className="mt-6 flex items-center justify-center gap-2 w-full bg-[var(--theme-btn-primary)] text-white py-3 rounded-xl font-semibold text-xs tracking-wider uppercase hover:bg-[var(--theme-btn-primary-hover)] transition-colors"
+                                        className="mt-4 sm:mt-6 flex items-center justify-center gap-2 w-full bg-[var(--theme-btn-primary)] text-white py-2.5 sm:py-3 rounded-xl font-semibold text-xs tracking-wider uppercase hover:bg-[var(--theme-btn-primary-hover)] transition-colors"
                                     >
                                         Manage Requests <FiArrowRight />
                                     </button>
@@ -615,7 +626,7 @@ function HostelOffice() {
                                 {/* Row 2: Filtering Controls (Gender, Department, Records Per Page) */}
                                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--theme-border)]">
                                     {/* Gender Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Gender</span>
                                         <select
                                             id="office-gender-filter"
@@ -623,14 +634,14 @@ function HostelOffice() {
                                             onChange={(e) => setGenderFilter(e.target.value)}
                                             className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
-                                            <option value="MALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">Male</option>
-                                            <option value="FEMALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">Female</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            <option value="MALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">Male</option>
+                                            <option value="FEMALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">Female</option>
                                         </select>
                                     </div>
 
                                     {/* Department Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Department</span>
                                         <select
                                             id="office-dept-filter"
@@ -638,18 +649,21 @@ function HostelOffice() {
                                             onChange={(e) => setDeptFilter(e.target.value)}
                                             className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
-                                            <option value="CSE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CSE</option>
-                                            <option value="ECE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">ECE</option>
-                                            <option value="EEE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">EEE</option>
-                                            <option value="MECH" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECH</option>
-                                            <option value="CIVIL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CIVIL</option>
-                                            <option value="MECHATRONICS" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECHATRONICS</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            {activeDepts.length > 0 ? (
+                                                activeDepts.map(d => (
+                                                    <option key={d.id} value={d.departmentCode} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{d.departmentCode}</option>
+                                                ))
+                                            ) : (
+                                                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                                                    <option key={code} value={code} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{code}</option>
+                                                ))
+                                            )}
                                         </select>
                                     </div>
 
                                     {/* Records Per Page Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
                                         <select
                                             id="office-records-per-page"
@@ -658,13 +672,13 @@ function HostelOffice() {
                                                 setItemsPerPage(Number(e.target.value));
                                                 setCurrentPage(1);
                                             }}
-                                            className="bg-transparent text-xs font-bold text-[var(--theme-btn-primary)] focus:outline-none cursor-pointer"
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">20</option>
-                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">40</option>
-                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">60</option>
-                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">80</option>
-                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">100</option>
+                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">20</option>
+                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">40</option>
+                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">60</option>
+                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">80</option>
+                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">100</option>
                                         </select>
                                     </div>
                                 </div>
@@ -713,11 +727,10 @@ function HostelOffice() {
                                 {/* 💻 TABLE VIEW */}
                                 <div 
                                     className="overflow-x-auto max-h-[600px] overflow-y-auto"
-                                    style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
+                                    style={{ WebkitOverflowScrolling: 'touch' }}
                                 >
                                     <table 
-                                        className="w-full text-left border-collapse"
-                                        style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
+                                        className="w-full text-left border-collapse min-w-[750px] lg:min-w-0 lg:table-auto lg:whitespace-normal"
                                     >
                                         <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
                                              <tr className="bg-[var(--theme-bg)] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">

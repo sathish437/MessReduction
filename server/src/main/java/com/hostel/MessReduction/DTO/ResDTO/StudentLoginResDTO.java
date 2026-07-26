@@ -1,7 +1,6 @@
 package com.hostel.MessReduction.DTO.ResDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -39,8 +38,8 @@ public class StudentLoginResDTO {
     @Email
     @NotBlank
     private String emailId;
-    @NotNull
-    private Department department;
+    @NotBlank
+    private String department;
     @NotNull
     private Gender gender;
     @NotNull

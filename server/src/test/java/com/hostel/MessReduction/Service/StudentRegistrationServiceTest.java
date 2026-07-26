@@ -1,7 +1,5 @@
 package com.hostel.MessReduction.Service;
 
-import com.hostel.MessReduction.CustomException.StudentVerificationFailedException;
-import com.hostel.MessReduction.CustomException.StudentVerificationServiceUnavailableException;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentDetailsReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StudentDetailsResDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +40,6 @@ public class StudentRegistrationServiceTest {
     @Test
     void testRegisterStudent_Success() {
         // Arrange
-        when(studentVerificationService.verifyStudent(reqDto)).thenReturn(true);
         when(studentDetailsService.addStudent(reqDto)).thenReturn(resDto);
 
         // Act
@@ -51,41 +48,6 @@ public class StudentRegistrationServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("test@student.com", result.getEmailId());
-        verify(studentVerificationService, times(1)).verifyStudent(reqDto);
         verify(studentDetailsService, times(1)).addStudent(reqDto);
-    }
-
-    @Test
-    void testRegisterStudent_VerificationFailed() {
-        // Arrange
-        when(studentVerificationService.verifyStudent(reqDto)).thenReturn(false);
-
-        // Act & Assert
-        StudentVerificationFailedException exception = assertThrows(
-                StudentVerificationFailedException.class,
-                () -> studentRegistrationService.registerStudent(reqDto)
-        );
-
-        assertEquals("Student details verification failed. Account cannot be created.", exception.getMessage());
-        verify(studentVerificationService, times(1)).verifyStudent(reqDto);
-        verify(studentDetailsService, never()).addStudent(any());
-    }
-
-    @Test
-    void testRegisterStudent_ServiceUnavailable() {
-        // Arrange
-        when(studentVerificationService.verifyStudent(reqDto))
-                .thenThrow(new StudentVerificationServiceUnavailableException(
-                        "External verification service is currently unavailable. Please try again later."));
-
-        // Act & Assert
-        StudentVerificationServiceUnavailableException exception = assertThrows(
-                StudentVerificationServiceUnavailableException.class,
-                () -> studentRegistrationService.registerStudent(reqDto)
-        );
-
-        assertEquals("External verification service is currently unavailable. Please try again later.", exception.getMessage());
-        verify(studentVerificationService, times(1)).verifyStudent(reqDto);
-        verify(studentDetailsService, never()).addStudent(any());
     }
 }

@@ -3,7 +3,6 @@ package com.hostel.MessReduction.Controller;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentRequestDTO;
 import com.hostel.MessReduction.DTO.ResDTO.PaginatedResponseDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StudentResponseDTO;
-import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Service.AdminService;
 import jakarta.validation.Valid;
@@ -25,7 +24,7 @@ public class AdminController {
     @GetMapping("/students")
     public ResponseEntity<PaginatedResponseDTO<StudentResponseDTO>> getStudents(
             @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "department", required = false) Department department,
+            @RequestParam(value = "department", required = false) String department,
             @RequestParam(value = "gender", required = false) Gender gender,
             @RequestParam(value = "year", required = false) Integer year,
             @RequestParam(value = "page", defaultValue = "0") int page,

@@ -1,38 +1,88 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useTheme } from './context/ThemeContext';
-import { motion } from "framer-motion"
-import { FiSun, FiMoon, FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft, FiCheckCircle, FiShield } from "react-icons/fi"
+import { motion, AnimatePresence } from "framer-motion"
+import { FiSun, FiMoon, FiUser, FiCreditCard, FiHash, FiCalendar, FiBookOpen, FiMail, FiPhone, FiArrowRight, FiArrowLeft, FiCheckCircle, FiShield, FiAlertTriangle, FiLogIn, FiX } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import image from "./assets/1000088399.png"
 import CustomSelect from "./CustomSelect"
 import { getHostelVerificationEnabled } from "./services/authService"
+import { getActiveDepartments } from "./api/departmentService"
+
+function Toast({ toast, onClose, onLogin }) {
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          key="toast"
+          initial={{ opacity: 0, y: -80, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -60, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+          className="fixed top-6 left-1/2 z-[9999] -translate-x-1/2 w-full max-w-md px-4"
+        >
+          <div className={`flex items-start gap-4 rounded-2xl shadow-2xl border px-5 py-4 ${
+            toast.type === 'already-registered'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+          }`}>
+            <div className="mt-0.5 shrink-0">
+              <FiAlertTriangle size={22} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm leading-snug">
+                {toast.title}
+              </p>
+              <p className="text-xs mt-1 opacity-80 leading-relaxed">
+                {toast.message}
+              </p>
+              {toast.type === 'already-registered' && (
+                <button
+                  onClick={onLogin}
+                  className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors"
+                >
+                  <FiLogIn size={13} /> Go to Student Login
+                </button>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity mt-0.5"
+            >
+              <FiX size={16} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 const TITLE = "STUDENT REGISTRATION"
 
 function Field({ label, icon, error, className = "", children, id, isSelect = false }) {
   return (
-    <div className={`flex flex-col gap-2 w-full text-left ${className}`}>
+    <div className={`flex flex-col gap-1.5 sm:gap-2 w-full text-left ${className}`}>
       {label && (
-        <label htmlFor={id} className="text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
+        <label htmlFor={id} className="text-xs sm:text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
           {label}
         </label>
       )}
       <div 
-        className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 relative group bg-[var(--color-primary-bg)] w-full 
+        className={`flex items-center gap-2.5 sm:gap-3 rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3.5 transition-all duration-300 relative group bg-[var(--color-primary-bg)] w-full 
           ${error 
             ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' 
             : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)] focus-within:bg-[var(--color-btn-primary)]/5 focus-within:ring-2 focus-within:ring-[var(--color-btn-primary)]/20'
           }`}
       >
         {icon && (
-          <span className={`shrink-0 text-base transition-colors ${error ? 'text-rose-400' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>
+          <span className={`shrink-0 text-sm sm:text-base transition-colors ${error ? 'text-rose-400' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>
             {icon}
           </span>
         )}
         {children}
         {isSelect && (
-          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <svg className="w-5 h-5 text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="pointer-events-none absolute right-3 sm:right-4 top-1/2 -translate-y-1/2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
           </div>
@@ -49,23 +99,23 @@ function FormSection({ title, icon, delay, children }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
-      className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 mb-8 shadow-sm "
+      className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 shadow-sm"
     >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-[var(--color-btn-primary)]/10 flex items-center justify-center text-[var(--color-btn-primary)] border border-teal-500/20">
+      <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--color-btn-primary)]/10 flex items-center justify-center text-[var(--color-btn-primary)] border border-teal-500/20 text-sm sm:text-base">
           {icon}
         </div>
-        <h3 className="text-lg font-bold text-[var(--color-text-primary)] tracking-wide">{title}</h3>
+        <h3 className="text-sm sm:text-lg font-bold text-[var(--color-text-primary)] tracking-wide">{title}</h3>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-6">
         {children}
       </div>
     </motion.div>
   )
 }
 
-const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium w-full h-full"
-const disabledInp = "flex-1 min-w-0 bg-transparent focus:outline-none text-base text-[var(--color-btn-primary-hover)]/90 font-semibold cursor-not-allowed w-full h-full"
+const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium w-full h-full"
+const disabledInp = "flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-btn-primary-hover)]/90 font-semibold cursor-not-allowed w-full h-full"
 
 function Register({ onNavigate }) {
   const { isDark, toggleTheme } = useTheme();
@@ -77,6 +127,13 @@ function Register({ onNavigate }) {
   const [error, setError] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((type, title, message) => {
+    setToast({ type, title, message });
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -118,6 +175,16 @@ function Register({ onNavigate }) {
     };
 
     verifySessionAccess();
+  }, []);
+
+  const [departmentOptions, setDepartmentOptions] = useState([]);
+
+  useEffect(() => {
+    getActiveDepartments().then(depts => {
+      if (Array.isArray(depts) && depts.length > 0) {
+        setDepartmentOptions(depts.map(d => ({ value: d.departmentCode, label: `${d.departmentCode} - ${d.departmentName}` })));
+      }
+    });
   }, []);
 
   const goToLogin = () => {
@@ -163,35 +230,35 @@ function Register({ onNavigate }) {
 
     // Validate inputs
     if (!formData.name || formData.name.trim().length < 2) {
-      setError("Please enter a valid Full Name.");
+      showToast('error', 'Invalid Name', 'Please enter a valid Full Name.');
       return;
     }
     if (!formData.regNo || formData.regNo.length !== 12) {
-      setError("Register Number must be 12 digits (starting with 8301).");
+      showToast('error', 'Invalid Register Number', 'Register Number must be 12 digits (starting with 8301).');
       return;
     }
     if (!formData.rollNo || !formData.rollNo.trim()) {
-      setError("Please enter a valid Roll Number.");
+      showToast('error', 'Invalid Roll Number', 'Please enter a valid Roll Number.');
       return;
     }
     if (!formData.dob) {
-      setError("Please select your Date of Birth.");
+      showToast('error', 'Date of Birth Required', 'Please select your Date of Birth.');
       return;
     }
     if (!formData.gender) {
-      setError("Please select your Gender.");
+      showToast('error', 'Gender Required', 'Please select your Gender.');
       return;
     }
     if (!formData.dept) {
-      setError("Please select your Department.");
+      showToast('error', 'Department Required', 'Please select your Department.');
       return;
     }
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      setError("Please enter a valid Email Address.");
+      showToast('error', 'Invalid Email', 'Please enter a valid Email Address.');
       return;
     }
     if (!formData.phone || formData.phone.length !== 10) {
-      setError("Please enter a valid 10-digit Phone Number.");
+      showToast('error', 'Invalid Phone Number', 'Please enter a valid 10-digit Phone Number.');
       return;
     }
 
@@ -216,10 +283,29 @@ function Register({ onNavigate }) {
         setSuccess(true);
         setTimeout(() => goToLogin(), 1500);
       } else {
-        setError("Registration failed. Please try again.");
+        showToast('error', 'Registration Failed', 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed. Ensure all fields are unique.");
+      const msg = err.response?.data?.message || "";
+      const isAlreadyRegistered =
+        msg.toLowerCase().includes("roll number is already registered") ||
+        msg.toLowerCase().includes("register number is already registered") ||
+        msg.toLowerCase().includes("roll_no") ||
+        msg.toLowerCase().includes("register_no");
+
+      if (isAlreadyRegistered) {
+        showToast(
+          'already-registered',
+          'You are already registered!',
+          'An account with this Roll Number or Register Number already exists. Please sign in to your existing account.'
+        );
+      } else if (msg.toLowerCase().includes("email already exists")) {
+        showToast('error', 'Email Already Used', 'This email address is already registered with another account.');
+      } else if (msg.toLowerCase().includes("phone number is already")) {
+        showToast('error', 'Phone Number Already Used', 'This phone number is already registered with another account.');
+      } else {
+        showToast('error', 'Registration Failed', msg || 'Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -250,46 +336,43 @@ function Register({ onNavigate }) {
 
   return (
     <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] selection:bg-teal-500/30 relative overflow-hidden" style={{ fontFamily: "'Inter', 'Poppins', 'Source Sans Pro', 'Segoe UI', sans-serif" }}>
+      <Toast toast={toast} onClose={() => setToast(null)} onLogin={goToLogin} />
                   
       {/* Header */}
-            <header className="w-full flex items-center justify-between px-4 sm:px-8 py-5 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white sticky top-0 z-50 shadow-md">
-        <div className="flex items-center gap-4">
-          <img src={image} alt="GCES Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-white/80 uppercase mb-0.5">Government College of Engineering</span>
-            <span className="text-lg sm:text-2xl font-bold tracking-tight">SRIRANGAM</span>
-          </div>
+      <header className="w-full flex items-center justify-between px-4 sm:px-8 py-3.5 sm:py-4 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <img src={image} alt="GCES Logo" className="w-10 h-10 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2.5 bg-white/10 hover:bg-white/20 rounded-[10px] border border-[var(--color-border)] shadow-sm transition-all cursor-pointer">
-              {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2 sm:p-2.5 bg-white/10 hover:bg-white/20 rounded-[10px] border border-[var(--color-border)] shadow-sm transition-all cursor-pointer">
+              {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
           </button>
-          <button onClick={() => onNavigate ? onNavigate('/') : window.location.href = '/'} className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-white/90 hover:text-white font-semibold bg-white/10 hover:bg-white/20 transition-all text-sm cursor-pointer border border-[var(--color-border)] shadow-sm"><FiArrowLeft size={16} /> Back</button>
+          <button onClick={() => onNavigate ? onNavigate('/') : window.location.href = '/'} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-[10px] text-white/90 hover:text-white font-semibold bg-white/10 hover:bg-white/20 transition-all text-xs sm:text-sm cursor-pointer border border-[var(--color-border)] shadow-sm"><FiArrowLeft size={15} /> Back</button>
         </div>
       </header>
       
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8 z-10">
         <div className="w-full max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]  shadow-2xl overflow-hidden relative p-6 sm:p-12 group"
+            className="w-full rounded-2xl sm:rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden relative p-4 sm:p-8 group"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             <div className="relative z-10">
             {/* Header section inside card */}
-            <div className="text-center mb-10">
-              <div className="flex justify-center mb-5"><img src={image} className="w-20 h-20 object-contain" alt="Logo"/></div>
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="flex justify-center mb-3 sm:mb-5"><img src={image} className="w-14 h-14 sm:w-20 sm:h-20 object-contain" alt="Logo"/></div>
               <h1 className="text-lg sm:text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">Government College of Engineering, Srirangam</h1>
               <h2 className="text-sm sm:text-lg text-[var(--color-btn-primary)] font-semibold mt-1 uppercase tracking-wider">Hostel Mess Reduction System</h2>
               
-              <div className="w-full h-px bg-white/10 my-8"></div>
+              <div className="w-full h-px bg-white/10 my-4 sm:my-8"></div>
               
-              <h3 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">{TITLE}</h3>
-              <p className="text-base text-[var(--color-text-secondary)] mt-2 font-medium">Create your mess account</p>
+              <h3 className="text-xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">{TITLE}</h3>
+              <p className="text-xs sm:text-base text-[var(--color-text-secondary)] mt-1 sm:mt-2 font-medium">Create your mess account</p>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-0">
@@ -338,7 +421,7 @@ function Register({ onNavigate }) {
                     onChange={handleChange}
                     required
                     placeholder="Select Department"
-                    options={["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => ({ value: d, label: d }))}
+                    options={departmentOptions.length > 0 ? departmentOptions : ["CSE", "ECE", "EEE", "CIVIL", "MECH", "MECHATRONICS"].map(d => ({ value: d, label: d }))}
                     error={error && !formData.dept ? error : null}
                   />
                 </div>
@@ -354,13 +437,6 @@ function Register({ onNavigate }) {
                 </Field>
               </FormSection>
 
-              {error && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
-                  <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-5 py-4 font-semibold shadow-sm">
-                    {error}
-                  </p>
-                </motion.div>
-              )}
 
               <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.4 }}>
                 <button

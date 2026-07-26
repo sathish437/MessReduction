@@ -4,11 +4,21 @@ import {
   MdSearch, MdCheckCircle, MdCancel, MdVisibility, MdPendingActions
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
+import { getActiveDepartments } from './api/departmentService';
 
 const AdminExtraSubmissions = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [activeDepts, setActiveDepts] = useState([]);
+
+  useEffect(() => {
+    getActiveDepartments().then(depts => {
+      if (Array.isArray(depts)) {
+        setActiveDepts(depts);
+      }
+    });
+  }, []);
   
   // Client-side pagination and filtering
   const [page, setPage] = useState(0);
@@ -149,12 +159,15 @@ const AdminExtraSubmissions = () => {
               className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 shadow-sm"
             >
               <option value="">All Depts</option>
-              <option value="CSE">CSE</option>
-              <option value="ECE">ECE</option>
-              <option value="EEE">EEE</option>
-              <option value="MECH">MECH</option>
-              <option value="CIVIL">CIVIL</option>
-              <option value="MECHATRONICS">MECHATRONICS</option>
+              {activeDepts.length > 0 ? (
+                activeDepts.map(d => (
+                  <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
+                ))
+              ) : (
+                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                  <option key={code} value={code}>{code}</option>
+                ))
+              )}
             </select>
           </div>
         </div>

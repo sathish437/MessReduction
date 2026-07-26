@@ -1,9 +1,7 @@
 package com.hostel.MessReduction.Service;
 
-import com.hostel.MessReduction.CustomException.StudentVerificationServiceUnavailableException;
-import com.hostel.MessReduction.DTO.ReqDTO.StudentDetailsReqDTO;
-import com.hostel.MessReduction.Entity.Department;
-import com.hostel.MessReduction.Entity.Gender;
+import com.hostel.MessReduction.DTO.ReqDTO.HostelVerifyReqDTO;
+import com.hostel.MessReduction.DTO.ResDTO.HostelVerifyResDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +34,7 @@ public class StudentVerificationServiceTest {
     private WebClient.ResponseSpec responseSpec;
 
     private StudentVerificationService studentVerificationService;
-    private StudentDetailsReqDTO studentDto;
+    private HostelVerifyReqDTO hostelReqDto;
 
     @BeforeEach
     void setUp() {
@@ -47,84 +45,49 @@ public class StudentVerificationServiceTest {
                 true
         );
 
-        studentDto = new StudentDetailsReqDTO();
-        studentDto.setRollNo("22CSE01");
-        studentDto.setRegisterNo("71782201");
-        studentDto.setGender(Gender.MALE);
-        studentDto.setDepartment(Department.CSE);
+        hostelReqDto = new HostelVerifyReqDTO();
+        hostelReqDto.setRollNo("22CSE01");
+        hostelReqDto.setPassword("hostelpass123");
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    void testVerifyStudent_Success() {
+    void testVerifyHostelCredentials_Success() {
         // Arrange
+        String jsonResponse = "{\"verified\":true,\"rollNo\":\"22CSE01\",\"name\":\"Test Student\",\"department\":\"CSE\"}";
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), any())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Boolean.class)).thenReturn(Mono.just(true));
+        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(jsonResponse));
 
         // Act
-        boolean result = studentVerificationService.verifyStudent(studentDto);
+        HostelVerifyResDTO response = studentVerificationService.verifyHostelCredentials(hostelReqDto);
 
         // Assert
-        assertTrue(result);
+        assertNotNull(response);
+        assertTrue(response.isVerified());
+        assertEquals("22CSE01", response.getRollNo());
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    void testVerifyStudent_Failure() {
+    void testVerifyHostelCredentials_Failure() {
         // Arrange
+        String jsonResponse = "{\"verified\":false,\"message\":\"Invalid Roll Number or Password.\"}";
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), any())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Boolean.class)).thenReturn(Mono.just(false));
+        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(jsonResponse));
 
         // Act
-        boolean result = studentVerificationService.verifyStudent(studentDto);
+        HostelVerifyResDTO response = studentVerificationService.verifyHostelCredentials(hostelReqDto);
 
         // Assert
-        assertFalse(result);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void testVerifyStudent_ThrowsException_WhenUnavailable() {
-        // Arrange
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.header(anyString(), any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(Boolean.class)).thenReturn(Mono.error(new RuntimeException("Connection refused")));
-
-        // Act & Assert
-        StudentVerificationServiceUnavailableException exception = assertThrows(
-                StudentVerificationServiceUnavailableException.class,
-                () -> studentVerificationService.verifyStudent(studentDto)
-        );
-
-        assertTrue(exception.getMessage().contains("External verification service is currently unavailable"));
-    }
-
-    @Test
-    void testVerifyStudent_Disabled() {
-        // Arrange
-        StudentVerificationService serviceDisabled = new StudentVerificationService(
-                webClient,
-                "https://example.com/api/auth/verify-details",
-                "password",
-                false
-        );
-
-        // Act
-        boolean result = serviceDisabled.verifyStudent(studentDto);
-
-        // Assert
-        assertTrue(result);
-        verifyNoInteractions(webClient);
+        assertNotNull(response);
+        assertFalse(response.isVerified());
     }
 }

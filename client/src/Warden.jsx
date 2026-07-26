@@ -11,6 +11,7 @@ import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import logo from './assets/1000088399.png';
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
+import { getActiveDepartments } from "./api/departmentService";
 
 const handleLogout = () => {
   logout();
@@ -330,6 +331,15 @@ const Warden = () => {
     const [deptFilter, setDeptFilter]     = useState("ALL");
     const [selectedYear, setSelectedYear] = useState("all");
     const [searchQuery, setSearchQuery]   = useState("");
+    const [activeDepts, setActiveDepts]   = useState([]);
+
+    useEffect(() => {
+        getActiveDepartments().then(depts => {
+            if (Array.isArray(depts)) {
+                setActiveDepts(depts);
+            }
+        });
+    }, []);
 
     // Reset pagination on filter/search change
     useEffect(() => {
@@ -580,14 +590,14 @@ const Warden = () => {
     return (
         <div className="min-h-screen w-full bg-[var(--theme-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-[var(--theme-btn-primary)]/20">
             {/* ── Header ── */}
-            <header className="w-full flex items-center justify-between px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-4 flex-wrap sm:flex-nowrap" style={{transition: 'background-color 0.3s ease'}}>
-                <div className="flex items-center gap-4">
-                    <div className={`p-2 ${t.ring} rounded-xl border ${t.border}`}>
-                        <img src={logo} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+            <header className="w-full flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-2.5 sm:gap-4 flex-wrap sm:flex-nowrap" style={{transition: 'background-color 0.3s ease'}}>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`p-1.5 sm:p-2 ${t.ring} rounded-xl border ${t.border}`}>
+                        <img src={logo} alt="Logo" className="w-7 h-7 sm:w-10 sm:h-10 object-contain" />
                     </div>
                      <div className="flex flex-col">
-                        <span className={`text-[10px] font-semibold tracking-wider ${t.text} uppercase`}>Authority Panel</span>
-                        <span className="text-xl font-bold text-white tracking-normal uppercase">Chief Warden</span>
+                        <span className={`text-[9px] sm:text-[10px] font-semibold tracking-wider ${t.text} uppercase`}>Authority Panel</span>
+                        <span className="text-lg sm:text-xl font-bold text-white tracking-normal uppercase">Chief Warden</span>
                     </div>
                 </div>
 
@@ -595,13 +605,13 @@ const Warden = () => {
                 <div className="flex bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden">
                     <button
                         onClick={() => setView("dashboard")}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? `${t.active} text-slate-950 shadow-sm` : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}
                     >
                         <FiTrendingUp size={14} /> Dashboard
                     </button>
                     <button
                         onClick={() => setView("requests")}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? `${t.active} text-slate-950 shadow-sm` : "text-white/70 hover:text-white hover:bg-[var(--theme-btn-primary)]/10"}`}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "requests" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}
                     >
                         <FiFileText size={14} /> Requests
                     </button>
@@ -633,16 +643,18 @@ const Warden = () => {
                 </div>
             </header>
 
-            {/* ── Main content ── */}
-            <main className="max-w-7xl mx-auto p-6 sm:p-10 lg:p-16">
+            {/* ── Main Content ── */}
+            <main className="flex-1 p-3 sm:p-6 lg:p-6">
                 <AnimatePresence mode="wait">
-                    {view === "dashboard" ? (
+                    {/* ════ DASHBOARD VIEW ════ */}
+                    {view === "dashboard" && (
                         <motion.div
                             key="dashboard"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-12"
+                            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
+                            transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+                            className="max-w-7xl mx-auto space-y-4 sm:space-y-6"
                         >
                             {/* ── Stats Row ── */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -711,10 +723,17 @@ const Warden = () => {
                             {/* ── Auto Accept Settings ── */}
                             <AutoAcceptSettingsCard />
                         </motion.div>
-                    ) : (
+                    )}
+
+                    {/* ════ REQUESTS VIEW ════ */}
+                    {view === "requests" && (
                         <motion.div
                             key="requests"
-                            className="space-y-6"
+                            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
+                            transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+                            className="max-w-7xl mx-auto space-y-4 sm:space-y-6"
                         >
                             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 px-1">
                                 <div>
@@ -734,7 +753,7 @@ const Warden = () => {
                                             className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
                                                 selectedYear === yr
                                                     ? "bg-[var(--theme-btn-primary)] text-white shadow-md"
-                                                    : "text-[var(--theme-text-primary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-btn-primary)]/10"
+                                                    : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"
                                             }`}
                                         >
                                             {yr === "all" ? "All" : yr}
@@ -777,7 +796,7 @@ const Warden = () => {
                                 {/* Row 2: Filtering Controls (Gender, Department, Records Per Page) */}
                                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--theme-border)]">
                                     {/* Gender Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Gender</span>
                                         <select
                                             id="warden-gender-filter"
@@ -785,14 +804,14 @@ const Warden = () => {
                                             onChange={(e) => setGenderFilter(e.target.value)}
                                             className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
-                                            <option value="MALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">Male</option>
-                                            <option value="FEMALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">Female</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            <option value="MALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">Male</option>
+                                            <option value="FEMALE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">Female</option>
                                         </select>
                                     </div>
 
                                     {/* Department Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Department</span>
                                         <select
                                             id="warden-dept-filter"
@@ -800,18 +819,21 @@ const Warden = () => {
                                             onChange={(e) => setDeptFilter(e.target.value)}
                                             className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">All</option>
-                                            <option value="CSE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CSE</option>
-                                            <option value="ECE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">ECE</option>
-                                            <option value="EEE" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">EEE</option>
-                                            <option value="MECH" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECH</option>
-                                            <option value="CIVIL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">CIVIL</option>
-                                            <option value="MECHATRONICS" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">MECHATRONICS</option>
+                                            <option value="ALL" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            {activeDepts.length > 0 ? (
+                                                activeDepts.map(d => (
+                                                    <option key={d.id} value={d.departmentCode} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{d.departmentCode}</option>
+                                                ))
+                                            ) : (
+                                                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                                                    <option key={code} value={code} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{code}</option>
+                                                ))
+                                            )}
                                         </select>
                                     </div>
 
                                     {/* Records Per Page Filter */}
-                                    <div className="flex items-center gap-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5">
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Records Per Page</span>
                                         <select
                                             id="warden-records-per-page"
@@ -820,13 +842,13 @@ const Warden = () => {
                                                 setItemsPerPage(Number(e.target.value));
                                                 setCurrentPage(1);
                                             }}
-                                            className="bg-transparent text-xs font-bold text-[var(--theme-btn-primary)] focus:outline-none cursor-pointer"
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
                                         >
-                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">20</option>
-                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">40</option>
-                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">60</option>
-                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">80</option>
-                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)]">100</option>
+                                            <option value={20} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">20</option>
+                                            <option value={40} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">40</option>
+                                            <option value={60} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">60</option>
+                                            <option value={80} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">80</option>
+                                            <option value={100} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">100</option>
                                         </select>
                                     </div>
                                 </div>
@@ -875,11 +897,10 @@ const Warden = () => {
                                 {/* 💻 TABLE VIEW */}
                                 <div 
                                     className="overflow-x-auto max-h-[600px] overflow-y-auto"
-                                    style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}
+                                    style={{ WebkitOverflowScrolling: 'touch' }}
                                 >
                                     <table 
-                                        className="w-full text-left border-collapse"
-                                        style={{ minWidth: 'max-content', whiteSpace: 'nowrap' }}
+                                        className="w-full text-left border-collapse min-w-[750px] lg:min-w-0 lg:table-auto lg:whitespace-normal"
                                     >
                                         <thead className="sticky top-0 bg-[var(--theme-card)] z-10">
                                             <tr className="bg-[var(--theme-bg)] text-xs uppercase tracking-wider font-semibold border-b border-[var(--theme-border)]">

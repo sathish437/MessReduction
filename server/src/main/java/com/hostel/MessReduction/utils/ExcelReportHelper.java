@@ -43,7 +43,7 @@ public class ExcelReportHelper {
                 row.createCell(1).setCellValue(report.getRegisterNo() != null ? report.getRegisterNo() : "");
                 row.createCell(2).setCellValue(report.getGender() != null ? report.getGender().name() : "");
                 row.createCell(3).setCellValue(report.getYear() != null ? report.getYear() + " Year" : "");
-                row.createCell(4).setCellValue(report.getDepartment() != null ? report.getDepartment().name() : "");
+                row.createCell(4).setCellValue(report.getDepartment() != null ? report.getDepartment() : "");
                 row.createCell(5).setCellValue(report.getLeaveDate() != null ? report.getLeaveDate().toString() : "");
                 row.createCell(6).setCellValue(report.getArrivalDate() != null ? report.getArrivalDate().toString() : "");
                 row.createCell(7).setCellValue(report.getTotalHolidays() != null ? report.getTotalHolidays() : 0L);

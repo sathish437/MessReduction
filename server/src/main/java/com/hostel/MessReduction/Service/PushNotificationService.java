@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Security;
@@ -31,7 +32,6 @@ import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 
 @Service
-@Transactional
 public class PushNotificationService {
     private static final Logger log = LoggerFactory.getLogger(PushNotificationService.class);
 
@@ -132,7 +132,9 @@ public class PushNotificationService {
             if (userSub.getSubscriptions() == null || userSub.getSubscriptions().isEmpty()) {
                 continue;
             }
-            for (SubscriptionDetail detail : userSub.getSubscriptions()) {
+            // Use defensive copy of subscriptions to avoid ConcurrentModificationException when deleting invalid endpoints
+            List<SubscriptionDetail> detailsCopy = new ArrayList<>(userSub.getSubscriptions());
+            for (SubscriptionDetail detail : detailsCopy) {
                 try {
                     log.info("Subscription found for: {}", userSub.getUsername());
                     log.info("Sending push notification to: {}", userSub.getUsername());
@@ -223,7 +225,8 @@ public class PushNotificationService {
                 .replace("\t", "\\t");
     }
 
-    private void deleteEndpoint(String endpoint) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteEndpoint(String endpoint) {
         List<PushSubscription> otherSubs = pushSubscriptionRepository.findByEndpointLike(endpoint);
         for (PushSubscription otherSub : otherSubs) {
             if (otherSub.getSubscriptions() != null) {

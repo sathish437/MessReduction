@@ -124,6 +124,24 @@ public class GlobalExceptionHandler {
         return buildErrorResponse("Invalid JSON payload or missing required fields", HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<HashMap<String, Object>> handleRuntimeException(RuntimeException exp) {
+        logger.error("RuntimeException: ", exp);
+        telegram.sendExceptionAlert(exp, "RuntimeException");
+        return buildErrorResponse(exp.getMessage() != null ? exp.getMessage() : "Bad Request", HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({org.springframework.transaction.UnexpectedRollbackException.class, org.springframework.transaction.TransactionSystemException.class})
+    public ResponseEntity<HashMap<String, Object>> handleTransactionException(Exception exp) {
+        logger.error("Transaction Exception: ", exp);
+        Throwable rootCause = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(exp);
+        String message = (rootCause != null && rootCause.getMessage() != null && !rootCause.getMessage().contains("Transaction silently rolled back"))
+                ? rootCause.getMessage()
+                : "Request failed validation. Please check input details.";
+        telegram.sendExceptionAlert(exp, "Transaction Exception: " + message);
+        return buildErrorResponse(message, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<HashMap<String, Object>> handleGeneralException(Exception exp) {
         logger.error("Unhandled Exception: ", exp);

@@ -50,7 +50,17 @@ import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Transactional
+@Transactional(noRollbackFor = {
+    BadRequestException.class,
+    DateNotValidException.class,
+    TotalLeaveDateCountException.class,
+    StatusAlreadyPendingException.class,
+    InvalidStatusException.class,
+    InvalidActionException.class,
+    StudentNotFoundException.class,
+    ReductionFormNotFoundException.class,
+    IllegalArgumentException.class
+})
 @Slf4j
 public class ReductionFormService {
     private static final String ACTION_APPROVE = "Approve";

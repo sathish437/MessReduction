@@ -6,6 +6,8 @@ import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,10 +77,10 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             
-            // Trigger browser push notification (delegated to batch or direct sending)
+            // Trigger browser push notification after main DB transaction commits safely
             String title = getPushTitle(recipientUsername, type, message);
             String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
-            batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, relatedFormId);
+            triggerPushNotificationSafely(recipientUsername, title, message, redirectUrl, type, relatedFormId);
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
@@ -108,12 +110,33 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             
-            // Trigger browser push notification (delegated to batch or direct sending)
+            // Trigger browser push notification after main DB transaction commits safely
             String title = getPushTitle(recipientUsername, type, message);
             String redirectUrl = getPushRedirectUrl(recipientUsername, type, -1L);
-            batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, -1L);
+            triggerPushNotificationSafely(recipientUsername, title, message, redirectUrl, type, -1L);
         } catch (Exception e) {
             logger.error("Failed to create aggregated notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
+        }
+    }
+
+    private void triggerPushNotificationSafely(String recipientUsername, String title, String message, String redirectUrl, String type, Long relatedFormId) {
+        Runnable sendPushTask = () -> {
+            try {
+                batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, relatedFormId);
+            } catch (Exception e) {
+                logger.error("Failed to send push notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
+            }
+        };
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendPushTask.run();
+                }
+            });
+        } else {
+            sendPushTask.run();
         }
     }
 

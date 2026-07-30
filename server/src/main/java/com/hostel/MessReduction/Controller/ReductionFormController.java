@@ -108,18 +108,11 @@ public class ReductionFormController {
     public ResponseEntity<?> getStudentLimits(@PathVariable Long studentId) {
         try {
             StudentDetails student = reductionFormService.getStudentDetails(studentId);
-            java.time.LocalDate today = java.time.LocalDate.now();
+            int count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+            int granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+            int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
             
-            int count = 0;
-            int granted = 0;
-            int used = 0;
-            if (student.getLastSubmissionDate() != null && !student.getLastSubmissionDate().isBefore(today)) {
-                count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
-                granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
-                used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
-            }
-            
-            int extraRemaining = granted - used;
+            int extraRemaining = Math.max(0, granted - used);
             
             return ResponseEntity.ok(java.util.Map.of(
                 "dailyCount", count,

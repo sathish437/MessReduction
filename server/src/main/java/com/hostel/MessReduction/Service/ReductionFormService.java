@@ -92,8 +92,12 @@ public class ReductionFormService {
             throw new BadRequestException("Invalid student ID");
         }
         autoDeactivateAllExpiredForms();
-        return studentDetailsRepo.findById(id)
+        StudentDetails student = studentDetailsRepo.findById(id)
                 .orElseThrow(() -> new StudentNotFoundException("Student not found"));
+        if (student.resetSubmissionCountIfNewDay()) {
+            studentDetailsRepo.save(student);
+        }
+        return student;
     }
 
     @Transactional(readOnly = true)
@@ -103,8 +107,7 @@ public class ReductionFormService {
             throw new BadRequestException("Invalid student ID");
         }
         autoDeactivateAllExpiredForms();
-        StudentDetails studentDetails = studentDetailsRepo.findById(id)
-                .orElseThrow(() -> new StudentNotFoundException("Student not found"));
+        StudentDetails studentDetails = getStudentDetails(id);
         log.info("Student found: {}", studentDetails.getName());
 
         List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(id);
@@ -214,6 +217,9 @@ public class ReductionFormService {
         }
         validateResubmitPayload(dto);
 
+        // Enforce daily submission limit on resubmission
+        checkSubmissionLimit(studentDetails);
+
         FormStatus previousStatus = form.getCurrentStatus();
         form.setYear(dto.getYear());
         form.setRoomNo(dto.getRoomNo());
@@ -260,15 +266,47 @@ public class ReductionFormService {
             throw new InvalidStatusException("Only pending or rejected requests can be deleted.");
         }
 
+        FormStatus currentStatus = form.getCurrentStatus();
+
         form.setActive(false);
         form.setDeletedByStudent(true);
         form.setDeletedAt(LocalDateTime.now());
         reductionFormRepo.save(form);
         
         StudentDetails student = form.getStudentDetails();
+        // Only restore count if the deleted form was currently PENDING (if already rejected, limit was restored on rejection)
+        if (!isRejectedStatus(currentStatus)) {
+            restoreSubmissionCountIfSubmittedToday(student, form);
+        }
         
-        saveFormHistory(form, "Student Deleted Request", form.getCurrentStatus(), null, "student", "Request deleted by student. Limit not restored.");
+        saveFormHistory(form, "Student Deleted Request", currentStatus, null, "student", "Request deleted by student.");
         notificationService.createNotification(student.getEmailId(), "Your request was successfully deleted.", "DELETED", form.getFormId());
+    }
+
+    private void restoreSubmissionCountIfSubmittedToday(StudentDetails student, ReductionForm form) {
+        if (student == null || form == null) return;
+
+        LocalDate today = LocalDate.now();
+        student.resetSubmissionCountIfNewDay();
+
+        // Check presentDate first (set on initial submit & updated on resubmit), fallback to submittedAt
+        LocalDate submittedDate = form.getPresentDate();
+        if (submittedDate == null && form.getSubmittedAt() != null) {
+            submittedDate = form.getSubmittedAt().toLocalDate();
+        }
+
+        if (submittedDate != null && submittedDate.equals(today)) {
+            int dailyCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+            int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+
+            if (dailyCount > 0) {
+                if (dailyCount > 3 && used > 0) {
+                    student.setExtraSubmissionUsed(used - 1);
+                }
+                student.setDailySubmissionCount(dailyCount - 1);
+                studentDetailsRepo.save(student);
+            }
+        }
     }
 
     public List<ReductionFormHistoryResDTO> getFormHistory(Long formId, Long studentId) {
@@ -434,6 +472,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.RejectedWarden);
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
+        restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Warden", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.Warden, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
@@ -452,6 +491,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
+        restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Deputy Warden", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
@@ -469,6 +509,7 @@ public class ReductionFormService {
         form.setCurrentStatus(FormStatus.RejectedOffice);
         form.setRejectReason(rejectReason.trim());
         reductionFormRepo.save(form);
+        restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Office", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
         createActivityLog(form, Role.Office, userName, "Rejected");
         notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
@@ -686,6 +727,7 @@ public class ReductionFormService {
                 form.setCurrentStatus(FormStatus.RejectedWarden);
                 form.setRejectReason(rejectReason.trim());
                 reductionFormRepo.save(form);
+                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
                 
                 saveFormHistory(form, "Rejected by Warden (Bulk)", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
                 createActivityLog(form, Role.Warden, userName, "Rejected");
@@ -735,6 +777,7 @@ public class ReductionFormService {
                 form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
                 form.setRejectReason(rejectReason.trim());
                 reductionFormRepo.save(form);
+                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
                 
                 saveFormHistory(form, "Rejected by Deputy Warden (Bulk)", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
                 createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
@@ -780,6 +823,7 @@ public class ReductionFormService {
                 form.setCurrentStatus(FormStatus.RejectedOffice);
                 form.setRejectReason(rejectReason.trim());
                 reductionFormRepo.save(form);
+                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
                 
                 saveFormHistory(form, "Rejected by Office (Bulk)", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
                 createActivityLog(form, Role.Office, userName, "Rejected");
@@ -855,26 +899,22 @@ public class ReductionFormService {
     }
 
     private void checkSubmissionLimit(StudentDetails student) {
-        LocalDate today = LocalDate.now();
-        if (student.getLastSubmissionDate() == null || student.getLastSubmissionDate().isBefore(today)) {
-            student.setDailySubmissionCount(0);
-            student.setExtraSubmissionGranted(0);
-            student.setExtraSubmissionUsed(0);
-            student.setLastSubmissionDate(today);
-        }
+        student.resetSubmissionCountIfNewDay();
 
-        if (student.getDailySubmissionCount() >= 3) {
+        int dailyCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+        int granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+        int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+
+        if (dailyCount >= 3) {
             // Check extra permissions
-            if (student.getExtraSubmissionGranted() != null && student.getExtraSubmissionUsed() != null &&
-                student.getExtraSubmissionGranted() > student.getExtraSubmissionUsed()) {
-                
-                student.setExtraSubmissionUsed(student.getExtraSubmissionUsed() + 1);
+            if (granted > used) {
+                student.setExtraSubmissionUsed(used + 1);
             } else {
                 throw new BadRequestException("You have reached the daily submission limit of 3 requests.");
             }
         }
         
-        student.setDailySubmissionCount(student.getDailySubmissionCount() + 1);
+        student.setDailySubmissionCount(dailyCount + 1);
         studentDetailsRepo.save(student);
     }
 
@@ -882,7 +922,10 @@ public class ReductionFormService {
 
         autoDeactivateAllExpiredForms();
 
-        // Check if there is any active form for this student that is NOT rejected
+        // 1. Validate payload first before modifying submission limit
+        validateResubmitPayload(dto);
+
+        // 2. Check if there is any active form for this student that is NOT rejected
         List<ReductionForm> activeForms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
         boolean hasPendingOrApproved = activeForms.stream()
                 .anyMatch(form -> !isRejectedStatus(form.getCurrentStatus()));
@@ -891,10 +934,9 @@ public class ReductionFormService {
             throw new StatusAlreadyPendingException("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.");
         }
 
-        StudentDetails student = studentDetailsRepo.findById(studentId).orElseThrow(() -> new StudentNotFoundException("Student not found"));
+        // 3. Check and increment submission limit
+        StudentDetails student = getStudentDetails(studentId);
         checkSubmissionLimit(student);
-
-        validateResubmitPayload(dto);
     }
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUsers, FiCheck, FiX, FiPieChart, FiList, FiCheckSquare, FiSquare, FiTrendingUp, FiArrowRight, FiClock, FiBarChart2, FiActivity, FiLogOut, FiSearch, FiSun, FiMoon } from "react-icons/fi";
+import { FiUsers, FiCheck, FiX, FiPieChart, FiList, FiCheckSquare, FiSquare, FiTrendingUp, FiArrowRight, FiClock, FiBarChart2, FiActivity, FiLogOut, FiSearch, FiSun, FiMoon, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import { useTheme } from "./context/ThemeContext";
@@ -393,6 +393,13 @@ function Deputy_warden_side() {
         fourthYear: 0
     });
 
+    // Toast Notification State
+    const [toast, setToast] = useState(null);
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
     // Rejection Modal State
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectFormId, setRejectFormId] = useState(null);
@@ -410,9 +417,8 @@ function Deputy_warden_side() {
     const [logActionTitle, setLogActionTitle] = useState("Accepted");
 
     const handleAction = async (id, actionType) => {
-        if (processingIds.has(id) || isBulkProcessing) return; // Prevent duplicate clicks
+        if (processingIds.has(id) || isBulkProcessing) return;
 
-        // Normalize action to 'Approve' or 'Reject' for backend
         const action = actionType === "Approve" || actionType === "accepted" ? "Approve" : "Reject";
         
         if (action === "Reject") {
@@ -423,7 +429,6 @@ function Deputy_warden_side() {
             return;
         }
 
-        // Add to processing set
         setProcessingIds(prev => {
             const newSet = new Set(prev);
             newSet.add(id);
@@ -432,12 +437,11 @@ function Deputy_warden_side() {
 
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${id}?action=${action}`);
-            // Refresh data after action
+            showToast(`Request ${action.toLowerCase()}d successfully`, 'success');
             await refreshData();
         } catch (err) {
-            alert("Failed to update status.");
+            showToast("Failed to update status.", 'error');
         } finally {
-            // Remove from processing set to allow subsequent actions/retries
             setProcessingIds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);
@@ -450,7 +454,7 @@ function Deputy_warden_side() {
         if (isRejecting) return;
 
         if (!rejectReason.trim()) {
-            alert("Please enter a reason for rejection.");
+            showToast("Please enter a reason for rejection.", 'error');
             return;
         }
 
@@ -461,10 +465,11 @@ function Deputy_warden_side() {
                     formIds: selectedIds,
                     rejectReason
                 });
-                alert(`Bulk Reject Summary:\nSelected: ${res.data.selected}\nRejected: ${res.data.rejected}\nFailed: ${res.data.failed}`);
+                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
                 setSelectedIds([]);
             } else {
                 await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
+                showToast("Request rejected successfully", 'success');
             }
             setIsRejectModalOpen(false);
             setRejectFormId(null);
@@ -472,9 +477,9 @@ function Deputy_warden_side() {
             setRejectReason("");
             await refreshData();
         } catch (err) {
-            alert("Failed to reject request.");
+            showToast("Failed to reject request.", 'error');
         } finally {
-            setIsRejecting(false); // Enable retry on failure
+            setIsRejecting(false);
         }
     };
 
@@ -485,13 +490,13 @@ function Deputy_warden_side() {
         const action = newStatus === "accepted" ? "Approve" : "Reject";
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=${action}`, selectedIds);
+            showToast(`Bulk ${action.toLowerCase()} completed successfully`, 'success');
             setSelectedIds([]);
-            // Refresh data after action
             await refreshData();
         } catch (err) {
-            alert("Failed to perform bulk action.");
+            showToast("Failed to perform bulk action.", 'error');
         } finally {
-            setIsBulkProcessing(false); // Enable retry on failure
+            setIsBulkProcessing(false);
         }
     };
 
@@ -543,6 +548,27 @@ function Deputy_warden_side() {
 
     return (
         <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
+                            ${toast.type === 'success'
+                                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
+                                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
+                    >
+                        {toast.type === 'success'
+                            ? <FiCheckCircle size={20} className="shrink-0" />
+                            : <FiXCircle size={20} className="shrink-0" />}
+                        <p className="font-medium text-sm text-white">{toast.message}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 
             {/* ── Header ── */}

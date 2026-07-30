@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MdSearch, MdFilterList, 
-  MdDelete, MdEdit, MdVisibility, MdMoreVert 
+  MdDelete, MdEdit, MdVisibility, MdMoreVert, MdCheckCircle, MdCancel 
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
 import { getActiveDepartments } from './api/departmentService';
@@ -40,21 +40,27 @@ const AdminStudents = () => {
     name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: ''
   });
 
-
-
+  // Toast State
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
       if (formData.studentId) {
         await apiClient.put(`/api/admin/students/${formData.studentId}`, formData);
+        showToast('Student updated successfully', 'success');
       } else {
         await apiClient.post('/api/admin/students', formData);
+        showToast('Student created successfully', 'success');
       }
       setShowForm(false);
       fetchStudents();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error saving student');
+      showToast(error.response?.data?.message || 'Error saving student', 'error');
     }
   };
 
@@ -62,9 +68,10 @@ const AdminStudents = () => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
         await apiClient.delete(`/api/admin/students/${id}`);
+        showToast('Student deleted successfully', 'success');
         fetchStudents();
       } catch (error) {
-        alert('Error deleting student');
+        showToast('Error deleting student', 'error');
       }
     }
   };
@@ -132,7 +139,28 @@ const AdminStudents = () => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4 min-w-0 w-full">
+    <div className="flex flex-col h-full space-y-4 min-w-0 w-full relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
+              ${toast.type === 'success'
+                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
+                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
+          >
+            {toast.type === 'success'
+              ? <MdCheckCircle size={20} className="shrink-0" />
+              : <MdCancel size={20} className="shrink-0" />}
+            <p className="font-medium text-sm text-white">{toast.message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Students</h2>

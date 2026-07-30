@@ -32,13 +32,20 @@ const AdminExtraSubmissions = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
+  // Toast State
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.get('/api/admin/extra-submissions');
       setRequests(response.data || []);
     } catch (error) {
-      alert('Error fetching extra submissions');
+      showToast('Error fetching extra submissions', 'error');
     } finally {
       setLoading(false);
     }
@@ -53,10 +60,11 @@ const AdminExtraSubmissions = () => {
     if (window.confirm(`Are you sure you want to ${isApprove ? 'approve' : 'reject'} this extra submission request?`)) {
       try {
         await apiClient.post(`/api/admin/extra-submissions/${id}/${action}`);
+        showToast(`Request ${isApprove ? 'approved' : 'rejected'} successfully`, 'success');
         fetchRequests(); // Refresh data
         if (showDetails) setShowDetails(false);
       } catch (error) {
-        alert(`Error ${isApprove ? 'approving' : 'rejecting'} request: ` + (error.response?.data?.message || 'Unknown error'));
+        showToast(`Error ${isApprove ? 'approving' : 'rejecting'} request: ` + (error.response?.data?.message || 'Unknown error'), 'error');
       }
     }
   };
@@ -67,10 +75,11 @@ const AdminExtraSubmissions = () => {
     if (window.confirm(`Are you sure you want to bulk ${isApprove ? 'approve' : 'reject'} ${selectedIds.length} selected requests?`)) {
       try {
         await apiClient.post(`/api/admin/extra-submissions/bulk-${action}`, selectedIds);
+        showToast(`Bulk ${isApprove ? 'approval' : 'rejection'} completed successfully`, 'success');
         setSelectedIds([]);
         fetchRequests();
       } catch (error) {
-        alert(`Error bulk ${isApprove ? 'approving' : 'rejecting'}: ` + (error.response?.data?.message || 'Unknown error'));
+        showToast(`Error bulk ${isApprove ? 'approving' : 'rejecting'}: ` + (error.response?.data?.message || 'Unknown error'), 'error');
       }
     }
   };
@@ -136,7 +145,28 @@ const AdminExtraSubmissions = () => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4 min-w-0 w-full">
+    <div className="flex flex-col h-full space-y-4 min-w-0 w-full relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
+              ${toast.type === 'success'
+                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
+                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
+          >
+            {toast.type === 'success'
+              ? <MdCheckCircle size={20} className="shrink-0" />
+              : <MdCancel size={20} className="shrink-0" />}
+            <p className="font-medium text-sm text-white">{toast.message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold">Extra Submission Requests</h2>

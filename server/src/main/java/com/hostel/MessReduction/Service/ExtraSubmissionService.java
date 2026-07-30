@@ -61,7 +61,9 @@ public class ExtraSubmissionService {
         extraSubmissionRequestRepo.save(request);
 
         StudentDetails student = request.getStudentDetails();
-        student.setExtraSubmissionGranted(student.getExtraSubmissionGranted() + 1);
+        student.resetSubmissionCountIfNewDay();
+        int currentGranted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+        student.setExtraSubmissionGranted(currentGranted + 1);
         studentDetailsRepo.save(student);
 
         notificationService.createNotification(student.getEmailId(), "Your extra submission request was approved.", "EXTRA_APPROVED", requestId);
@@ -104,10 +106,22 @@ public class ExtraSubmissionService {
     }
 
     public List<ExtraSubmissionRequest> getAllPendingRequests() {
-        return extraSubmissionRequestRepo.findByStatus(RequestStatus.PENDING);
+        List<ExtraSubmissionRequest> list = extraSubmissionRequestRepo.findByStatus(RequestStatus.PENDING);
+        for (ExtraSubmissionRequest req : list) {
+            if (req.getStudentDetails() != null && req.getStudentDetails().resetSubmissionCountIfNewDay()) {
+                studentDetailsRepo.save(req.getStudentDetails());
+            }
+        }
+        return list;
     }
 
     public List<ExtraSubmissionRequest> getRequestsByStudent(Long studentId) {
-        return extraSubmissionRequestRepo.findByStudentDetailsStudentId(studentId);
+        List<ExtraSubmissionRequest> list = extraSubmissionRequestRepo.findByStudentDetailsStudentId(studentId);
+        for (ExtraSubmissionRequest req : list) {
+            if (req.getStudentDetails() != null && req.getStudentDetails().resetSubmissionCountIfNewDay()) {
+                studentDetailsRepo.save(req.getStudentDetails());
+            }
+        }
+        return list;
     }
 }

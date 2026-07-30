@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-    FiCheckCircle, FiClock, FiFileText, FiFilter, FiLogOut,
+    FiCheckCircle, FiXCircle, FiClock, FiFileText, FiFilter, FiLogOut,
     FiShield, FiTrendingUp, FiArrowRight, FiCalendar, FiMapPin, FiUsers,
     FiCheck, FiX, FiHash, FiCheckSquare, FiSquare, FiSearch, FiSun, FiMoon
 } from "react-icons/fi";
@@ -345,10 +345,17 @@ const Warden = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, selectedYear, genderFilter, deptFilter, itemsPerPage]);
-    // Processing State for Action Locking
+
     const [processingIds, setProcessingIds] = useState(new Set());
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
+
+    // Toast Notification State
+    const [toast, setToast] = useState(null);
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
 
     // Rejection Modal State
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -398,15 +405,19 @@ const Warden = () => {
             const data = Array.isArray(formsRes.data) ? formsRes.data.map(r => ({
                 ...r,
                 id: r.formId,
-                dept: r.department,
-                phone: r.phoneNo || r.phone || r.studentPhone || r.mobile || "N/A",
-                gender: r.gender || "ALL",
-                status: r.currentStatus || "PendingWarden"
+                name: r.studentDetails?.name || "N/A",
+                dept: r.studentDetails?.department || "N/A",
+                registerNo: r.studentDetails?.registerNo || "N/A",
+                phone: r.studentDetails?.phoneNo || "N/A",
+                year: r.year ? `${r.year}th` : "N/A",
+                room: r.roomNo || "N/A",
+                dates: `${r.leaveDate} ${r.leaveTime ? r.leaveTime.substring(0, 5) : ''} - ${r.arrivalDate} ${r.arrivalTime ? r.arrivalTime.substring(0, 5) : ''}`,
+                submittedAt: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : "N/A"
             })) : [];
             setRequests(data);
         } catch (err) {
-            if (signal && signal.aborted) return;
-            // Any error (including 404) - treat as empty
+            console.error("Error fetching data:", err);
+            showToast("Failed to load requests", 'error');
             setRequests([]);
             setCounts({ pendingWarden: 0, pendingDeputyWarden: 0, pendingOffice: 0, approved: 0, rejectedWarden: 0, rejectedDeputyWarden: 0, rejectedOffice: 0 });
         } finally {
@@ -416,41 +427,44 @@ const Warden = () => {
         }
     };
     const handleAction = async (formId, action) => {
-        if (processingIds.has(formId) || isBulkProcessing) return; // Prevent duplicate clicks
+        // Prevent concurrent execution for the same formId
+        if (processingIds.has(formId)) return;
+
+        // Optimistically lock item
+        setProcessingIds(prev => new Set(prev).add(formId));
 
         if (action === "Reject") {
             setRejectFormId(formId);
             setRejectReason("");
             setIsBulkReject(false);
             setIsRejectModalOpen(true);
+            setProcessingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(formId);
+                return newSet;
+            });
             return;
         }
-
-        // Add to processing set
-        setProcessingIds(prev => {
-            const newSet = new Set(prev);
-            newSet.add(formId);
-            return newSet;
-        });
 
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
         if (!token) {
-            alert("Authentication token not found. Please login again.");
+            showToast("Authentication token not found. Please login again.", 'error');
             handleLogout();
             return;
         }
 
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/${formId}?action=${action}`);
+            showToast(`Request ${action.toLowerCase()}d successfully`, 'success');
             // Refresh data after action
             await fetchData();
         } catch (err) {
             if (err.response?.status === 401) {
-                alert("Session expired. Please login again.");
+                showToast("Session expired. Please login again.", 'error');
                 handleLogout();
             } else {
-                alert("Failed to update status.");
+                showToast("Failed to update status.", 'error');
             }
         } finally {
             // Remove from processing set to allow subsequent actions/retries
@@ -466,7 +480,7 @@ const Warden = () => {
         if (isRejecting) return;
         
         if (!rejectReason.trim()) {
-            alert("Please enter a reason for rejection.");
+            showToast("Please enter a reason for rejection.", 'error');
             return;
         }
 
@@ -475,7 +489,7 @@ const Warden = () => {
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
         if (!token) {
-            alert("Authentication token not found. Please login again.");
+            showToast("Authentication token not found. Please login again.", 'error');
             handleLogout();
             return;
         }
@@ -486,10 +500,11 @@ const Warden = () => {
                     formIds: selectedIds,
                     rejectReason
                 });
-                alert(`Bulk Reject Summary:\nSelected: ${res.data.selected}\nRejected: ${res.data.rejected}\nFailed: ${res.data.failed}`);
+                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
                 setSelectedIds([]);
             } else {
                 await apiClient.patch(`/api/hostelStaff/staff/warden/${rejectFormId}/reject`, { rejectReason });
+                showToast("Request rejected successfully", 'success');
             }
             setIsRejectModalOpen(false);
             setRejectFormId(null);
@@ -498,10 +513,10 @@ const Warden = () => {
             await fetchData();
         } catch (err) {
             if (err.response?.status === 401) {
-                alert("Session expired. Please login again.");
+                showToast("Session expired. Please login again.", 'error');
                 handleLogout();
             } else {
-                alert("Failed to reject request.");
+                showToast("Failed to reject request.", 'error');
             }
         } finally {
             setIsRejecting(false); // Enable retry on failure
@@ -516,7 +531,7 @@ const Warden = () => {
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
         if (!token) {
-            alert("Authentication token not found. Please login again.");
+            showToast("Authentication token not found. Please login again.", 'error');
             handleLogout();
             setIsBulkProcessing(false);
             return;
@@ -524,17 +539,18 @@ const Warden = () => {
 
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/bulk?action=Approve`, selectedIds);
+            showToast("Bulk approval completed successfully", 'success');
             setSelectedIds([]);
             await fetchData();
         } catch (err) {
             if (err.response?.status === 401) {
-                alert("Session expired. Please login again.");
+                showToast("Session expired. Please login again.", 'error');
                 handleLogout();
             } else if (err.response?.status === 409) {
-                alert("Some selected forms are not in the correct status for approval. Please refresh and try again.");
+                showToast("Some selected forms are not in the correct status for approval. Please refresh and try again.", 'error');
                 await fetchData();
             } else {
-                alert("Failed to perform bulk approval.");
+                showToast("Failed to perform bulk approval.", 'error');
             }
         } finally {
             setIsBulkProcessing(false);
@@ -589,6 +605,27 @@ const Warden = () => {
 
     return (
         <div className="min-h-screen w-full bg-[var(--theme-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-[var(--theme-btn-primary)]/20">
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
+                            ${toast.type === 'success'
+                                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
+                                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
+                    >
+                        {toast.type === 'success'
+                            ? <FiCheckCircle size={20} className="shrink-0" />
+                            : <FiXCircle size={20} className="shrink-0" />}
+                        <p className="font-medium text-sm text-white">{toast.message}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* ── Header ── */}
             <header className="w-full flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-2.5 sm:gap-4 flex-wrap sm:flex-nowrap" style={{transition: 'background-color 0.3s ease'}}>
                 <div className="flex items-center gap-3 sm:gap-4">

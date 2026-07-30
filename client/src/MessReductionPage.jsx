@@ -495,23 +495,10 @@ function MessReductionPage() {
 
                 if (sortedForms.length > 0) {
                     const req = sortedForms[0];
-                    const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
-                    const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
-                    
-                    setFormData(prev => ({
-                        ...prev,
-                        year: yearStrMap[req.year] || "1st",
-                        room: req.roomNo?.toString() || "",
-                        leaveDate: req.leaveDate || "",
-                        leaveTime: req.leaveTime || "",
-                        arrivalDate: req.arrivalDate || "",
-                        arrivalTime: req.arrivalTime || "",
-                        reason: isStandardReason ? req.reason : "other",
-                        otherReason: isStandardReason ? "" : req.reason
-                    }));
-                    
-                    // Default to track tab if there's an active request
-                    setActiveTab('track');
+                    const isPending = req.currentStatus?.startsWith('Pending') || req.currentStatus === 'Approved';
+                    if (isPending && req.isActive) {
+                        setActiveTab('track');
+                    }
                 }
             } else {
                 setStudentDetails(null);
@@ -648,7 +635,7 @@ function MessReductionPage() {
 
         const savedUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
         if (!savedUser.studentId) {
-            alert("Session expired. Please login again.");
+            showToast("Session expired. Please login again.", 'error');
             setIsSubmitting(false);
             return;
         }
@@ -706,7 +693,7 @@ function MessReductionPage() {
     };
 
     const handleDeleteRequest = async (formId) => {
-        if (!window.confirm("Are you sure you want to delete this request? This action cannot be undone, and this submission will still count toward your daily limit.")) return;
+        if (!window.confirm("Are you sure you want to delete this request? This action cannot be undone.")) return;
         setIsDeleting(true);
         try {
             await apiClient.delete(`/api/student-form/StudentForm/${studentId}/${formId}`);

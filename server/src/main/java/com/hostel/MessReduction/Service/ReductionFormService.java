@@ -227,7 +227,7 @@ public class ReductionFormService {
         }
         validateResubmitPayload(dto);
 
-        // Enforce daily submission limit on resubmission
+        // Enforce daily submission limit on resubmission (increments lifetime count)
         checkSubmissionLimit(studentDetails);
 
         FormStatus previousStatus = form.getCurrentStatus();
@@ -244,10 +244,17 @@ public class ReductionFormService {
         form.setTotalHolidays(calculateTotalLeaves(dto));
         
         FormStatus newStatus = FormStatus.PendingDeputyWarden;
-        if (previousStatus == FormStatus.RejectedWarden) {
+        String stageName = "Deputy Warden";
+
+        if (previousStatus == FormStatus.RejectedDeputyWarden) {
+            newStatus = FormStatus.PendingDeputyWarden;
+            stageName = "Deputy Warden";
+        } else if (previousStatus == FormStatus.RejectedWarden) {
             newStatus = FormStatus.PendingWarden;
+            stageName = "Warden";
         } else if (previousStatus == FormStatus.RejectedOffice) {
             newStatus = FormStatus.PendingOffice;
+            stageName = "Office";
         }
         
         form.setRejectedStage(previousStatus);
@@ -255,11 +262,13 @@ public class ReductionFormService {
         form.setResubmissionCount(form.getResubmissionCount() + 1);
         form.setCurrentStatus(newStatus);
         
-        form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(studentDetails.getGender(), form.getYear()));
+        if (form.getAssignedDeputyWarden() == null) {
+            form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(studentDetails.getGender(), form.getYear()));
+        }
         form.setRejectReason(null);
 
         reductionFormRepo.save(form);
-        saveFormHistory(form, "Student Resubmitted", previousStatus, newStatus, "student", "Request resubmitted after rejection");
+        saveFormHistory(form, "Student Resubmitted", previousStatus, newStatus, "student", "Student resubmitted request after " + stageName + " rejection");
         
         processAutoAcceptIfApplicable(form);
         
@@ -272,8 +281,8 @@ public class ReductionFormService {
         ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
-        if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden && !isRejectedStatus(form.getCurrentStatus())) {
-            throw new InvalidStatusException("Only pending or rejected requests can be deleted.");
+        if (form.getCurrentStatus() == FormStatus.Approved) {
+            throw new InvalidStatusException("Approved requests cannot be deleted.");
         }
 
         FormStatus currentStatus = form.getCurrentStatus();
@@ -294,29 +303,8 @@ public class ReductionFormService {
     }
 
     private void restoreSubmissionCountIfSubmittedToday(StudentDetails student, ReductionForm form) {
-        if (student == null || form == null) return;
-
-        LocalDate today = LocalDate.now();
-        student.resetSubmissionCountIfNewDay();
-
-        // Check presentDate first (set on initial submit & updated on resubmit), fallback to submittedAt
-        LocalDate submittedDate = form.getPresentDate();
-        if (submittedDate == null && form.getSubmittedAt() != null) {
-            submittedDate = form.getSubmittedAt().toLocalDate();
-        }
-
-        if (submittedDate != null && submittedDate.equals(today)) {
-            int dailyCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
-            int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
-
-            if (dailyCount > 0) {
-                if (dailyCount > 3 && used > 0) {
-                    student.setExtraSubmissionUsed(used - 1);
-                }
-                student.setDailySubmissionCount(dailyCount - 1);
-                studentDetailsRepo.save(student);
-            }
-        }
+        // Submission count is a permanent lifetime count and must NEVER decrease on deletion or rejection.
+        return;
     }
 
     public List<ReductionFormHistoryResDTO> getFormHistory(Long formId, Long studentId) {
@@ -911,20 +899,15 @@ public class ReductionFormService {
     private void checkSubmissionLimit(StudentDetails student) {
         student.resetSubmissionCountIfNewDay();
 
-        int dailyCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
+        int totalCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
         int granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
-        int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
+        int maxAllowed = 3 + granted;
 
-        if (dailyCount >= 3) {
-            // Check extra permissions
-            if (granted > used) {
-                student.setExtraSubmissionUsed(used + 1);
-            } else {
-                throw new BadRequestException("You have reached the daily submission limit of 3 requests.");
-            }
+        if (totalCount >= maxAllowed) {
+            throw new BadRequestException("You have reached the maximum limit of 3 mess reduction requests.\n\nIf you need another reduction request, please contact the Hostel Administration through the existing Admin Request process.");
         }
-        
-        student.setDailySubmissionCount(dailyCount + 1);
+
+        student.setDailySubmissionCount(totalCount + 1);
         studentDetailsRepo.save(student);
     }
 

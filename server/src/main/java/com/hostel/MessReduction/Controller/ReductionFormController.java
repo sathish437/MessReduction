@@ -111,13 +111,19 @@ public class ReductionFormController {
             int count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
             int granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
             int used = student.getExtraSubmissionUsed() != null ? student.getExtraSubmissionUsed() : 0;
-            
-            int extraRemaining = Math.max(0, granted - used);
-            
+
+            int totalAllowed = 3 + granted;
+            int extraRemaining = Math.max(0, totalAllowed - count);
+            boolean limitReached = count >= totalAllowed;
+
             return ResponseEntity.ok(java.util.Map.of(
                 "dailyCount", count,
-                "extraRemaining", Math.max(0, extraRemaining),
-                "limitReached", count >= 3 && extraRemaining <= 0
+                "extraRemaining", extraRemaining,
+                "extraSubmissionGranted", granted,
+                "extraSubmissionUsed", used,
+                "dailySubmissionLimit", 3,
+                "totalAllowed", totalAllowed,
+                "limitReached", limitReached
             ));
         } catch (com.hostel.MessReduction.CustomException.StudentNotFoundException e) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)

@@ -78,14 +78,6 @@ public class StudentDetails {
     private java.time.LocalDateTime createdAt;
 
     public boolean resetSubmissionCountIfNewDay() {
-        LocalDate today = LocalDate.now();
-        if (this.lastSubmissionDate == null || this.lastSubmissionDate.isBefore(today)) {
-            this.dailySubmissionCount = 0;
-            this.extraSubmissionGranted = 0;
-            this.extraSubmissionUsed = 0;
-            this.lastSubmissionDate = today;
-            return true;
-        }
         boolean updated = false;
         if (this.dailySubmissionCount == null) { this.dailySubmissionCount = 0; updated = true; }
         if (this.extraSubmissionGranted == null) { this.extraSubmissionGranted = 0; updated = true; }

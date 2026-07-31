@@ -448,8 +448,8 @@ function MessReductionPage() {
 
     const isBlockedByCompletedDate = isCompletedRequest && isBeforeNextEligibleDate(latestForm?.arrivalDate);
 
-    const isLimitReached = limits.limitReached && limits.extraRemaining <= 0;
-    const totalAllowed = Math.max(3, limits.dailyCount + limits.extraRemaining);
+    const totalAllowed = limits.totalAllowed || Math.max(3, (limits.dailyCount || 0) + (limits.extraRemaining || 0));
+    const isLimitReached = (limits.dailyCount || 0) >= totalAllowed;
 
     const getDaysDifference = (start, end) => {
         if (!start || !end) return 0;
@@ -744,6 +744,8 @@ function MessReductionPage() {
             showToast("Extra submission requested successfully", "success");
             setShowExtraDialog(false);
             setExtraReason("");
+            fetchStudentData(studentId);
+            fetchLimits(studentId);
         } catch (error) {
             showToast(error.response?.data?.message || "Failed to request extra submission", "error");
             setShowExtraDialog(false);
@@ -913,7 +915,7 @@ function MessReductionPage() {
                                         </div>
                                         <div className="flex items-center gap-4 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-[12px] p-3 shadow-sm">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Daily Limit</span>
+                                                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Daily Submission Limit</span>
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex gap-1">
                                                         {[...Array(totalAllowed)].map((_, i) => (
@@ -923,7 +925,7 @@ function MessReductionPage() {
                                                     <span className="text-xs font-semibold text-[var(--color-text-primary)]">{limits.dailyCount}/{totalAllowed} used</span>
                                                 </div>
                                             </div>
-                                            {(isLimitReached || limits.extraRemaining > 0) && (
+                                            {isLimitReached && (
                                                 <button
                                                     onClick={() => setShowExtraDialog(true)}
                                                     disabled={isAnyProcessing}
@@ -1030,9 +1032,14 @@ function MessReductionPage() {
                                             {isLimitReached && !isInProgressRequest && !isCompletedRequest && (
                                                 <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
                                                     <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
-                                                    <p className="text-sm font-medium leading-relaxed">
-                                                        You have reached your daily limit. Please request an extra submission.
-                                                    </p>
+                                                    <div>
+                                                        <p className="text-sm font-semibold leading-relaxed">
+                                                            You have reached the maximum limit of 3 mess reduction requests.
+                                                        </p>
+                                                        <p className="text-xs mt-1 leading-relaxed opacity-90">
+                                                            If you need another reduction request, please contact the Hostel Administration through the existing Admin Request process.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -1098,20 +1105,22 @@ function MessReductionPage() {
                                                 </div>
                                             )}
 
-                                            <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
-                                                <button
-                                                    type="button"
-                                                    disabled={isAnyProcessing}
-                                                    onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                                    className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
-                                                        ${isAnyProcessing
-                                                            ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
-                                                            : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
-                                                        }`}
-                                                >
-                                                    {isDeleting ? 'Deleting...' : 'Delete Request'}
-                                                </button>
-                                            </div>
+                                            {activeRequest.currentStatus !== 'Approved' && (
+                                                <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        disabled={isAnyProcessing}
+                                                        onClick={() => handleDeleteRequest(activeRequest.formId)}
+                                                        className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
+                                                            ${isAnyProcessing
+                                                                ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
+                                                                : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
+                                                            }`}
+                                                    >
+                                                        {isDeleting ? 'Deleting...' : 'Delete Request'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="py-16 text-center">

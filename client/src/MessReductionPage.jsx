@@ -417,9 +417,36 @@ function MessReductionPage() {
 
     const isAnyProcessing = isSubmitting || isDeleting || isRequestingExtra || loading;
 
-    const activeRequest = Array.isArray(studentForm) && studentForm.length > 0
+    const latestForm = Array.isArray(studentForm) && studentForm.length > 0
         ? studentForm[0]
         : null;
+    const activeRequest = latestForm;
+
+    const isInProgressRequest = latestForm && latestForm.currentStatus && latestForm.currentStatus.startsWith('Pending');
+    const isCompletedRequest = latestForm && latestForm.currentStatus === 'Approved';
+
+    const formatNextRequestDate = (arrivalDateStr) => {
+        if (!arrivalDateStr) return "";
+        const date = new Date(arrivalDateStr + "T00:00:00");
+        date.setDate(date.getDate() + 1);
+        const day = String(date.getDate()).padStart(2, '0');
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const isBeforeNextEligibleDate = (arrivalDateStr) => {
+        if (!arrivalDateStr) return false;
+        const nextDate = new Date(arrivalDateStr + "T00:00:00");
+        nextDate.setDate(nextDate.getDate() + 1);
+        nextDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today < nextDate;
+    };
+
+    const isBlockedByCompletedDate = isCompletedRequest && isBeforeNextEligibleDate(latestForm?.arrivalDate);
 
     const isLimitReached = limits.limitReached && limits.extraRemaining <= 0;
     const totalAllowed = Math.max(3, limits.dailyCount + limits.extraRemaining);
@@ -433,7 +460,7 @@ function MessReductionPage() {
 
     const isInvalidDateDifference = formData.leaveDate && formData.arrivalDate && getDaysDifference(formData.leaveDate, formData.arrivalDate) <= 3;
 
-    const isSubmitBlocked = isSubmitting || (!editingFormId && (isLimitReached || activeRequest));
+    const isSubmitBlocked = isSubmitting || (!editingFormId && (isLimitReached || isInProgressRequest || isBlockedByCompletedDate));
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -977,13 +1004,34 @@ function MessReductionPage() {
                                                 )}
                                             </AnimatePresence>
 
-                                            {isSubmitBlocked && (
+                                            {isInProgressRequest && (
                                                 <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
                                                     <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
                                                     <p className="text-sm font-medium leading-relaxed">
-                                                        {(isLimitReached && !activeRequest)
-                                                            ? "You have reached your daily limit. Please request an extra submission."
-                                                            : "You already have an active request. Please delete it or wait for processing to submit a new one."}
+                                                        You already have an active request. Please delete it or wait for processing to submit a new one.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {isCompletedRequest && (
+                                                <div className="rounded-[12px] border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-start gap-3 text-emerald-400">
+                                                    <FiCheckCircle size={18} className="shrink-0 mt-0.5 text-emerald-400" />
+                                                    <div className="text-sm font-medium leading-relaxed space-y-1">
+                                                        <p className="font-semibold text-emerald-300">
+                                                            Your previous mess reduction request has been completed.
+                                                        </p>
+                                                        <p className="text-emerald-400/90">
+                                                            You can submit your next reduction request from: <span className="font-bold underline">{formatNextRequestDate(latestForm.arrivalDate)}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {isLimitReached && !isInProgressRequest && !isCompletedRequest && (
+                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
+                                                    <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                                    <p className="text-sm font-medium leading-relaxed">
+                                                        You have reached your daily limit. Please request an extra submission.
                                                     </p>
                                                 </div>
                                             )}
@@ -1032,37 +1080,38 @@ function MessReductionPage() {
                                         <>
                                             <RequestTimeline tracking={trackingDetails} activeRequest={activeRequest} onEditRequest={handleEditRequest} />
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
-                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Deputy Warden</span>
-                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.assignedDeputyWarden || "Unassigned"}</span>
-                                                </div>
-                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
-                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Leave Date</span>
-                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.leaveDate}</span>
-                                                </div>
-                                                <div className="bg-[var(--color-card)] p-4 rounded-[12px] border border-[var(--color-border)]">
-                                                    <span className="text-[11px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider block mb-1">Arrival Date</span>
-                                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">{activeRequest.arrivalDate}</span>
-                                                </div>
-                                            </div>
-
-                                            {(activeRequest.currentStatus === 'PendingDeputyWarden' || activeRequest.currentStatus.startsWith('Rejected')) && (
-                                                <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
-                                                    <button
-                                                        type="button"
-                                                        disabled={isLimitReached || isAnyProcessing}
-                                                        onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                                        className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
-                                                            ${isLimitReached || isAnyProcessing
-                                                                ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
-                                                                : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
-                                                            }`}
-                                                    >
-                                                        {isDeleting ? 'Deleting...' : (isLimitReached ? 'Limit Reached' : 'Delete Request')}
-                                                    </button>
+                                            {activeRequest.currentStatus === 'PendingOffice' && (
+                                                <div className="mt-8 bg-amber-500/10 border border-amber-500/20 rounded-[12px] p-6 text-amber-400">
+                                                    <h3 className="text-base font-bold mb-2 flex items-center gap-2 text-amber-300">
+                                                        <FiCheckCircle size={20} className="text-amber-400" />
+                                                        Important Information
+                                                    </h3>
+                                                    <p className="text-sm font-medium leading-relaxed">
+                                                        Your mess reduction request has been successfully processed.
+                                                    </p>
+                                                    <p className="text-sm font-medium leading-relaxed mt-1">
+                                                        Your request is now pending final completion at the Hostel Office.
+                                                    </p>
+                                                    <p className="text-sm font-medium leading-relaxed mt-1">
+                                                        Please visit the Hostel Office to complete the final verification and collect your mess reduction confirmation.
+                                                    </p>
                                                 </div>
                                             )}
+
+                                            <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    disabled={isAnyProcessing}
+                                                    onClick={() => handleDeleteRequest(activeRequest.formId)}
+                                                    className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
+                                                        ${isAnyProcessing
+                                                            ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
+                                                            : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
+                                                        }`}
+                                                >
+                                                    {isDeleting ? 'Deleting...' : 'Delete Request'}
+                                                </button>
+                                            </div>
                                         </>
                                     ) : (
                                         <div className="py-16 text-center">

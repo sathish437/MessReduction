@@ -17,5 +17,9 @@ public class AutoAcceptSettingsDTO {
     @NotNull(message = "To date is required")
     private LocalDate toDate;
     
+    private String department;
+    
+    private String year;
+    
     private String reason;
 }

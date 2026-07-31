@@ -1128,6 +1128,8 @@ public class ReductionFormService {
         settings.setEnabled(dto.isEnabled());
         settings.setFromDate(dto.getFromDate());
         settings.setToDate(dto.getToDate());
+        settings.setDepartment(dto.getDepartment());
+        settings.setYear(dto.getYear());
         settings.setReason(dto.getReason());
         
         return autoAcceptSettingsRepo.save(settings);
@@ -1137,6 +1139,36 @@ public class ReductionFormService {
         ZoneId systemZone = ZoneId.of("Asia/Kolkata");
         LocalDate today = LocalDate.now(systemZone);
         return !today.isBefore(settings.getFromDate()) && !today.isAfter(settings.getToDate());
+    }
+
+    private boolean isMatchingDepartmentAndYear(AutoAcceptSettings settings, ReductionForm form) {
+        if (settings == null || form == null) {
+            return false;
+        }
+
+        // Department check
+        String reqDept = settings.getDepartment();
+        if (reqDept != null && !reqDept.trim().isEmpty() && !"ALL".equalsIgnoreCase(reqDept.trim())) {
+            String formDept = form.getStudentDetails() != null ? form.getStudentDetails().getDepartment() : null;
+            if (formDept == null || !formDept.trim().equalsIgnoreCase(reqDept.trim())) {
+                return false;
+            }
+        }
+
+        // Year check
+        String reqYear = settings.getYear();
+        if (reqYear != null && !reqYear.trim().isEmpty() && !"ALL".equalsIgnoreCase(reqYear.trim())) {
+            Integer formYear = form.getYear();
+            if (formYear == null) {
+                return false;
+            }
+            String cleanReqYear = reqYear.replaceAll("[^0-9]", "").trim();
+            if (!cleanReqYear.isEmpty() && !cleanReqYear.equalsIgnoreCase(String.valueOf(formYear))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void processAutoAcceptIfApplicable(ReductionForm form) {
@@ -1165,7 +1197,7 @@ public class ReductionFormService {
         }
         
         AutoAcceptSettings settings = settingOpt.get();
-        if (!settings.isEnabled() || !isWithinDateRange(settings)) {
+        if (!settings.isEnabled() || !isWithinDateRange(settings) || !isMatchingDepartmentAndYear(settings, form)) {
             return false;
         }
         
@@ -1231,7 +1263,7 @@ public class ReductionFormService {
         }
         
         AutoAcceptSettings settings = wardenSettingOpt.get();
-        if (!settings.isEnabled() || !isWithinDateRange(settings)) {
+        if (!settings.isEnabled() || !isWithinDateRange(settings) || !isMatchingDepartmentAndYear(settings, form)) {
             return false;
         }
         

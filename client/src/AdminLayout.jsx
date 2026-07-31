@@ -169,7 +169,7 @@ const AdminLayout = () => {
               <div className="font-medium text-xs md:text-sm">Master Admin</div>
               <div className="text-[var(--color-text-secondary)] text-[11px] md:text-xs">Administrator</div>
             </div>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold shadow-lg shadow-purple-500/20 shrink-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/20 shrink-0">
               A
             </div>
           </div>

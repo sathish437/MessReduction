@@ -245,8 +245,8 @@ const AdminDepartments = () => {
                           onClick={() => handleToggleStatus(dept)}
                           className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                             dept.isActive 
-                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20' 
-                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' 
+                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
                           }`}
                           title={dept.isActive ? "Deactivate Department" : "Activate Department"}
                         >
@@ -254,7 +254,7 @@ const AdminDepartments = () => {
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(dept)}
-                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
+                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
                           title="Edit Department"
                         >
                           <MdEdit size={16} />

@@ -5,6 +5,7 @@ import {
     FiShield, FiTrendingUp, FiArrowRight, FiCalendar, FiMapPin, FiUsers,
     FiCheck, FiX, FiHash, FiCheckSquare, FiSquare, FiSearch, FiSun, FiMoon
 } from "react-icons/fi";
+import axios from 'axios';
 import { useTheme } from "./context/ThemeContext";
 import apiClient from "./api/apiClient";
 import { deleteCookie, getCookie } from "./utils/cookieUtils";
@@ -91,11 +92,20 @@ function AutoAcceptSettingsCard() {
     const [enabled, setEnabled] = useState(false);
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
+    const [department, setDepartment] = useState("ALL");
+    const [year, setYear] = useState("ALL");
     const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
+    const [activeDepts, setActiveDepts] = useState([]);
+
+    useEffect(() => {
+        getActiveDepartments().then(depts => {
+            if (Array.isArray(depts)) setActiveDepts(depts);
+        });
+    }, []);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -106,6 +116,8 @@ function AutoAcceptSettingsCard() {
                     setEnabled(res.data.enabled);
                     setFromDate(res.data.fromDate || "");
                     setToDate(res.data.toDate || "");
+                    setDepartment(res.data.department || "ALL");
+                    setYear(res.data.year || "ALL");
                     setReason(res.data.reason || "");
                 }
             } catch (err) {
@@ -146,6 +158,8 @@ function AutoAcceptSettingsCard() {
                 enabled,
                 fromDate,
                 toDate,
+                department,
+                year,
                 reason
             });
             setMessage("Settings saved successfully!");
@@ -272,6 +286,44 @@ function AutoAcceptSettingsCard() {
                             onChange={(e) => setToDate(e.target.value)}
                             className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">Department</label>
+                        <select
+                            disabled={!enabled || saving}
+                            value={department}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            <option value="ALL">All Departments</option>
+                            {activeDepts.length > 0 ? (
+                                activeDepts.map(d => (
+                                    <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
+                                ))
+                            ) : (
+                                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                                    <option key={code} value={code}>{code}</option>
+                                ))
+                            )}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">Year</label>
+                        <select
+                            disabled={!enabled || saving}
+                            value={year}
+                            onChange={(e) => setYear(e.target.value)}
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            <option value="ALL">All Years</option>
+                            <option value="1">1st Year (1)</option>
+                            <option value="2">2nd Year (2)</option>
+                            <option value="3">3rd Year (3)</option>
+                            <option value="4">4th Year (4)</option>
+                        </select>
                     </div>
                 </div>
 
@@ -405,10 +457,10 @@ const Warden = () => {
             const data = Array.isArray(formsRes.data) ? formsRes.data.map(r => ({
                 ...r,
                 id: r.formId,
-                name: r.studentDetails?.name || "N/A",
-                dept: r.studentDetails?.department || "N/A",
-                registerNo: r.studentDetails?.registerNo || "N/A",
-                phone: r.studentDetails?.phoneNo || "N/A",
+                name: r.name || r.studentDetails?.name || "N/A",
+                dept: r.department || r.dept || r.studentDetails?.department || "N/A",
+                registerNo: r.registerNo || r.studentDetails?.registerNo || "N/A",
+                phone: r.phoneNo || r.phone || r.studentDetails?.phoneNo || "N/A",
                 year: r.year ? `${r.year}th` : "N/A",
                 room: r.roomNo || "N/A",
                 dates: `${r.leaveDate} ${r.leaveTime ? r.leaveTime.substring(0, 5) : ''} - ${r.arrivalDate} ${r.arrivalTime ? r.arrivalTime.substring(0, 5) : ''}`,
@@ -416,6 +468,9 @@ const Warden = () => {
             })) : [];
             setRequests(data);
         } catch (err) {
+            if (axios.isCancel(err) || (signal && signal.aborted) || err?.name === 'CanceledError') {
+                return;
+            }
             console.error("Error fetching data:", err);
             showToast("Failed to load requests", 'error');
             setRequests([]);

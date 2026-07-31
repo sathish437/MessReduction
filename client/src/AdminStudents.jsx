@@ -222,7 +222,7 @@ const AdminStudents = () => {
               setFormData({ name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: '' });
               setShowForm(true);
             }}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-[var(--color-text-primary)] rounded-xl text-sm font-medium shadow-lg shadow-[0_4px_15px_rgba(147,51,234,0.4)] transition-all admin-lift">
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-[0_4px_15px_rgba(147,51,234,0.4)] transition-all admin-lift">
             + Add Student
           </button>
         </div>
@@ -239,7 +239,7 @@ const AdminStudents = () => {
           >
             <span className="text-sm font-medium">{selectedIds.length} students selected</span>
             <div className="flex gap-2">
-              <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-lg text-sm transition-colors">
+              <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-sm transition-colors">
                 <MdDelete size={16} /> Delete
               </button>
             </div>
@@ -314,23 +314,25 @@ const AdminStudents = () => {
                     </td>
                     <td className="px-4 py-3 text-[var(--color-text-secondary)]">{student.phoneNo}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-2">
                         <button 
                           onClick={() => { setSelectedStudent(student); setShowDetails(true); }}
-                          className="p-1.5 hover:bg-gray-700 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
                           title="View Details"
                         >
                           <MdVisibility size={18} />
                         </button>
                         <button 
                           onClick={() => { setFormData(student); setShowForm(true); }}
-                          className="p-1.5 hover:bg-gray-700 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          className="p-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all cursor-pointer"
+                          title="Edit Student"
                         >
                           <MdEdit size={18} />
                         </button>
                         <button 
                           onClick={() => handleDeleteOne(student.studentId)}
-                          className="p-1.5 hover:bg-red-500/20 rounded-lg text-[var(--color-text-secondary)] hover:text-purple-500 transition-colors"
+                          className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
+                          title="Delete Student"
                         >
                           <MdDelete size={18} />
                         </button>
@@ -488,7 +490,7 @@ const AdminStudents = () => {
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-border)]">
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-card)] transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-[var(--color-text-primary)] rounded-lg transition-colors font-medium">Save Student</button>
+                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-colors font-medium">Save Student</button>
               </div>
             </form>
           </motion.div>

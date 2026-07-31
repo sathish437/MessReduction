@@ -38,6 +38,12 @@ public class AutoAcceptSettings {
     @Column(nullable = false)
     private LocalDate toDate;
 
+    @Column(length = 50)
+    private String department;
+
+    @Column(length = 20)
+    private String year;
+
     @Column(length = 500)
     private String reason;
 

@@ -79,6 +79,7 @@ public class ReductionFormResDTO {
     private String registerNo;
     private Gender gender;
     private String rollNo;
+    private String phoneNo;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submittedAt;
 }

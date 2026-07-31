@@ -45,6 +45,7 @@ public class ReductionFormMapper {
             reductionFormResDTO.setRegisterNo(studentDetails.getRegisterNo());
             reductionFormResDTO.setRollNo(studentDetails.getRollNo());
             reductionFormResDTO.setGender(studentDetails.getGender());
+            reductionFormResDTO.setPhoneNo(studentDetails.getPhoneNo());
         }
 
         reductionFormResDTO.setYear(reductionForm.getYear());

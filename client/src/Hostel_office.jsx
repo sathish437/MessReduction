@@ -79,9 +79,11 @@ function HostelOffice() {
     const [reportData, setReportData] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Date range selectors for Report
+    // Date & Dropdown selectors for Report
     const [reportFromDate, setReportFromDate] = useState(defaultFromDate());
     const [reportToDate, setReportToDate] = useState(defaultToDate());
+    const [reportDeptFilter, setReportDeptFilter] = useState("ALL");
+    const [reportYearFilter, setReportYearFilter] = useState("ALL");
 
     // Pagination & Expand Reason Modal States
     const [currentPage, setCurrentPage]   = useState(1);
@@ -104,7 +106,10 @@ function HostelOffice() {
             }));
             const filtered = data.filter(r => {
                 const date = r.leaveDate;
-                return (!reportFromDate || date >= reportFromDate) && (!reportToDate || date <= reportToDate);
+                const matchDate = (!reportFromDate || date >= reportFromDate) && (!reportToDate || date <= reportToDate);
+                const matchDept = reportDeptFilter === "ALL" || !reportDeptFilter || r.department === reportDeptFilter;
+                const matchYear = reportYearFilter === "ALL" || !reportYearFilter || r.year === reportYearFilter;
+                return matchDate && matchDept && matchYear;
             });
             setReportData(filtered);
         } catch (err) {
@@ -467,28 +472,6 @@ function HostelOffice() {
                     </div>
                 </div>
 
-                {/* Filters Row */}
-                {(view === "dashboard" || view === "requests") && (
-                    <div className="flex items-center gap-3 w-full lg:w-auto no-print">
-                        {/* Year Tabs */}
-                        <div className="flex items-center gap-1 bg-[var(--theme-card)] p-1.5 rounded-xl border border-[var(--theme-border)] overflow-x-auto w-full lg:w-auto justify-between sm:justify-start [&::-webkit-scrollbar]:hidden">
-                            {["all", ...YEARS].map(yr => (
-                                <button
-                                    key={yr}
-                                    onClick={() => setSelectedYear(yr)}
-                                    className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap text-center ${
-                                        selectedYear === yr
-                                            ? "bg-[var(--theme-btn-primary)] text-white shadow-md"
-                                            : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"
-                                    }`}
-                                >
-                                    {yr === "all" ? "All" : yr}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* View Toggle */}
                 <div className="flex w-full lg:w-auto bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] shadow-sm overflow-x-auto [&::-webkit-scrollbar]:hidden no-print">
                     <button onClick={() => setView("dashboard")} className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200 whitespace-nowrap ${view === "dashboard" ? "bg-[var(--theme-btn-primary)] text-white shadow-sm" : "text-[var(--theme-text-primary)] hover:text-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary)]/10"}`}>
@@ -540,7 +523,7 @@ function HostelOffice() {
                                     Submission Overview
                                 </h2>
                                 <p className="text-[var(--theme-text-secondary)] text-xs sm:text-sm font-normal ml-3 mt-0.5">
-                                    {selectedYear === "all" ? "All academic years shown" : `Filtered to ${selectedYear} year submissions`}.
+                                    Overview of all academic year submissions.
                                 </p>
                             </div>
 
@@ -656,6 +639,22 @@ function HostelOffice() {
 
                                 {/* Row 2: Filtering Controls (Gender, Department, Records Per Page) */}
                                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--theme-border)]">
+                                    {/* Year Filter */}
+                                    <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
+                                        <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Year</span>
+                                        <select
+                                            id="office-year-filter"
+                                            value={selectedYear}
+                                            onChange={(e) => setSelectedYear(e.target.value)}
+                                            className="bg-transparent text-xs font-bold text-[var(--theme-text-primary)] focus:outline-none cursor-pointer"
+                                        >
+                                            <option value="all" className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">All</option>
+                                            {YEARS.map(yr => (
+                                                <option key={yr} value={yr} className="bg-[var(--theme-card)] text-[var(--theme-text-primary)] font-medium">{yr}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
                                     {/* Gender Filter */}
                                     <div className="flex items-center gap-2 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 shadow-xs hover:border-[var(--theme-btn-primary)]/50 transition-colors">
                                         <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider whitespace-nowrap">Gender</span>
@@ -958,8 +957,40 @@ function HostelOffice() {
                                 </div>
                             </div>
 
-                            {/* Date selectors row */}
+                            {/* Date and Filter selectors row */}
                             <div className="flex flex-col sm:flex-row items-end gap-4 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 no-print">
+                                <div className="flex-1 w-full">
+                                    <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">Department</label>
+                                    <select
+                                        value={reportDeptFilter}
+                                        onChange={(e) => setReportDeptFilter(e.target.value)}
+                                        className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-btn-primary)]/50 cursor-pointer"
+                                    >
+                                        <option value="ALL">All Departments</option>
+                                        {activeDepts.length > 0 ? (
+                                            activeDepts.map(d => (
+                                                <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
+                                            ))
+                                        ) : (
+                                            ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                                                <option key={code} value={code}>{code}</option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="flex-1 w-full">
+                                    <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">Year</label>
+                                    <select
+                                        value={reportYearFilter}
+                                        onChange={(e) => setReportYearFilter(e.target.value)}
+                                        className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-btn-primary)]/50 cursor-pointer"
+                                    >
+                                        <option value="ALL">All Years</option>
+                                        {YEARS.map(yr => (
+                                            <option key={yr} value={yr}>{yr} Year</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <div className="flex-1 w-full">
                                     <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">From Date</label>
                                     <input
@@ -980,7 +1011,7 @@ function HostelOffice() {
                                 </div>
                                 <button
                                     onClick={handleGenerateReport}
-                                    className="px-6 py-2.5 bg-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary-hover)] text-[var(--theme-text-primary)] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors w-full sm:w-auto"
+                                    className="px-6 py-2.5 bg-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary-hover)] text-[var(--theme-text-primary)] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors w-full sm:w-auto shrink-0"
                                 >
                                     Generate Report
                                 </button>

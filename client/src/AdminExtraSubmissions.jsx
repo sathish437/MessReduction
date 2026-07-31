@@ -211,12 +211,12 @@ const AdminExtraSubmissions = () => {
             exit={{ opacity: 0, height: 0 }}
             className="flex items-center gap-4 bg-purple-500/10 border border-purple-500/20 p-3 rounded-xl"
           >
-            <span className="text-sm font-semibold text-purple-400">{selectedIds.length} requests selected</span>
+            <span className="text-sm font-semibold text-purple-700 dark:text-purple-400">{selectedIds.length} requests selected</span>
             <div className="flex gap-2">
-              <button onClick={() => handleBulkAction('approve')} className="px-4 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-500 rounded-lg text-sm font-semibold transition-colors">
+              <button onClick={() => handleBulkAction('approve')} className="px-4 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-sm font-semibold transition-colors">
                 Approve Selected
               </button>
-              <button onClick={() => handleBulkAction('reject')} className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg text-sm font-semibold transition-colors">
+              <button onClick={() => handleBulkAction('reject')} className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-rose-700 dark:text-rose-400 rounded-lg text-sm font-semibold transition-colors">
                 Reject Selected
               </button>
             </div>
@@ -315,7 +315,7 @@ const AdminExtraSubmissions = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button 
                           onClick={() => { setSelectedRequest(req); setShowDetails(true); }}
-                          className="p-1.5 hover:bg-gray-700 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
                           title="View Details"
                         >
                           <MdVisibility size={18} />
@@ -324,14 +324,14 @@ const AdminExtraSubmissions = () => {
                            <>
                              <button 
                                onClick={() => handleAction(req.id, 'approve')}
-                               className="p-1.5 hover:bg-green-500/20 rounded-lg text-green-500 hover:text-green-400 transition-colors"
+                               className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-all cursor-pointer"
                                title="Approve"
                              >
                                <MdCheckCircle size={18} />
                              </button>
                              <button 
                                onClick={() => handleAction(req.id, 'reject')}
-                               className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-500 hover:text-red-400 transition-colors"
+                               className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
                                title="Reject"
                              >
                                <MdCancel size={18} />
@@ -429,13 +429,13 @@ const AdminExtraSubmissions = () => {
                 <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
                   <button 
                     onClick={() => handleAction(selectedRequest.id, 'reject')}
-                    className="px-4 py-2 border border-purple-500/50 text-purple-500 rounded-lg hover:bg-purple-500/10 transition-colors font-medium"
+                    className="px-4 py-2 border border-purple-500/50 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-500/10 transition-colors font-medium"
                   >
                     Reject Request
                   </button>
                   <button 
                     onClick={() => handleAction(selectedRequest.id, 'approve')}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-[var(--color-text-primary)] rounded-lg transition-colors font-medium shadow-lg shadow-green-600/20"
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium shadow-lg shadow-green-600/20"
                   >
                     Approve Request
                   </button>

@@ -462,7 +462,7 @@ const Warden = () => {
                 dept: r.department || r.dept || r.studentDetails?.department || "N/A",
                 registerNo: r.registerNo || r.studentDetails?.registerNo || "N/A",
                 phone: r.phoneNo || r.phone || r.studentDetails?.phoneNo || "N/A",
-                year: r.year ? `${r.year}th` : "N/A",
+                year: r.year ?? r.studentDetails?.year ?? r.studentDetails?.currentYear ?? "N/A",
                 room: r.roomNo || "N/A",
                 dates: `${r.leaveDate} ${r.leaveTime ? r.leaveTime.substring(0, 5) : ''} - ${r.arrivalDate} ${r.arrivalTime ? r.arrivalTime.substring(0, 5) : ''}`,
                 submittedAt: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : "N/A"
@@ -613,7 +613,7 @@ const Warden = () => {
         }
     };
 
-    // Apply client-side search and department filter
+    // Apply client-side search, department, and year filter
     const normalizedSearch = searchQuery.trim().toLowerCase();
     const pendingForms = requests.filter(r => {
         let matchDept = true;
@@ -621,6 +621,13 @@ const Warden = () => {
             matchDept = (r.dept || r.department) === deptFilter;
         }
         if (!matchDept) return false;
+
+        let matchYear = true;
+        if (selectedYear && selectedYear !== "all") {
+            const expectedYear = selectedYear === "1st" ? 1 : selectedYear === "2nd" ? 2 : selectedYear === "3rd" ? 3 : 4;
+            matchYear = Number(r.year) === expectedYear;
+        }
+        if (!matchYear) return false;
 
         if (!normalizedSearch) return true;
         const nameMatch = r.name?.toLowerCase().includes(normalizedSearch);
@@ -1040,7 +1047,7 @@ const Warden = () => {
                                                         <span className="px-2.5 py-1 bg-[var(--theme-bg)] rounded-md text-xs font-semibold text-[var(--theme-text-secondary)] border border-[var(--theme-border)] tracking-wider block truncate max-w-[120px]">{req.dept}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
-                                                        <span className="px-2 py-0.5 bg-[var(--theme-bg)] rounded text-xs font-medium text-[var(--theme-text-secondary)]">{req.year === 1 ? "1st" : req.year === 2 ? "2nd" : req.year === 3 ? "3rd" : "4th"}</span>
+                                                        <span className="px-2 py-0.5 bg-[var(--theme-bg)] rounded text-xs font-medium text-[var(--theme-text-secondary)]">{Number(req.year) === 1 ? "1st" : Number(req.year) === 2 ? "2nd" : Number(req.year) === 3 ? "3rd" : Number(req.year) === 4 ? "4th" : req.year || "N/A"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center whitespace-nowrap">
                                                         <span className="text-xs font-medium text-[var(--theme-text-secondary)]">{req.gender}</span>

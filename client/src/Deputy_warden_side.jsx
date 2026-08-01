@@ -7,6 +7,7 @@ import { useTheme } from "./context/ThemeContext";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 import { getActiveDepartments } from "./api/departmentService";
+import { logout } from "./services/authService";
 import Toast from "./components/Toast";
 
 

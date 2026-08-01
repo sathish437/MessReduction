@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUsers, FiCheck, FiX, FiPieChart, FiList, FiTrendingUp, FiArrowRight, FiBarChart2, FiActivity, FiLogOut, FiCheckSquare, FiSquare, FiSearch, FiSun, FiMoon, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { FiUsers, FiCheck, FiX, FiPieChart, FiList, FiTrendingUp, FiArrowRight, FiBarChart2, FiActivity, FiLogOut, FiCheckSquare, FiSquare, FiSearch, FiSun, FiMoon, FiCheckCircle, FiXCircle, FiLoader } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { deleteCookie } from "./utils/cookieUtils";
 import { useTheme } from "./context/ThemeContext";
@@ -8,6 +8,8 @@ import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
+import MultiSelect from "./MultiSelect";
+import Toast from "./components/Toast";
 
 
 const handleLogout = () => {
@@ -82,8 +84,10 @@ function HostelOffice() {
     // Date & Dropdown selectors for Report
     const [reportFromDate, setReportFromDate] = useState(defaultFromDate());
     const [reportToDate, setReportToDate] = useState(defaultToDate());
-    const [reportDeptFilter, setReportDeptFilter] = useState("ALL");
-    const [reportYearFilter, setReportYearFilter] = useState("ALL");
+    const [reportDeptFilters, setReportDeptFilters] = useState([]);
+    const [reportYearFilters, setReportYearFilters] = useState([]);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+    const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
 
     // Pagination & Expand Reason Modal States
     const [currentPage, setCurrentPage]   = useState(1);
@@ -96,6 +100,8 @@ function HostelOffice() {
     }, [searchQuery, selectedYear, genderFilter, deptFilter, itemsPerPage]);
 
     const handleGenerateReport = async () => {
+        if (isGeneratingReport) return;
+        setIsGeneratingReport(true);
         try {
             const response = await apiClient.get(`/api/hostelStaff/staff/office/report-data?t=${Date.now()}`);
             const data = response.data.map(r => ({
@@ -107,13 +113,20 @@ function HostelOffice() {
             const filtered = data.filter(r => {
                 const date = r.leaveDate;
                 const matchDate = (!reportFromDate || date >= reportFromDate) && (!reportToDate || date <= reportToDate);
-                const matchDept = reportDeptFilter === "ALL" || !reportDeptFilter || r.department === reportDeptFilter;
-                const matchYear = reportYearFilter === "ALL" || !reportYearFilter || r.year === reportYearFilter;
+                const matchDept = reportDeptFilters.length === 0 || reportDeptFilters.includes("ALL") || reportDeptFilters.includes(r.department);
+                const matchYear = reportYearFilters.length === 0 || reportYearFilters.includes("ALL") || reportYearFilters.some(y => {
+                    const strY = String(y);
+                    const rY = String(r.year);
+                    return strY === rY || strY.startsWith(rY) || rY.startsWith(strY) || (strY.includes("1") && rY.includes("1")) || (strY.includes("2") && rY.includes("2")) || (strY.includes("3") && rY.includes("3")) || (strY.includes("4") && rY.includes("4"));
+                });
                 return matchDate && matchDept && matchYear;
             });
             setReportData(filtered);
+            setHasGeneratedReport(true);
         } catch (err) {
             showToast("Failed to generate report.", 'error');
+        } finally {
+            setIsGeneratingReport(false);
         }
     };
 
@@ -192,13 +205,6 @@ function HostelOffice() {
         link.remove();
         window.URL.revokeObjectURL(url);
     };
-
-    // Auto load data on tab switch
-    useEffect(() => {
-        if (view === "reports" && reportData.length === 0) {
-            handleGenerateReport();
-        }
-    }, [view]);
 
     const refreshData = async (signal = null) => {
         try {
@@ -436,26 +442,8 @@ function HostelOffice() {
 
     return (
         <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
-            {/* Toast Notification */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
-                            ${toast.type === 'success'
-                                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
-                                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
-                    >
-                        {toast.type === 'success'
-                            ? <FiCheckCircle size={20} className="shrink-0" />
-                            : <FiXCircle size={20} className="shrink-0" />}
-                        <p className="font-medium text-sm text-white">{toast.message}</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Toast Notification Panel */}
+            <Toast toast={toast} onClose={() => setToast(null)} />
 
             <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 
@@ -933,63 +921,60 @@ function HostelOffice() {
                                     </h2>
                                     <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">Generate and download historical approved student reduction requests</p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                    <button
-                                        onClick={handleDownloadReport}
-                                        disabled={reportData.length === 0}
-                                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors w-full sm:w-auto ${reportData.length > 0
-                                                ? "bg-[var(--color-success)] text-[var(--theme-text-primary)] hover:brightness-110 cursor-pointer shadow-sm font-bold"
-                                                : "bg-[var(--theme-border)]/30 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]"
-                                            }`}
-                                    >
-                                        <FiTrendingUp size={14} /> Download Excel
-                                    </button>
-                                    <button
-                                        onClick={() => window.print()}
-                                        disabled={reportData.length === 0}
-                                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors w-full sm:w-auto ${reportData.length > 0
-                                                ? "bg-violet-500 text-white hover:bg-violet-400 cursor-pointer shadow-sm font-bold"
-                                                : "bg-[var(--theme-border)]/30 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]"
-                                            }`}
-                                    >
-                                        <FiPieChart size={14} /> Export PDF
-                                    </button>
-                                </div>
+                                {hasGeneratedReport && (
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                        <button
+                                            onClick={handleDownloadReport}
+                                            disabled={reportData.length === 0}
+                                            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors w-full sm:w-auto ${reportData.length > 0
+                                                    ? "bg-[var(--color-success)] text-[var(--theme-text-primary)] hover:brightness-110 cursor-pointer shadow-sm font-bold"
+                                                    : "bg-[var(--theme-border)]/30 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]"
+                                                }`}
+                                        >
+                                            <FiTrendingUp size={14} /> Download Excel
+                                        </button>
+                                        <button
+                                            onClick={() => window.print()}
+                                            disabled={reportData.length === 0}
+                                            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors w-full sm:w-auto ${reportData.length > 0
+                                                    ? "bg-violet-500 text-white hover:bg-violet-400 cursor-pointer shadow-sm font-bold"
+                                                    : "bg-[var(--theme-border)]/30 text-[var(--theme-text-secondary)] cursor-not-allowed border border-[var(--theme-border)]"
+                                                }`}
+                                        >
+                                            <FiPieChart size={14} /> Export PDF
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Date and Filter selectors row */}
                             <div className="flex flex-col sm:flex-row items-end gap-4 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 no-print">
                                 <div className="flex-1 w-full">
-                                    <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">Department</label>
-                                    <select
-                                        value={reportDeptFilter}
-                                        onChange={(e) => setReportDeptFilter(e.target.value)}
-                                        className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-btn-primary)]/50 cursor-pointer"
-                                    >
-                                        <option value="ALL">All Departments</option>
-                                        {activeDepts.length > 0 ? (
-                                            activeDepts.map(d => (
-                                                <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
-                                            ))
-                                        ) : (
-                                            ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
-                                                <option key={code} value={code}>{code}</option>
-                                            ))
-                                        )}
-                                    </select>
+                                    <MultiSelect
+                                        label="Department"
+                                        options={
+                                            activeDepts.length > 0
+                                                ? activeDepts.map(d => ({ value: d.departmentCode, label: d.departmentCode }))
+                                                : ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => ({ value: code, label: code }))
+                                        }
+                                        value={reportDeptFilters}
+                                        onChange={(selected) => setReportDeptFilters(selected)}
+                                        allOptionLabel="All Departments"
+                                    />
                                 </div>
                                 <div className="flex-1 w-full">
-                                    <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">Year</label>
-                                    <select
-                                        value={reportYearFilter}
-                                        onChange={(e) => setReportYearFilter(e.target.value)}
-                                        className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-btn-primary)]/50 cursor-pointer"
-                                    >
-                                        <option value="ALL">All Years</option>
-                                        {YEARS.map(yr => (
-                                            <option key={yr} value={yr}>{yr} Year</option>
-                                        ))}
-                                    </select>
+                                    <MultiSelect
+                                        label="Year"
+                                        options={[
+                                            { value: "1st", label: "I Year (1st)" },
+                                            { value: "2nd", label: "II Year (2nd)" },
+                                            { value: "3rd", label: "III Year (3rd)" },
+                                            { value: "4th", label: "IV Year (4th)" }
+                                        ]}
+                                        value={reportYearFilters}
+                                        onChange={(selected) => setReportYearFilters(selected)}
+                                        allOptionLabel="All Years"
+                                    />
                                 </div>
                                 <div className="flex-1 w-full">
                                     <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] mb-1.5 uppercase tracking-wider">From Date</label>
@@ -1011,9 +996,18 @@ function HostelOffice() {
                                 </div>
                                 <button
                                     onClick={handleGenerateReport}
-                                    className="px-6 py-2.5 bg-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary-hover)] text-[var(--theme-text-primary)] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors w-full sm:w-auto shrink-0"
+                                    disabled={isGeneratingReport}
+                                    className={`px-6 py-2.5 bg-[var(--theme-btn-primary)] hover:bg-[var(--theme-btn-primary-hover)] text-[var(--theme-text-primary)] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 ${
+                                        isGeneratingReport ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
+                                    }`}
                                 >
-                                    Generate Report
+                                    {isGeneratingReport ? (
+                                        <>
+                                            <FiLoader className="animate-spin" size={16} /> Generating...
+                                        </>
+                                    ) : (
+                                        "Generate Report"
+                                    )}
                                 </button>
                             </div>
 

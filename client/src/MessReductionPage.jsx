@@ -1,6 +1,6 @@
 import { useTheme } from './context/ThemeContext';
 import { FiSun, FiMoon } from 'react-icons/fi';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { logout } from "./services/authService";
+import Toast from "./components/Toast";
+import ConfirmModal from "./components/ConfirmModal";
 import CustomSelect from "./CustomSelect";
 
 import image from "./assets/1000088399.png";
@@ -36,9 +38,9 @@ function Field({ label, icon, as: Component = "input", readOnly = false, childre
                     {label} {props.required && <span className="text-[var(--color-danger)]">*</span>}
                 </label>
             )}
-            <div className={`flex items-center gap-3 rounded-[12px] border px-4 py-3.5 transition-all duration-200 relative group 
-                ${readOnly ? 'opacity-70 cursor-not-allowed bg-black/20 border-[var(--color-border)]' : 'bg-[var(--color-surface)]'} 
-                ${error ? 'border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 focus-within:border-[var(--color-danger)] focus-within:ring-2 focus-within:ring-[var(--color-danger)]/20' : 'border-[var(--color-border)] hover:border-white/20 focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)]/20'}`}>
+            <div className={`flex items-center gap-3 rounded-[12px] border px-4 py-3.5 transition-all duration-200 relative group bg-[var(--color-surface)]
+                ${readOnly ? 'opacity-80 cursor-not-allowed border-[var(--color-border)]' : ''} 
+                ${error ? 'border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 focus-within:border-[var(--color-danger)]' : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)]'}`}>
                 {icon && <span className={`shrink-0 text-lg transition-colors ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>{icon}</span>}
                 <Component
                     id={id}
@@ -414,6 +416,51 @@ function MessReductionPage() {
     const [extraReason, setExtraReason] = useState("");
     const [isRequestingExtra, setIsRequestingExtra] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [extraRequests, setExtraRequests] = useState([]);
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        title: "Confirm Action",
+        message: "",
+        confirmText: "Delete",
+        confirmVariant: "danger",
+        onConfirm: null
+    });
+
+    const fetchExtraSubmissionStatus = useCallback(async () => {
+        if (!studentId) return;
+        try {
+            const res = await apiClient.get(`/api/student-form/extra-submission/${studentId}`);
+            if (Array.isArray(res.data)) {
+                setExtraRequests(res.data);
+            }
+        } catch (error) {
+        }
+    }, [studentId]);
+
+    useEffect(() => {
+        if (!studentId) return;
+        fetchExtraSubmissionStatus();
+        const interval = setInterval(() => {
+            fetchExtraSubmissionStatus();
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [studentId, fetchExtraSubmissionStatus]);
+
+    // Daily Extra Submission Filter (Current Day only)
+    const todayStr = new Date().toDateString();
+    const todayExtraRequests = Array.isArray(extraRequests)
+        ? extraRequests.filter(req => req.createdAt && new Date(req.createdAt).toDateString() === todayStr)
+        : [];
+
+    const latestExtraRequest = todayExtraRequests.length > 0
+        ? [...todayExtraRequests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+        : null;
+
+    useEffect(() => {
+        if (latestExtraRequest && latestExtraRequest.status === 'APPROVED' && studentId) {
+            fetchLimits(studentId);
+        }
+    }, [latestExtraRequest?.status, studentId]);
 
     const isAnyProcessing = isSubmitting || isDeleting || isRequestingExtra || loading;
 
@@ -448,7 +495,8 @@ function MessReductionPage() {
 
     const isBlockedByCompletedDate = isCompletedRequest && isBeforeNextEligibleDate(latestForm?.arrivalDate);
 
-    const totalAllowed = limits.totalAllowed || Math.max(3, (limits.dailyCount || 0) + (limits.extraRemaining || 0));
+    const hasApprovedExtraToday = latestExtraRequest && latestExtraRequest.status === 'APPROVED';
+    const totalAllowed = hasApprovedExtraToday ? 4 : 3;
     const isLimitReached = (limits.dailyCount || 0) >= totalAllowed;
 
     const getDaysDifference = (start, end) => {
@@ -719,8 +767,19 @@ function MessReductionPage() {
         }
     };
 
-    const handleDeleteRequest = async (formId) => {
-        if (!window.confirm("Are you sure you want to delete this request? This action cannot be undone.")) return;
+    const handleDeleteRequest = (formId) => {
+        setConfirmState({
+            isOpen: true,
+            title: "Confirm Action",
+            message: "Are you sure you want to delete this request? This action cannot be undone.",
+            confirmText: "Delete",
+            confirmVariant: "danger",
+            onConfirm: () => executeDeleteRequest(formId)
+        });
+    };
+
+    const executeDeleteRequest = async (formId) => {
+        setConfirmState(prev => ({ ...prev, isOpen: false }));
         setIsDeleting(true);
         try {
             await apiClient.delete(`/api/student-form/StudentForm/${studentId}/${formId}`);
@@ -768,26 +827,8 @@ function MessReductionPage() {
 
     return (
         <div className="min-h-[100dvh] w-full flex flex-col bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-btn-primary)]/30">
-            {/* Toast Notification */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-soft border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
-                            ${toast.type === 'success'
-                                ? 'bg-[var(--color-surface)] border-[var(--color-success)]/30 text-[var(--color-success)]'
-                                : 'bg-[var(--color-surface)] border-[var(--color-danger)]/30 text-[var(--color-danger)]'}`}
-                    >
-                        {toast.type === 'success'
-                            ? <FiCheckCircle size={20} className="shrink-0" />
-                            : <FiXCircle size={20} className="shrink-0" />}
-                        <p className="font-medium text-sm text-[var(--color-text-primary)]">{toast.message}</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Toast Notification Panel */}
+            <Toast toast={toast} onClose={() => setToast(null)} />
 
             {/* Desktop Top Navbar */}
             <header className="hidden md:flex items-center justify-between px-6 py-3.5 bg-[var(--color-header)] text-white shadow-md z-20 shrink-0">
@@ -854,6 +895,41 @@ function MessReductionPage() {
 
                         {activeTab === 'dashboard' && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5">
+                                {/* Extra Submission Request Status Banner Card */}
+                                {latestExtraRequest && (
+                                    <div className={`p-4 sm:p-5 rounded-[12px] border transition-all shadow-md flex items-start gap-4 ${
+                                        latestExtraRequest.status === 'PENDING'
+                                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                                            : latestExtraRequest.status === 'APPROVED'
+                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                                            : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                                    }`}>
+                                        <div className={`p-2.5 rounded-xl shrink-0 ${
+                                            latestExtraRequest.status === 'PENDING'
+                                                ? 'bg-amber-500/20 text-amber-400'
+                                                : latestExtraRequest.status === 'APPROVED'
+                                                ? 'bg-emerald-500/20 text-emerald-400'
+                                                : 'bg-rose-500/20 text-rose-400'
+                                        }`}>
+                                            {latestExtraRequest.status === 'PENDING' && <FiClock size={24} />}
+                                            {latestExtraRequest.status === 'APPROVED' && <FiCheckCircle size={24} />}
+                                            {latestExtraRequest.status === 'REJECTED' && <FiXCircle size={24} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-sm sm:text-base font-extrabold tracking-wide">
+                                                {latestExtraRequest.status === 'PENDING' && 'Extra Submission Request Pending'}
+                                                {latestExtraRequest.status === 'APPROVED' && 'Extra Submission Request Approved'}
+                                                {latestExtraRequest.status === 'REJECTED' && 'Extra Submission Request Rejected'}
+                                            </h4>
+                                            <p className="text-xs sm:text-sm mt-1 opacity-90 leading-relaxed font-medium">
+                                                {latestExtraRequest.status === 'PENDING' && 'Your request has been sent to the Administrator and is awaiting review.'}
+                                                {latestExtraRequest.status === 'APPROVED' && 'The Administrator has granted you one additional submission.'}
+                                                {latestExtraRequest.status === 'REJECTED' && 'Your request for an additional submission has been rejected by the Administrator.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Student Profile Information Card */}
                                 <div className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft p-4 sm:p-5">
                                     <div className="flex items-center gap-3 pb-2.5 mb-3 border-b border-[var(--color-border)]">
@@ -1209,6 +1285,18 @@ function MessReductionPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                confirmVariant={confirmState.confirmVariant}
+                onConfirm={confirmState.onConfirm}
+                onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+                loading={isDeleting}
+            />
         </div>
     );
 }

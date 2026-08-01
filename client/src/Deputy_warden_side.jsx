@@ -6,8 +6,8 @@ import { deleteCookie, getCookie } from "./utils/cookieUtils";
 import { useTheme } from "./context/ThemeContext";
 import logo from "./assets/1000088399.png";
 import ActivityLogModal from "./ActivityLogModal";
-import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
+import Toast from "./components/Toast";
 
 
 const handleLogout = () => {
@@ -599,26 +599,8 @@ function Deputy_warden_side() {
 
     return (
         <div className="min-h-screen w-full flex flex-col font-sans bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
-            {/* Toast Notification */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
-                            ${toast.type === 'success'
-                                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
-                                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
-                    >
-                        {toast.type === 'success'
-                            ? <FiCheckCircle size={20} className="shrink-0" />
-                            : <FiXCircle size={20} className="shrink-0" />}
-                        <p className="font-medium text-sm text-white">{toast.message}</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Toast Notification Panel */}
+            <Toast toast={toast} onClose={() => setToast(null)} />
 
             <div className="fixed inset-0 bg-[var(--theme-bg)] -z-10" />
 

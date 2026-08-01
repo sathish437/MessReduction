@@ -10,13 +10,13 @@ import {
   updateDepartment,
   toggleDepartmentStatus
 } from './api/departmentService';
+import Toast from './components/Toast';
 
 const AdminDepartments = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [toast, setToast] = useState(null);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -44,7 +44,7 @@ const AdminDepartments = () => {
         setDepartments([]);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error loading departments');
+      showNotification(err.response?.data?.message || 'Error loading departments', false);
     } finally {
       setLoading(false);
     }
@@ -55,13 +55,8 @@ const AdminDepartments = () => {
   }, [fetchDepartments]);
 
   const showNotification = (msg, isSuccess = true) => {
-    if (isSuccess) {
-      setSuccessMsg(msg);
-      setTimeout(() => setSuccessMsg(''), 4000);
-    } else {
-      setError(msg);
-      setTimeout(() => setError(''), 4000);
-    }
+    setToast({ message: msg, type: isSuccess ? 'success' : 'error' });
+    setTimeout(() => setToast(null), 4000);
   };
 
   const handleOpenAddModal = () => {
@@ -132,80 +127,70 @@ const AdminDepartments = () => {
   return (
     <div className="flex flex-col h-full space-y-4 min-w-0 w-full text-[var(--color-text-primary)]">
       {/* Header Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 sm:gap-4 w-full">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2 text-[var(--color-text-primary)]">
             <MdSchool className="text-purple-500" />
             Academic Departments
           </h2>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Manage master departments used across student registration, profiles, and reports.</p>
+          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-1">Manage master departments used across student registration, profiles, and reports.</p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          <div className="relative flex-1 md:w-64">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={18} />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
             <input 
               type="text"
               placeholder="Search code, name..."
-              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-9 pr-3 py-2 text-xs md:text-sm focus:outline-none focus:border-purple-500 transition-all shadow-sm"
+              className="w-full h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <button
-            onClick={fetchDepartments}
-            className="p-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] transition-colors cursor-pointer shadow-sm"
-            title="Refresh list"
-          >
-            <MdRefresh size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchDepartments}
+              className="w-11 h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
+              title="Refresh list"
+            >
+              <MdRefresh size={20} />
+            </button>
 
-          <button 
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-xl text-xs md:text-sm font-semibold shadow-sm transition-all cursor-pointer"
-          >
-            <MdAdd size={18} />
-            Add Department
-          </button>
+            <button 
+              onClick={handleOpenAddModal}
+              className="h-11 px-4 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <MdAdd size={20} />
+              Add Department
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Toast Notifications */}
-      {successMsg && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-green-500/10 border border-green-500/30 text-green-400 text-xs md:text-sm rounded-xl flex items-center gap-2">
-          <MdCheckCircle size={18} />
-          <span>{successMsg}</span>
-        </motion.div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
-      {error && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs md:text-sm rounded-xl flex items-center gap-2">
-          <MdCancel size={18} />
-          <span>{error}</span>
-        </motion.div>
-      )}
-
-      {/* Departments Table Card */}
-      <div className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-sm overflow-hidden flex flex-col min-w-0">
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider text-[10px] md:text-xs">
-                <th className="px-4 py-3">Order</th>
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Department Name</th>
-                <th className="px-4 py-3">Short Name</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+      {/* Departments Table Card Container */}
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-soft overflow-hidden flex flex-col min-w-0 w-full">
+        <div className="overflow-x-auto select-none w-full">
+          <table className="w-full text-left text-xs sm:text-sm min-w-[650px] border-collapse">
+            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+              <tr>
+                <th className="px-4 py-3.5 w-16">Order</th>
+                <th className="px-4 py-3.5">Code</th>
+                <th className="px-4 py-3.5">Department Name</th>
+                <th className="px-4 py-3.5">Short Name</th>
+                <th className="px-4 py-3.5">Status</th>
+                <th className="px-4 py-3.5 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-12 text-[var(--color-text-secondary)]">
+                  <td colSpan="6" className="text-center py-12 text-[var(--color-text-secondary)] font-medium">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                       <span>Loading departments...</span>
                     </div>
                   </td>
@@ -218,43 +203,43 @@ const AdminDepartments = () => {
                 </tr>
               ) : (
                 filteredDepts.map((dept) => (
-                  <tr key={dept.id} className="hover:bg-[var(--color-primary-bg)]/50 transition-colors">
-                    <td className="px-4 py-3 font-mono font-medium text-[var(--color-text-secondary)]">
+                  <tr key={dept.id} className="hover:bg-[var(--color-card)]/50 transition-colors">
+                    <td className="px-4 py-3.5 font-mono font-bold text-[var(--color-text-secondary)]">
                       {dept.displayOrder ?? 0}
                     </td>
-                    <td className="px-4 py-3 font-bold font-mono text-[var(--color-text-primary)]">
+                    <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">
                       {dept.departmentCode}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-[var(--color-text-primary)]">
+                    <td className="px-4 py-3.5 font-bold text-[var(--color-text-primary)]">
                       {dept.departmentName}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-text-secondary)] font-medium">
+                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-semibold">
                       {dept.shortName}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] md:text-xs font-bold uppercase ${
-                        dept.isActive ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+                    <td className="px-4 py-3.5">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${
+                        dept.isActive ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${dept.isActive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                        <span className={`w-2 h-2 rounded-full ${dept.isActive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                         {dept.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleToggleStatus(dept)}
-                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                             dept.isActive 
-                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' 
-                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20' 
+                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                           }`}
                           title={dept.isActive ? "Deactivate Department" : "Activate Department"}
                         >
-                          {dept.isActive ? <MdToggleOn size={20} /> : <MdToggleOff size={20} />}
+                          {dept.isActive ? <MdToggleOn size={22} /> : <MdToggleOff size={22} />}
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(dept)}
-                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
+                          className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title="Edit Department"
                         >
                           <MdEdit size={16} />

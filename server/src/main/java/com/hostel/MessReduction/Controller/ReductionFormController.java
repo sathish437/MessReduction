@@ -144,4 +144,9 @@ public class ReductionFormController {
         }
         return ResponseEntity.ok(extraSubmissionService.requestExtraSubmission(studentId, reason));
     }
+
+    @GetMapping("/extra-submission/{studentId}")
+    public ResponseEntity<?> getExtraSubmissionRequests(@PathVariable Long studentId) {
+        return ResponseEntity.ok(extraSubmissionService.getRequestsByStudent(studentId));
+    }
 }

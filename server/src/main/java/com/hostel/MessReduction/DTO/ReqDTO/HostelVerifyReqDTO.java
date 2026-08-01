@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class HostelVerifyReqDTO {
 
-    @NotBlank(message = "Roll Number is required")
-    private String rollNo;
+    @NotBlank(message = "Register Number is required")
+    private String registerNo;
 
     @NotBlank(message = "Password is required")
     private String password;

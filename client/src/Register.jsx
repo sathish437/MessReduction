@@ -7,55 +7,7 @@ import image from "./assets/1000088399.png"
 import CustomSelect from "./CustomSelect"
 import { getHostelVerificationEnabled } from "./services/authService"
 import { getActiveDepartments } from "./api/departmentService"
-
-function Toast({ toast, onClose, onLogin }) {
-  return (
-    <AnimatePresence>
-      {toast && (
-        <motion.div
-          key="toast"
-          initial={{ opacity: 0, y: -80, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -60, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="fixed top-6 left-1/2 z-[9999] -translate-x-1/2 w-full max-w-md px-4"
-        >
-          <div className={`flex items-start gap-4 rounded-2xl shadow-2xl border px-5 py-4 ${
-            toast.type === 'already-registered'
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-          }`}>
-            <div className="mt-0.5 shrink-0">
-              <FiAlertTriangle size={22} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm leading-snug">
-                {toast.title}
-              </p>
-              <p className="text-xs mt-1 opacity-80 leading-relaxed">
-                {toast.message}
-              </p>
-              {toast.type === 'already-registered' && (
-                <button
-                  onClick={onLogin}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors"
-                >
-                  <FiLogIn size={13} /> Go to Student Login
-                </button>
-              )}
-            </div>
-            <button
-              onClick={onClose}
-              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity mt-0.5"
-            >
-              <FiX size={16} />
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
+import Toast from "./components/Toast"
 
 const TITLE = "STUDENT REGISTRATION"
 
@@ -68,10 +20,10 @@ function Field({ label, icon, error, className = "", children, id, isSelect = fa
         </label>
       )}
       <div 
-        className={`flex items-center gap-2.5 sm:gap-3 rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3.5 transition-all duration-300 relative group bg-[var(--color-primary-bg)] w-full 
+        className={`flex items-center gap-2.5 sm:gap-3 rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3.5 transition-all duration-300 relative group bg-[var(--color-surface)] w-full 
           ${error 
             ? 'border-rose-500/50 bg-rose-500/5 focus-within:border-rose-400' 
-            : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)] focus-within:bg-[var(--color-btn-primary)]/5 focus-within:ring-2 focus-within:ring-[var(--color-btn-primary)]/20'
+            : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)]'
           }`}
       >
         {icon && (
@@ -115,7 +67,7 @@ function FormSection({ title, icon, delay, children }) {
 }
 
 const inp = "flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium w-full h-full"
-const disabledInp = "flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-btn-primary-hover)]/90 font-semibold cursor-not-allowed w-full h-full"
+const disabledInp = "flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-text-primary)] font-semibold cursor-not-allowed opacity-80 w-full h-full"
 
 function Register({ onNavigate }) {
   const { isDark, toggleTheme } = useTheme();
@@ -162,6 +114,7 @@ function Register({ onNavigate }) {
           const verifiedData = JSON.parse(verifiedDataStr);
           setFormData(prev => ({
             ...prev,
+            regNo: verifiedData.registerNo || verifiedData.regNo || prev.regNo,
             rollNo: verifiedData.rollNo || prev.rollNo,
             dept: verifiedData.department || verifiedData.dept || prev.dept,
             gender: verifiedData.gender || prev.gender,
@@ -365,7 +318,7 @@ function Register({ onNavigate }) {
             <div className="relative z-10">
             {/* Header section inside card */}
             <div className="text-center mb-6 sm:mb-8">
-              <div className="flex justify-center mb-3 sm:mb-5"><img src={image} className="w-14 h-14 sm:w-20 sm:h-20 object-contain" alt="Logo"/></div>
+              {/* <div className="flex justify-center mb-3 sm:mb-5"><img src={image} className="w-14 h-14 sm:w-20 sm:h-20 object-contain" alt="Logo"/></div> */}
               <h1 className="text-lg sm:text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">Government College of Engineering, Srirangam</h1>
               <h2 className="text-sm sm:text-lg text-[var(--color-btn-primary)] font-semibold mt-1 uppercase tracking-wider">Hostel Mess Reduction System</h2>
               
@@ -383,11 +336,21 @@ function Register({ onNavigate }) {
                     <input id="name-input" type="text" placeholder="Enter your full name" name="name" className={inp} value={formData.name} onChange={handleChange} required />
                   </Field>
                 </div>
-                <Field label="Register Number" icon={<FiCreditCard />} error={!!error} id="regNo-input">
-                  <input id="regNo-input" type="text" placeholder="Register number (12 digits)" name="regNo" className={inp} value={formData.regNo} onChange={handleChange} maxLength={12} required />
+                <Field 
+                  label={
+                    <div className="flex items-center justify-between w-full">
+                      <span>Register Number</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-btn-primary)] uppercase tracking-wider">(Read Only)</span>
+                    </div>
+                  } 
+                  icon={<FiCreditCard />} 
+                  error={!!error} 
+                  id="regNo-input"
+                >
+                  <input id="regNo-input" type="text" placeholder="Register number (12 digits)" name="regNo" className={disabledInp} value={formData.regNo} readOnly required />
                 </Field>
                 <Field label="Roll Number" icon={<FiHash />} error={!!error} id="rollNo-input">
-                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={disabledInp} value={formData.rollNo} readOnly required />
+                  <input id="rollNo-input" type="text" placeholder="Roll number" name="rollNo" className={inp} value={formData.rollNo} onChange={handleChange} onKeyDown={handleAlphaNumKey} required />
                 </Field>
                 <Field label="Date of Birth" icon={<FiCalendar />} error={!!error} id="dob-input">
                    <input id="dob-input" type="date" value={formData.dob} max={today} onChange={(e) => handleChange({ target: { name: "dob", value: e.target.value } })} required className={`${inp} cursor-pointer`} />

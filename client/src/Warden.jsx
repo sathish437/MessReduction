@@ -13,6 +13,7 @@ import logo from './assets/1000088399.png';
 import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
+import Toast from "./components/Toast";
 
 const handleLogout = () => {
   logout();
@@ -660,26 +661,8 @@ const Warden = () => {
 
     return (
         <div className="min-h-screen w-full bg-[var(--theme-bg)] text-[var(--theme-text-primary)] font-sans selection:bg-[var(--theme-btn-primary)]/20">
-            {/* Toast Notification */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
-                            ${toast.type === 'success'
-                                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
-                                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
-                    >
-                        {toast.type === 'success'
-                            ? <FiCheckCircle size={20} className="shrink-0" />
-                            : <FiXCircle size={20} className="shrink-0" />}
-                        <p className="font-medium text-sm text-white">{toast.message}</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Toast Notification Panel */}
+            <Toast toast={toast} onClose={() => setToast(null)} />
 
             {/* ── Header ── */}
             <header className="w-full flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] sticky top-0 z-50 gap-2.5 sm:gap-4 flex-wrap sm:flex-nowrap" style={{transition: 'background-color 0.3s ease'}}>
@@ -868,7 +851,7 @@ const Warden = () => {
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search Students..."
-                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/20 transition-all"
+                                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-8 py-2 text-xs font-medium text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none focus:border-teal-500 transition-all"
                                         />
                                         {searchQuery && (
                                             <button

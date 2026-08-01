@@ -99,4 +99,19 @@ public class AdminController {
         extraSubmissionService.bulkRejectRequests(ids, "MasterAdmin");
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/settings/reminder-offset")
+    public ResponseEntity<java.util.Map<String, Object>> getReminderOffset() {
+        return ResponseEntity.ok(java.util.Map.of("reminderDays", adminService.getReminderOffsetDays()));
+    }
+
+    @PutMapping("/settings/reminder-offset")
+    public ResponseEntity<java.util.Map<String, Object>> updateReminderOffset(@RequestBody java.util.Map<String, Integer> payload) {
+        Integer days = payload.get("reminderDays");
+        if (days == null || days < 1) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Days must be a positive integer"));
+        }
+        int updated = adminService.updateReminderOffsetDays(days);
+        return ResponseEntity.ok(java.util.Map.of("reminderDays", updated));
+    }
 }

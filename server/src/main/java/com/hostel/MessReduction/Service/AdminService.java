@@ -39,6 +39,7 @@ public class AdminService {
     private final DepartmentService departmentService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public PaginatedResponseDTO<StudentResponseDTO> getStudents(
             String search, String department, Gender gender, Integer year,
             int page, int size, String sortBy, String sortDir) {
@@ -197,5 +198,29 @@ public class AdminService {
 
         adminUser.setPassword(passwordEncoder.encode(newPassword));
         staffUsersRepo.save(adminUser);
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public int getReminderOffsetDays() {
+        return systemSettingsRepo.findById("REMINDER_BEFORE_ARRIVAL_DAYS")
+                .map(setting -> {
+                    try {
+                        return Integer.parseInt(setting.getSettingValue());
+                    } catch (Exception e) {
+                        return 3;
+                    }
+                })
+                .orElse(3);
+    }
+
+    public int updateReminderOffsetDays(int days) {
+        if (days < 1) {
+            throw new com.hostel.MessReduction.CustomException.BadRequestException("Reminder offset days must be at least 1");
+        }
+        com.hostel.MessReduction.Entity.SystemSettings setting = systemSettingsRepo.findById("REMINDER_BEFORE_ARRIVAL_DAYS")
+                .orElseGet(() -> new com.hostel.MessReduction.Entity.SystemSettings("REMINDER_BEFORE_ARRIVAL_DAYS", "3"));
+        setting.setSettingValue(String.valueOf(days));
+        systemSettingsRepo.save(setting);
+        return days;
     }
 }

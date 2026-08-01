@@ -9,7 +9,7 @@ import { getHostelVerificationEnabled } from "./services/authService"
 
 function HostelVerification({ onNavigate }) {
   const { isDark, toggleTheme } = useTheme();
-  const [rollNo, setRollNo] = useState("")
+  const [regNo, setRegNo] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -33,8 +33,8 @@ function HostelVerification({ onNavigate }) {
     })
   }, [])
 
-  const handleRollNoChange = (e) => {
-    setRollNo(e.target.value.toUpperCase())
+  const handleRegNoChange = (e) => {
+    setRegNo(e.target.value.toUpperCase())
   }
 
   const handleAlphaNumKey = (e) => {
@@ -47,8 +47,8 @@ function HostelVerification({ onNavigate }) {
     e.preventDefault()
     setError("")
 
-    if (!rollNo.trim() || !password) {
-      setError("Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
+    if (!regNo.trim() || !password) {
+      setError("Invalid Register Number or Password.\n\nPlease use your official College Hostel credentials.")
       return
     }
 
@@ -56,7 +56,7 @@ function HostelVerification({ onNavigate }) {
 
     try {
       const response = await apiClient.post("/api/auth/verify-hostel", {
-        rollNo: rollNo.trim(),
+        registerNo: regNo.trim(),
         password: password
       })
 
@@ -73,13 +73,13 @@ function HostelVerification({ onNavigate }) {
         // Navigate ONLY when verification succeeded
         navigate("/register")
       } else {
-        setError(response.data?.message || "Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
+        setError(response.data?.message || "Invalid Register Number or Password.\n\nPlease use your official College Hostel credentials.")
       }
     } catch (err) {
       console.error("Hostel Verification Error:", err)
       const serverMsg = err.response?.data?.message
       if (err.response?.status === 401 || err.response?.status === 400) {
-        setError(serverMsg || "Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.")
+        setError(serverMsg || "Invalid Register Number or Password.\n\nPlease use your official College Hostel credentials.")
       } else {
         setError(serverMsg || "Unable to connect to the College Hostel Verification Server.\n\nPlease try again later.")
       }
@@ -140,19 +140,19 @@ function HostelVerification({ onNavigate }) {
               </div>
 
               <form onSubmit={handleVerify} className="flex flex-col gap-3.5 sm:gap-4">
-                {/* Roll Number Field */}
+                {/* Register Number Field */}
                 <div className="flex flex-col gap-1.5 sm:gap-2 w-full text-left">
-                  <label htmlFor="hostel-rollNo" className="text-xs sm:text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
-                    Roll Number
+                  <label htmlFor="hostel-regNo" className="text-xs sm:text-sm font-semibold tracking-wide text-[var(--color-text-primary)]/80 select-none">
+                    Register Number
                   </label>
-                  <div className="flex items-center gap-2.5 sm:gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-bg)] px-3 sm:px-4 py-2.5 sm:py-3.5 focus-within:border-[var(--color-btn-primary)] focus-within:bg-[var(--color-btn-primary)]/5 transition-all duration-300">
+                  <div className="flex items-center gap-2.5 sm:gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 sm:px-4 py-2.5 sm:py-3.5 focus-within:border-[var(--color-btn-primary)] transition-all duration-300">
                     <FiHash className="text-[var(--color-text-secondary)] text-base sm:text-lg shrink-0" />
                     <input
-                      id="hostel-rollNo"
+                      id="hostel-regNo"
                       type="text"
-                      placeholder="e.g. 22CSE01"
-                      value={rollNo}
-                      onChange={handleRollNoChange}
+                      placeholder="e.g. 830122104001"
+                      value={regNo}
+                      onChange={handleRegNoChange}
                       onKeyDown={handleAlphaNumKey}
                       required
                       className="flex-1 min-w-0 bg-transparent focus:outline-none text-sm sm:text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] font-medium uppercase"

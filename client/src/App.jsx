@@ -1,21 +1,31 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import './App.css'
 import { useNavigate, useLocation } from 'react-router-dom'
 import LandingPage from './LandingPage'
 import StudentLogin from './StudentLogin'
 import StaffLogin from './StaffLogin'
-import Register from './Register'
-import HostelVerification from './HostelVerification'
-import MessReductionPage from './MessReductionPage'
-import Deputy_warden_side from './Deputy_warden_side'
-import Warden from './Warden'
-import HostelOffice from './Hostel_office'
 import ProtectedRoute from './ProtectedRoute'
 import { isTokenExpired, getStaffDashboardRoute, logout } from './services/authService'
 import { setCookie, deleteCookie } from './utils/cookieUtils'
 
-import AdminLogin from './AdminLogin'
-import AdminLayout from './AdminLayout'
+// Lazy load heavy dashboard and admin routes for code splitting & initial bundle optimization
+const Register = lazy(() => import('./Register'));
+const HostelVerification = lazy(() => import('./HostelVerification'));
+const MessReductionPage = lazy(() => import('./MessReductionPage'));
+const Deputy_warden_side = lazy(() => import('./Deputy_warden_side'));
+const Warden = lazy(() => import('./Warden'));
+const HostelOffice = lazy(() => import('./Hostel_office'));
+const AdminLogin = lazy(() => import('./AdminLogin'));
+const AdminLayout = lazy(() => import('./AdminLayout'));
+
+const RouteLoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[60vh] w-full text-[var(--color-text-secondary)]">
+    <div className="flex items-center gap-3">
+      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-bold uppercase tracking-wider">Loading...</span>
+    </div>
+  </div>
+);
 
 // ============================================
 // ROOT ROUTER CONFIGURATION
@@ -213,7 +223,9 @@ function App() {
 
   return (
     <div className="app-container">
-      {renderScreen()}
+      <Suspense fallback={<RouteLoadingSpinner />}>
+        {renderScreen()}
+      </Suspense>
     </div>
   );
 }

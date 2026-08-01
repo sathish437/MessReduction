@@ -25,6 +25,7 @@ public class ReminderNotificationService {
     private final StaffUsersRepo staffUsersRepo;
     private final NotificationReminderLogRepository reminderLogRepo;
     private final PushNotificationService pushNotificationService;
+    private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     @Value("${notification.reminder.enabled:true}")
     private boolean reminderEnabled;
@@ -35,11 +36,13 @@ public class ReminderNotificationService {
     public ReminderNotificationService(ReductionFormRepo reductionFormRepo,
                                        StaffUsersRepo staffUsersRepo,
                                        NotificationReminderLogRepository reminderLogRepo,
-                                       PushNotificationService pushNotificationService) {
+                                       PushNotificationService pushNotificationService,
+                                       com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.reminderLogRepo = reminderLogRepo;
         this.pushNotificationService = pushNotificationService;
+        this.systemSettingsRepo = systemSettingsRepo;
     }
 
     @Transactional

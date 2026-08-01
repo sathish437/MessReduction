@@ -114,6 +114,168 @@
 }
 
 
+/* ========================================================
+   GLOBAL SINGLE CLEAN BORDER INPUT DESIGN SYSTEM
+   ======================================================== */
+
+/* Base Input Control Reset - Completely Eliminate Secondary Outlines, Rings & Insets */
+input, select, textarea {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* 1. INPUTS INSIDE BORDERED WRAPPER CONTAINERS: Remove inner border completely! */
+div[class*="border"] input,
+div.border input,
+div.group input,
+label[class*="border"] input,
+form div[class*="border"] input {
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+div[class*="border"] input:focus,
+div.border input:focus,
+div.group input:focus,
+label[class*="border"] input:focus,
+form div[class*="border"] input:focus {
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+/* 2. STANDALONE INPUTS, SELECTS & TEXTAREAS: Single clean border */
+:root select,
+:root textarea,
+:root input:not(div[class*="border"] input):not(div.border input):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]) {
+  font-family: inherit;
+  font-size: 0.9375rem !important; /* 15px */
+  line-height: 1.5 !important;
+  border-radius: 0.75rem !important; /* 12px / rounded-xl */
+  background-color: #FFFFFF !important;
+  color: var(--theme-text-primary) !important;
+  border: 1px solid var(--theme-border) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out !important;
+}
+
+.dark select,
+.dark textarea,
+.dark input:not(div[class*="border"] input):not(div.border input):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]) {
+  background-color: #1F2937 !important;
+  color: var(--theme-text-primary) !important;
+  border: 1px solid var(--theme-border) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Re-enforce zero inner border for inputs inside bordered wrappers after standalone rule */
+div[class*="border"] input,
+div.border input,
+div.group input,
+label[class*="border"] input,
+form div[class*="border"] input {
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+/* 3. Chrome / Edge / Safari Browser Autofill Reset */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset !important;
+  -webkit-text-fill-color: var(--theme-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #1F2937 inset !important;
+  -webkit-text-fill-color: var(--theme-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* 4. Uniform Placeholder Styling */
+::placeholder,
+::-webkit-input-placeholder,
+::-moz-placeholder {
+  color: #9CA3AF !important;
+  opacity: 0.8 !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+}
+
+.dark ::placeholder,
+.dark ::-webkit-input-placeholder,
+.dark ::-moz-placeholder {
+  color: #9CA3AF !important;
+  opacity: 0.6 !important;
+}
+
+/* 5. Single Border Focus Highlight - NO DOUBLE RINGS, NO BOX-SHADOWS */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--theme-btn-primary) !important;
+}
+
+div[class*="border"]:focus-within,
+div.border:focus-within {
+  border-color: var(--theme-btn-primary) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 6. Readonly and Disabled Inputs — EXACT SAME Background, Single Border */
+input:read-only,
+textarea:read-only,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #FFFFFF !important;
+  color: var(--theme-text-primary) !important;
+  border-color: var(--theme-border) !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dark input:read-only,
+.dark textarea:read-only,
+.dark input:disabled,
+.dark select:disabled,
+.dark textarea:disabled {
+  background-color: #1F2937 !important;
+  color: var(--theme-text-primary) !important;
+  border-color: var(--theme-border) !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Dropdown Filter — Theme-Aware with Custom Chevron Arrow */
 select {
   color: var(--theme-text-primary) !important;

@@ -6,6 +6,9 @@ import {
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
 import { getActiveDepartments } from './api/departmentService';
+import { useDebounce } from './hooks/useDebounce';
+import Toast from './components/Toast';
+import ConfirmModal from './components/ConfirmModal';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -13,6 +16,7 @@ const AdminStudents = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
@@ -64,22 +68,41 @@ const AdminStudents = () => {
     }
   };
 
-  const handleDeleteOne = async (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      try {
-        await apiClient.delete(`/api/admin/students/${id}`);
-        showToast('Student deleted successfully', 'success');
-        fetchStudents();
-      } catch (error) {
-        showToast('Error deleting student', 'error');
-      }
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: "Confirm Action",
+    message: "",
+    confirmText: "Delete",
+    confirmVariant: "danger",
+    onConfirm: null
+  });
+
+  const handleDeleteOne = (id) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Student",
+      message: "Are you sure you want to delete this student? This action cannot be undone.",
+      confirmText: "Delete",
+      confirmVariant: "danger",
+      onConfirm: () => executeDeleteOne(id)
+    });
+  };
+
+  const executeDeleteOne = async (id) => {
+    setConfirmState(prev => ({ ...prev, isOpen: false }));
+    try {
+      await apiClient.delete(`/api/admin/students/${id}`);
+      showToast('Student deleted successfully', 'success');
+      fetchStudents();
+    } catch (error) {
+      showToast('Error deleting student', 'error');
     }
   };
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, size, search, sortBy, sortDir };
+      const params = { page, size, search: debouncedSearch, sortBy, sortDir };
       if (selectedDept) params.department = selectedDept;
       if (selectedGender) params.gender = selectedGender;
       if (selectedYear) params.year = selectedYear;
@@ -88,18 +111,14 @@ const AdminStudents = () => {
       setStudents(response.data.content);
       setTotalPages(response.data.totalPages);
     } catch (error) {
+      showToast('Error fetching students', 'error');
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, sortBy, sortDir, selectedDept, selectedGender, selectedYear]);
+  }, [page, size, debouncedSearch, selectedDept, selectedGender, selectedYear, sortBy, sortDir]);
 
   useEffect(() => {
-    // Debounce search
-    const delayDebounceFn = setTimeout(() => {
-      fetchStudents();
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
+    fetchStudents();
   }, [fetchStudents]);
 
   const handleSort = (column) => {
@@ -127,60 +146,55 @@ const AdminStudents = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} students?`)) {
-      try {
-        await apiClient.post('/api/admin/students/bulk-delete', selectedIds);
-        setSelectedIds([]);
-        fetchStudents();
-      } catch (error) {
-      }
+  const handleBulkDelete = () => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Multiple Students",
+      message: `Are you sure you want to delete ${selectedIds.length} selected students? This action cannot be undone.`,
+      confirmText: "Delete Students",
+      confirmVariant: "danger",
+      onConfirm: () => executeBulkDelete()
+    });
+  };
+
+  const executeBulkDelete = async () => {
+    setConfirmState(prev => ({ ...prev, isOpen: false }));
+    try {
+      await apiClient.post('/api/admin/students/bulk-delete', selectedIds);
+      setSelectedIds([]);
+      showToast('Students deleted successfully', 'success');
+      fetchStudents();
+    } catch (error) {
+      showToast('Error deleting students', 'error');
     }
   };
 
   return (
     <div className="flex flex-col h-full space-y-4 min-w-0 w-full relative">
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-[12px] shadow-lg border w-[calc(100%-2rem)] sm:w-auto sm:min-w-[320px] max-w-md
-              ${toast.type === 'success'
-                ? 'bg-slate-900 border-emerald-500/30 text-emerald-400'
-                : 'bg-slate-900 border-rose-500/30 text-rose-400'}`}
-          >
-            {toast.type === 'success'
-              ? <MdCheckCircle size={20} className="shrink-0" />
-              : <MdCancel size={20} className="shrink-0" />}
-            <p className="font-medium text-sm text-white">{toast.message}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Toast Notification Panel */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Header Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold">Students</h2>
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          <div className="relative flex-1 md:w-64">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 sm:gap-4 w-full">
+        <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-text-primary)]">Students</h2>
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
             <input 
               type="text"
-              placeholder="Search Name, Reg No, Roll No, Phone, Email, Dept..."
-              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 shadow-sm"
+              placeholder="Search Name, Reg No, Roll No, Phone..."
+              className="w-full h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
             <select 
               value={selectedDept}
               onChange={(e) => { setSelectedDept(e.target.value); setPage(0); }}
-              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 shadow-sm"
+              className="h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full"
             >
               <option value="">All Depts</option>
               {activeDepts.length > 0 ? (
@@ -197,9 +211,9 @@ const AdminStudents = () => {
             <select 
               value={selectedGender}
               onChange={(e) => { setSelectedGender(e.target.value); setPage(0); }}
-              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 shadow-sm"
+              className="h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full"
             >
-              <option value="">All Genders</option>
+              <option value="">Genders</option>
               <option value="MALE">MALE</option>
               <option value="FEMALE">FEMALE</option>
             </select>
@@ -207,9 +221,9 @@ const AdminStudents = () => {
             <select 
               value={selectedYear}
               onChange={(e) => { setSelectedYear(e.target.value); setPage(0); }}
-              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 shadow-sm"
+              className="h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full"
             >
-              <option value="">All Years</option>
+              <option value="">Years</option>
               <option value="1">1st Year</option>
               <option value="2">2nd Year</option>
               <option value="3">3rd Year</option>
@@ -222,7 +236,8 @@ const AdminStudents = () => {
               setFormData({ name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: '' });
               setShowForm(true);
             }}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-[0_4px_15px_rgba(147,51,234,0.4)] transition-all admin-lift">
+            className="h-11 px-4 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+          >
             + Add Student
           </button>
         </div>
@@ -235,103 +250,103 @@ const AdminStudents = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-red-900/30 border border-red-500/50 rounded-xl p-3 flex items-center justify-between"
+            className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-rose-300"
           >
-            <span className="text-sm font-medium">{selectedIds.length} students selected</span>
+            <span className="text-xs sm:text-sm font-bold">{selectedIds.length} students selected</span>
             <div className="flex gap-2">
-              <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-sm transition-colors">
-                <MdDelete size={16} /> Delete
+              <button onClick={handleBulkDelete} className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer">
+                <MdDelete size={18} /> Delete
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Data Table */}
-      <div className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden flex flex-col shadow-lg shadow-black/50 min-w-0 w-full">
-        <div className="overflow-x-auto flex-1 relative">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-[var(--color-primary-bg)] sticky top-0 z-10 shadow-sm border-b border-[var(--color-border)]">
+      {/* Data Table Container */}
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-soft flex flex-col min-w-0 w-full">
+        <div className="overflow-x-auto select-none w-full">
+          <table className="w-full text-left text-xs sm:text-sm min-w-[750px] border-collapse">
+            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
               <tr>
-                <th className="px-4 py-3 sticky left-0 bg-[var(--color-primary-bg)] z-20 w-12">
+                <th className="px-4 py-3.5 w-12 text-center">
                   <input 
                     type="checkbox" 
-                    className="rounded bg-[var(--color-surface)] border-gray-600 text-purple-500 focus:ring-purple-500 cursor-pointer"
+                    className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
                     onChange={handleSelectAll}
                     checked={students.length > 0 && selectedIds.length === students.length}
                   />
                 </th>
-                <th className="px-4 py-3 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('registerNo')}>Reg No {sortBy === 'registerNo' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('name')}>Name {sortBy === 'name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('department')}>Dept {sortBy === 'department' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('year')}>Year {sortBy === 'year' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('phoneNo')}>Phone</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('registerNo')}>Reg No {sortBy === 'registerNo' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('name')}>Name {sortBy === 'name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('department')}>Dept {sortBy === 'department' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('year')}>Year {sortBy === 'year' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('phoneNo')}>Phone</th>
+                <th className="px-4 py-3.5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y border-[var(--color-border)]">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)]">
+                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">
                     <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                     Loading students...
                   </td>
                 </tr>
               ) : students.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)]">No students found.</td>
+                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">No students found.</td>
                 </tr>
               ) : (
                 students.map((student) => (
-                  <tr key={student.studentId} className="hover:bg-[var(--color-card)] transition-all duration-300 group hover:-translate-y-[1px] hover:shadow-[0_4px_15px_rgba(0,0,0,0.1)] relative z-0 hover:z-10">
-                    <td className="px-4 py-3 sticky left-0 bg-[var(--color-surface)] group-hover:bg-[var(--color-card)] z-10 transition-colors">
+                  <tr key={student.studentId} className="hover:bg-[var(--color-card)]/50 transition-colors">
+                    <td className="px-4 py-3.5 text-center">
                       <input 
                         type="checkbox" 
-                        className="rounded bg-black border-gray-600 text-purple-500 focus:ring-purple-500 cursor-pointer"
+                        className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
                         checked={selectedIds.includes(student.studentId)}
                         onChange={() => handleSelectOne(student.studentId)}
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium">{student.registerNo}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">{student.registerNo}</td>
+                    <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[var(--color-card)] flex items-center justify-center text-xs font-bold text-[var(--color-text-primary)]">
+                        <div className="w-9 h-9 rounded-xl bg-purple-600/10 border border-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">
                           {student.name.charAt(0)}
                         </div>
                         <div>
-                          <div>{student.name}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)]">{student.emailId}</div>
+                          <div className="font-bold text-[var(--color-text-primary)]">{student.name}</div>
+                          <div className="text-xs text-[var(--color-text-secondary)] font-normal">{student.emailId}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 rounded-md bg-[var(--color-card)] text-xs font-medium text-[var(--color-text-primary)]">
+                    <td className="px-4 py-3.5">
+                      <span className="px-2.5 py-1 rounded-lg bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-bold text-[var(--color-text-primary)]">
                         {student.department}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-text-secondary)]">
+                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-medium">
                       {student.currentYear ? `${student.currentYear}${student.currentYear === 1 ? 'st' : student.currentYear === 2 ? 'nd' : student.currentYear === 3 ? 'rd' : 'th'} Year` : '-'}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-text-secondary)]">{student.phoneNo}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-mono text-xs font-semibold">{student.phoneNo}</td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-center gap-2">
                         <button 
                           onClick={() => { setSelectedStudent(student); setShowDetails(true); }}
-                          className="p-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg transition-all cursor-pointer"
+                          className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title="View Details"
                         >
                           <MdVisibility size={18} />
                         </button>
                         <button 
                           onClick={() => { setFormData(student); setShowForm(true); }}
-                          className="p-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all cursor-pointer"
+                          className="w-9 h-9 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title="Edit Student"
                         >
                           <MdEdit size={18} />
                         </button>
                         <button 
                           onClick={() => handleDeleteOne(student.studentId)}
-                          className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
+                          className="w-9 h-9 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title="Delete Student"
                         >
                           <MdDelete size={18} />
@@ -346,11 +361,11 @@ const AdminStudents = () => {
         </div>
 
         {/* Pagination */}
-        <div className="border-t border-[var(--color-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-[var(--color-primary-bg)] min-w-0 w-full">
-          <div className="flex items-center gap-4 text-sm text-[var(--color-text-secondary)]">
+        <div className="border-t border-[var(--color-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--color-surface)] w-full">
+          <div className="flex items-center gap-3 text-xs sm:text-sm text-[var(--color-text-secondary)] font-semibold">
             <span>Rows per page:</span>
             <select 
-              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded p-1 outline-none focus:border-purple-500"
+              className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 outline-none focus:border-purple-500 text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
               value={size}
               onChange={(e) => { setSize(Number(e.target.value)); setPage(0); }}
             >
@@ -360,17 +375,17 @@ const AdminStudents = () => {
               <option value={100}>100</option>
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button 
-              className="px-3 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-card)] disabled:opacity-50 transition-colors text-sm"
+              className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
             >
               Previous
             </button>
-            <span className="text-sm px-2">Page {page + 1} of {Math.max(1, totalPages)}</span>
+            <span className="text-xs sm:text-sm font-bold px-2 text-[var(--color-text-primary)]">Page {page + 1} of {Math.max(1, totalPages)}</span>
             <button 
-              className="px-3 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-card)] disabled:opacity-50 transition-colors text-sm"
+              className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
               onClick={() => setPage(page + 1)}
               disabled={page >= totalPages - 1}
             >
@@ -380,37 +395,93 @@ const AdminStudents = () => {
         </div>
       </div>
       
-      {/* Student Details Dialog placeholder */}
+      {/* Student Details Dialog */}
       {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="admin-card w-full max-w-4xl max-h-[90vh] rounded-2xl border border-[var(--color-border)] overflow-hidden flex flex-col shadow-2xl"
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-3xl max-h-[90vh] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"
           >
-            <div className="p-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-primary-bg)]">
-              <h3 className="text-xl font-bold">Student Details</h3>
-              <button onClick={() => setShowDetails(false)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Student Details</h3>
+              <button 
+                onClick={() => setShowDetails(false)} 
+                className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-primary-bg)] transition-colors text-base cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-purple-500 font-bold mb-2">Personal Information</h4>
-                  <p><span className="text-[var(--color-text-secondary)]">Name:</span> {selectedStudent?.name}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Email:</span> {selectedStudent?.emailId}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Phone:</span> {selectedStudent?.phoneNo}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">DOB:</span> {selectedStudent?.dob}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Gender:</span> {selectedStudent?.gender}</p>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 overflow-y-auto flex-1 bg-[var(--color-surface)] space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
+                    Personal Information
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Name</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.name || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Email</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)] break-all">{selectedStudent?.emailId || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Phone</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.phoneNo || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">DOB</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.dob || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Gender</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.gender || '-'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-purple-500 font-bold mb-2">Academic Information</h4>
-                  <p><span className="text-[var(--color-text-secondary)]">Register No:</span> {selectedStudent?.registerNo}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Roll No:</span> {selectedStudent?.rollNo}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Department:</span> {selectedStudent?.department}</p>
-                  <p><span className="text-[var(--color-text-secondary)]">Year:</span> {selectedStudent?.currentYear}</p>
+
+                {/* Academic Information */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
+                    Academic Information
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Register No</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.registerNo || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Roll No</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.rollNo || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Department</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.department || '-'}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
+                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Year</span>
+                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.currentYear || '-'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-[var(--color-border)] flex justify-end bg-[var(--color-surface)]">
+              <button 
+                onClick={() => setShowDetails(false)} 
+                className="px-5 py-2 rounded-xl bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-purple-500/40 transition-all cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </motion.div>
         </div>
@@ -432,31 +503,31 @@ const AdminStudents = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Name</label>
-                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Email</label>
-                  <input required type="email" value={formData.emailId} onChange={e => setFormData({...formData, emailId: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="email" value={formData.emailId} onChange={e => setFormData({...formData, emailId: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Register No</label>
-                  <input required type="text" value={formData.registerNo} onChange={e => setFormData({...formData, registerNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="text" value={formData.registerNo} onChange={e => setFormData({...formData, registerNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Roll No</label>
-                  <input required type="text" value={formData.rollNo} onChange={e => setFormData({...formData, rollNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="text" value={formData.rollNo} onChange={e => setFormData({...formData, rollNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Phone No</label>
-                  <input required type="text" value={formData.phoneNo} onChange={e => setFormData({...formData, phoneNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="text" value={formData.phoneNo} onChange={e => setFormData({...formData, phoneNo: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">DOB</label>
-                  <input required type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300" />
+                  <input required type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
                 </div>
                 <div>
                   <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Department</label>
-                  <select required value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300">
+                  <select required value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300">
                     <option value="">Select Dept</option>
                     {activeDepts.length > 0 ? (
                       activeDepts.map(d => (
@@ -496,6 +567,17 @@ const AdminStudents = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        confirmVariant={confirmState.confirmVariant}
+        onConfirm={confirmState.onConfirm}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

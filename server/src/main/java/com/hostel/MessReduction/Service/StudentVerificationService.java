@@ -39,8 +39,8 @@ public class StudentVerificationService {
             logger.info("External student verification is disabled. Returning mock verified status.");
             return HostelVerifyResDTO.builder()
                     .verified(true)
-                    .rollNo(req.getRollNo())
-                    .registerNo("8301" + req.getRollNo())
+                    .registerNo(req.getRegisterNo())
+                    .rollNo(req.getRegisterNo())
                     .name("Verified Student")
                     .department("CSE")
                     .gender("MALE")
@@ -48,7 +48,7 @@ public class StudentVerificationService {
                     .build();
         }
 
-        logger.info("Hostel verification request started for rollNo: {}", req.getRollNo());
+        logger.info("Hostel verification request started for registerNo: {}", req.getRegisterNo());
 
         try {
             String rawResponseBody = webClient.post()
@@ -63,7 +63,7 @@ public class StudentVerificationService {
 
             boolean isVerified = false;
             HostelVerifyResDTO response = new HostelVerifyResDTO();
-            response.setRollNo(req.getRollNo());
+            response.setRegisterNo(req.getRegisterNo());
 
             if (rawResponseBody != null) {
                 String trimmed = rawResponseBody.trim();
@@ -86,6 +86,8 @@ public class StudentVerificationService {
                         }
                         if (map.get("name") != null) response.setName(String.valueOf(map.get("name")));
                         if (map.get("registerNo") != null) response.setRegisterNo(String.valueOf(map.get("registerNo")));
+                        if (map.get("regNo") != null && response.getRegisterNo() == null) response.setRegisterNo(String.valueOf(map.get("regNo")));
+                        if (map.get("rollNo") != null) response.setRollNo(String.valueOf(map.get("rollNo")));
                         if (map.get("department") != null) response.setDepartment(String.valueOf(map.get("department")));
                         if (map.get("gender") != null) response.setGender(String.valueOf(map.get("gender")));
                         if (map.get("message") != null) response.setMessage(String.valueOf(map.get("message")));
@@ -100,20 +102,20 @@ public class StudentVerificationService {
 
             if (!isVerified) {
                 if (response.getMessage() == null || response.getMessage().isBlank()) {
-                    response.setMessage("Invalid Roll Number or Password.\n\nPlease use your official College Hostel credentials.");
+                    response.setMessage("Invalid Register Number or Password.\n\nPlease use your official College Hostel credentials.");
                 }
-                logger.warn("Hostel verification failed for rollNo: {}", req.getRollNo());
+                logger.warn("Hostel verification failed for registerNo: {}", req.getRegisterNo());
             } else {
-                logger.info("Hostel verification successful for rollNo: {}", req.getRollNo());
+                logger.info("Hostel verification successful for registerNo: {}", req.getRegisterNo());
             }
             return response;
         } catch (org.springframework.web.reactive.function.client.WebClientResponseException e) {
             if (e.getStatusCode().is4xxClientError()) {
-                logger.warn("Hostel verification 4xx response ({}) for rollNo: {}", e.getStatusCode(), req.getRollNo());
+                logger.warn("Hostel verification 4xx response ({}) for registerNo: {}", e.getStatusCode(), req.getRegisterNo());
                 HostelVerifyResDTO response = new HostelVerifyResDTO();
-                response.setRollNo(req.getRollNo());
+                response.setRegisterNo(req.getRegisterNo());
                 response.setVerified(false);
-                response.setMessage("The Roll Number or Password you entered is incorrect. Please use your official College Hostel App credentials.");
+                response.setMessage("The Register Number or Password you entered is incorrect. Please use your official College Hostel App credentials.");
                 return response;
             }
             logger.error("Hostel Verification API server error ({}): {}", e.getStatusCode(), e.getMessage());

@@ -34,6 +34,9 @@ public class ReminderNotificationServiceTest {
     @Mock
     private PushNotificationService pushNotificationService;
 
+    @Mock
+    private com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
+
     @InjectMocks
     private ReminderNotificationService reminderNotificationService;
 

@@ -46,7 +46,7 @@ public class StudentVerificationServiceTest {
         );
 
         hostelReqDto = new HostelVerifyReqDTO();
-        hostelReqDto.setRollNo("22CSE01");
+        hostelReqDto.setRegisterNo("830122104001");
         hostelReqDto.setPassword("hostelpass123");
     }
 
@@ -54,7 +54,7 @@ public class StudentVerificationServiceTest {
     @Test
     void testVerifyHostelCredentials_Success() {
         // Arrange
-        String jsonResponse = "{\"verified\":true,\"rollNo\":\"22CSE01\",\"name\":\"Test Student\",\"department\":\"CSE\"}";
+        String jsonResponse = "{\"verified\":true,\"registerNo\":\"830122104001\",\"name\":\"Test Student\",\"department\":\"CSE\"}";
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), any())).thenReturn(requestBodySpec);
@@ -68,14 +68,14 @@ public class StudentVerificationServiceTest {
         // Assert
         assertNotNull(response);
         assertTrue(response.isVerified());
-        assertEquals("22CSE01", response.getRollNo());
+        assertEquals("830122104001", response.getRegisterNo());
     }
 
     @SuppressWarnings("unchecked")
     @Test
     void testVerifyHostelCredentials_Failure() {
         // Arrange
-        String jsonResponse = "{\"verified\":false,\"message\":\"Invalid Roll Number or Password.\"}";
+        String jsonResponse = "{\"verified\":false,\"message\":\"Invalid Register Number or Password.\"}";
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), any())).thenReturn(requestBodySpec);

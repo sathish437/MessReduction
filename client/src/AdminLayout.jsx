@@ -1,23 +1,61 @@
 import { useTheme } from './context/ThemeContext';
-import { FiSun, FiMoon } from 'react-icons/fi';
+import { FiSun, FiMoon, FiSettings, FiX, FiCheck, FiClock } from 'react-icons/fi';
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MdPeople, MdLogout, MdMenu, MdPendingActions 
+  MdPeople, MdLogout, MdMenu, MdPendingActions, MdSchool, MdSettings
 } from 'react-icons/md';
 import { logout } from './services/authService';
+import apiClient from './api/apiClient';
 import AdminStudents from './AdminStudents';
 import AdminExtraSubmissions from './AdminExtraSubmissions';
 import AdminDepartments from './AdminDepartments';
-import { MdPerson, MdLockOutline, MdSchool } from 'react-icons/md';
+import AdminSettings from './AdminSettings';
 
 const AdminLayout = () => {
   const { isDark, toggleTheme } = useTheme();
 
-
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Admin Settings Modal State
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [reminderOffset, setReminderOffset] = useState(3);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsToast, setSettingsToast] = useState(null);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await apiClient.get('/api/admin/settings/reminder-offset');
+      if (res.data && res.data.reminderDays) {
+        setReminderOffset(res.data.reminderDays);
+      }
+    } catch (e) {
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const handleSaveSettings = async () => {
+    if (reminderOffset < 1) return;
+    setSavingSettings(true);
+    try {
+      await apiClient.put('/api/admin/settings/reminder-offset', { reminderDays: Number(reminderOffset) });
+      setSettingsToast({ message: "Reminder offset setting saved successfully", type: "success" });
+      setTimeout(() => {
+        setSettingsToast(null);
+        setShowSettingsModal(false);
+      }, 1200);
+    } catch (e) {
+      setSettingsToast({ message: e.response?.data?.message || "Failed to save settings", type: "error" });
+      setTimeout(() => setSettingsToast(null), 3000);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -38,7 +76,8 @@ const AdminLayout = () => {
   const menuItems = [
     { path: '/admin/students', icon: <MdPeople size={24} />, label: 'Students' },
     { path: '/admin/departments', icon: <MdSchool size={24} />, label: 'Departments' },
-    { path: '/admin/extra-submissions', icon: <MdPendingActions size={24} />, label: 'Extra Submissions' }
+    { path: '/admin/extra-submissions', icon: <MdPendingActions size={24} />, label: 'Extra Submissions' },
+    { path: '/admin/settings', icon: <MdSettings size={24} />, label: 'Reminder Settings' }
   ];
 
   const handleLogout = async () => {
@@ -48,6 +87,7 @@ const AdminLayout = () => {
   const renderAdminContent = () => {
     if (location.pathname.startsWith('/admin/departments')) return <AdminDepartments />;
     if (location.pathname.startsWith('/admin/extra-submissions')) return <AdminExtraSubmissions />;
+    if (location.pathname.startsWith('/admin/settings')) return <AdminSettings />;
     // Default to Students
     return <AdminStudents />;
   };
@@ -95,9 +135,12 @@ const AdminLayout = () => {
             return (
               <div
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile) setSidebarOpen(false);
+                }}
                 className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 relative ${
-                  isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_4px_15px_rgba(147,51,234,0.4)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] hover:text-[var(--color-text-primary)]'
+                  isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_4px_15px_rgba(147,51,234,0.4)] font-bold' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] hover:text-[var(--color-text-primary)] font-medium'
                 }`}
               >
                 {isActive && (
@@ -113,7 +156,7 @@ const AdminLayout = () => {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      className="ml-4 font-medium whitespace-nowrap"
+                      className="ml-4 whitespace-nowrap text-sm"
                     >
                       {item.label}
                     </motion.span>
@@ -127,7 +170,7 @@ const AdminLayout = () => {
         <div className="p-4 border-t border-[var(--color-border)] space-y-2">
           <button 
             onClick={handleLogout}
-            className="flex items-center p-3 w-full text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer mt-4"
+            className="flex items-center p-3 w-full text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer mt-4 font-bold text-sm"
           >
             <MdLogout size={24} />
             <AnimatePresence>
@@ -136,7 +179,7 @@ const AdminLayout = () => {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="ml-4 font-medium"
+                  className="ml-4"
                 >
                   Logout
                 </motion.span>
@@ -148,37 +191,138 @@ const AdminLayout = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-        {/* Top Header (Optional) */}
-        <header className="h-14 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-4 md:px-6 z-10 shrink-0">
+        {/* Top Header */}
+        <header className="h-16 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setSidebarOpen(true)} 
-              className="md:hidden p-2 hover:bg-[var(--color-card)] rounded-full transition-colors text-[var(--color-text-primary)]"
+              className="md:hidden p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors text-[var(--color-text-primary)] cursor-pointer"
             >
               <MdMenu size={24} />
             </button>
-            <div className="text-lg md:text-xl font-bold truncate">
+            <div className="text-base sm:text-xl font-extrabold tracking-tight truncate text-[var(--color-text-primary)]">
               {menuItems.find(item => location.pathname.startsWith(item.path))?.label || 'Students'}
             </div>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <button onClick={toggleTheme} className="p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <button
+              onClick={() => { fetchSettings(); setShowSettingsModal(true); }}
+              className="h-10 px-3 sm:px-3.5 hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer flex items-center gap-2 text-xs font-bold"
+              title="Admin Settings"
+            >
+              <FiSettings size={18} />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+            <button onClick={toggleTheme} className="w-10 h-10 flex items-center justify-center hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer">
               {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
             </button>
             <div className="text-sm text-right hidden sm:block">
-              <div className="font-medium text-xs md:text-sm">Master Admin</div>
-              <div className="text-[var(--color-text-secondary)] text-[11px] md:text-xs">Administrator</div>
+              <div className="font-bold text-xs sm:text-sm text-[var(--color-text-primary)]">Master Admin</div>
+              <div className="text-[var(--color-text-secondary)] text-[11px] sm:text-xs font-medium">Administrator</div>
             </div>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/20 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-purple-500/20 shrink-0">
               A
             </div>
           </div>
         </header>
 
         {/* Content Outlet */}
-        <div className="flex-1 overflow-auto p-3 md:p-4 lg:p-5 z-0 w-full relative">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 z-0 w-full relative">
           {renderAdminContent()}
         </div>
+
+        {/* Admin Settings Modal */}
+        <AnimatePresence>
+          {showSettingsModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--color-border)]">
+                  <div className="flex items-center gap-2 text-purple-400 font-bold text-lg">
+                    <FiSettings size={20} />
+                    <span>Admin Settings</span>
+                  </div>
+                  <button
+                    onClick={() => setShowSettingsModal(false)}
+                    className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-bg)] transition-colors"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+
+                {settingsToast && (
+                  <div className={`mb-4 p-3 rounded-xl text-xs font-bold ${settingsToast.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}`}>
+                    {settingsToast.message}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)] mb-2 flex items-center gap-1.5">
+                      <FiClock size={14} className="text-purple-400" />
+                      Reminder Before Arrival (Days)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={reminderOffset}
+                        onChange={(e) => setReminderOffset(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-24 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-base font-bold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500"
+                      />
+                      <span className="text-sm font-semibold text-[var(--color-text-secondary)]">Days</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 block">Quick Select Presets:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 5, 7].map(num => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setReminderOffset(num)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            Number(reminderOffset) === num
+                              ? 'bg-purple-600 text-white shadow-md'
+                              : 'bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]'
+                          }`}
+                        >
+                          {num} {num === 1 ? 'Day' : 'Days'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[var(--color-text-secondary)]/80 leading-relaxed pt-2 border-t border-[var(--color-border)]">
+                    Configure how many days before arrival reminders should be sent for student mess reduction requests. Hardcoded values have been removed.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-border)]">
+                  <button
+                    onClick={() => setShowSettingsModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={savingSettings}
+                    className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    {savingSettings ? 'Saving...' : 'Save Settings'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
         <footer className="py-4 text-center border-t border-[var(--color-border)] bg-[var(--color-primary-bg)] relative overflow-hidden">

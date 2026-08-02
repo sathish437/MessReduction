@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.Service;
 
+import com.hostel.MessReduction.CustomException.BadRequestException;
 import com.hostel.MessReduction.DTO.ReqDTO.DepartmentReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.DepartmentResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.PaginatedResponseDTO;
@@ -72,17 +73,17 @@ public class DepartmentService {
 
     public DepartmentResDTO getDepartmentById(Long id) {
         Department department = departmentRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Department not found with ID: " + id));
+                .orElseThrow(() -> new BadRequestException("Department not found with ID: " + id));
         return mapToDTO(department);
     }
 
     public Department findEntityByCode(String code) {
         if (code == null || code.trim().isEmpty()) {
-            throw new IllegalArgumentException("Department code cannot be empty");
+            throw new BadRequestException("Department code cannot be empty");
         }
         return departmentRepo.findByDepartmentCodeIgnoreCase(code.trim())
                 .orElseGet(() -> departmentRepo.findByDepartmentNameIgnoreCase(code.trim())
-                        .orElseThrow(() -> new IllegalArgumentException("Invalid Department: " + code)));
+                        .orElseThrow(() -> new BadRequestException("Invalid Department: " + code)));
     }
 
     @Transactional
@@ -92,11 +93,11 @@ public class DepartmentService {
         String name = reqDTO.getDepartmentName().trim();
 
         if (departmentRepo.existsByDepartmentCodeIgnoreCase(code)) {
-            throw new IllegalArgumentException("Department Code '" + code + "' already exists!");
+            throw new BadRequestException("Department Code '" + code + "' already exists!");
         }
 
         if (departmentRepo.existsByDepartmentNameIgnoreCase(name)) {
-            throw new IllegalArgumentException("Department Name '" + name + "' already exists!");
+            throw new BadRequestException("Department Name '" + name + "' already exists!");
         }
 
         Department department = Department.builder()
@@ -116,17 +117,17 @@ public class DepartmentService {
     @CacheEvict(value = "activeDepartments", allEntries = true)
     public DepartmentResDTO updateDepartment(Long id, DepartmentReqDTO reqDTO) {
         Department department = departmentRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Department not found with ID: " + id));
+                .orElseThrow(() -> new BadRequestException("Department not found with ID: " + id));
 
         String code = reqDTO.getDepartmentCode().trim().toUpperCase();
         String name = reqDTO.getDepartmentName().trim();
 
         if (!department.getDepartmentCode().equalsIgnoreCase(code) && departmentRepo.existsByDepartmentCodeIgnoreCase(code)) {
-            throw new IllegalArgumentException("Department Code '" + code + "' already exists!");
+            throw new BadRequestException("Department Code '" + code + "' already exists!");
         }
 
         if (!department.getDepartmentName().equalsIgnoreCase(name) && departmentRepo.existsByDepartmentNameIgnoreCase(name)) {
-            throw new IllegalArgumentException("Department Name '" + name + "' already exists!");
+            throw new BadRequestException("Department Name '" + name + "' already exists!");
         }
 
         department.setDepartmentCode(code);
@@ -144,7 +145,7 @@ public class DepartmentService {
     @CacheEvict(value = "activeDepartments", allEntries = true)
     public DepartmentResDTO toggleDepartmentStatus(Long id, Boolean isActive) {
         Department department = departmentRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Department not found with ID: " + id));
+                .orElseThrow(() -> new BadRequestException("Department not found with ID: " + id));
 
         department.setIsActive(isActive);
         Department saved = departmentRepo.save(department);

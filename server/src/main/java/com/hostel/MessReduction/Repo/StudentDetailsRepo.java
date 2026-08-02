@@ -15,6 +15,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 @Repository
 public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long>, JpaSpecificationExecutor<StudentDetails> {
     Boolean existsByEmailId(String email);
+    Boolean existsByRollNo(String rollNo);
+    Boolean existsByRegisterNo(String registerNo);
+    Boolean existsByPhoneNo(String phoneNo);
     StudentDetails findByEmailId(String emailId);
     Optional<StudentDetails> findByEmailIdAndDob(String emailId, LocalDate dob);
     Optional<StudentDetails> findByRegisterNo(String registerNo);

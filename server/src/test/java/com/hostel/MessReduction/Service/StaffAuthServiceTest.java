@@ -1,6 +1,6 @@
 package com.hostel.MessReduction.Service;
 
-import com.hostel.MessReduction.CustomException.BadRequestException;
+import com.hostel.MessReduction.CustomException.InvalidCredentialsException;
 import com.hostel.MessReduction.DTO.ReqDTO.StaffUsersReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StaffLoginResDTO;
 import com.hostel.MessReduction.Entity.Role;
@@ -91,8 +91,8 @@ public class StaffAuthServiceTest {
         when(staffUsersRepo.findByUserName("warden")).thenReturn(Optional.empty());
 
         // Act & Assert
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
+        InvalidCredentialsException exception = assertThrows(
+                InvalidCredentialsException.class,
                 () -> staffAuthService.login(reqDto)
         );
 
@@ -108,8 +108,8 @@ public class StaffAuthServiceTest {
         when(passwordEncoder.matches("password123", "encodedPassword123")).thenReturn(false);
 
         // Act & Assert
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
+        InvalidCredentialsException exception = assertThrows(
+                InvalidCredentialsException.class,
                 () -> staffAuthService.login(reqDto)
         );
 
@@ -128,8 +128,8 @@ public class StaffAuthServiceTest {
         when(passwordEncoder.matches("password123", "encodedPassword123")).thenReturn(true);
 
         // Act & Assert
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
+        InvalidCredentialsException exception = assertThrows(
+                InvalidCredentialsException.class,
                 () -> staffAuthService.login(reqDto)
         );
 
@@ -148,8 +148,8 @@ public class StaffAuthServiceTest {
                 .thenThrow(new AuthenticationException("Bad credentials") {});
 
         // Act & Assert
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
+        InvalidCredentialsException exception = assertThrows(
+                InvalidCredentialsException.class,
                 () -> staffAuthService.login(reqDto)
         );
 

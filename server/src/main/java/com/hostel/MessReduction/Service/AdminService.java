@@ -101,7 +101,7 @@ public class AdminService {
 
     public StudentResponseDTO getStudentById(Long id) {
         StudentDetails student = studentDetailsRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.StudentNotFoundException("Student not found with ID: " + id));
         return mapToDTO(student);
     }
 
@@ -124,7 +124,7 @@ public class AdminService {
 
     public StudentResponseDTO updateStudent(Long id, StudentRequestDTO dto) {
         StudentDetails student = studentDetailsRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.StudentNotFoundException("Student not found with ID: " + id));
 
         if (!student.getRegisterNo().equals(dto.getRegisterNo()) && studentDetailsRepo.findByRegisterNo(dto.getRegisterNo()).isPresent()) {
             throw new com.hostel.MessReduction.CustomException.BadRequestException("Register number already exists");
@@ -143,7 +143,7 @@ public class AdminService {
 
     public void deleteStudent(Long id) {
         StudentDetails student = studentDetailsRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.StudentNotFoundException("Student not found with ID: " + id));
         studentDetailsRepo.delete(student);
     }
 
@@ -185,15 +185,15 @@ public class AdminService {
     public void updatePassword(String oldPassword, String newPassword) {
         String currentUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         com.hostel.MessReduction.Entity.StaffUsers adminUser = staffUsersRepo.findByUserName(currentUsername)
-                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.BadRequestException("Admin user not found"));
 
         if (adminUser.getPassword().startsWith("{noop}")) {
             String plainOld = adminUser.getPassword().substring(6);
             if (!plainOld.equals(oldPassword)) {
-                throw new RuntimeException("Incorrect old password");
+                throw new com.hostel.MessReduction.CustomException.BadRequestException("Incorrect old password");
             }
         } else if (!passwordEncoder.matches(oldPassword, adminUser.getPassword())) {
-            throw new RuntimeException("Incorrect old password");
+            throw new com.hostel.MessReduction.CustomException.BadRequestException("Incorrect old password");
         }
 
         adminUser.setPassword(passwordEncoder.encode(newPassword));

@@ -199,7 +199,7 @@ public class NotificationService {
 
     public void markAsRead(Long id, String username) {
         try {
-            AppNotification notification = notificationRepo.findById(id).orElseThrow(() -> new RuntimeException("Notification not found"));
+            AppNotification notification = notificationRepo.findById(id).orElseThrow(() -> new com.hostel.MessReduction.CustomException.BadRequestException("Notification not found"));
             if (notification.getRecipientUsername().equals(username)) {
                 notification.setRead(true);
                 notificationRepo.save(notification);

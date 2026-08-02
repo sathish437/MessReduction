@@ -20,6 +20,9 @@ public class StudentAuthService {
     private final JwtUtil jwtUtil;
 
     public AuthResponseDTO login(StudentLoginReqDTO loginRequest) {
+        if (loginRequest == null || loginRequest.getIdentifier() == null || loginRequest.getIdentifier().trim().isEmpty() || loginRequest.getDob() == null) {
+            throw new InvalidCredentialsException("Invalid Register Number/Roll Number or Date of Birth");
+        }
         String identifier = loginRequest.getIdentifier().trim();
         LocalDate dob = loginRequest.getDob();
 

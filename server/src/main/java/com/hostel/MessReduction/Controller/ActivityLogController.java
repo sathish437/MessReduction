@@ -55,11 +55,21 @@ public class ActivityLogController {
     }
 
     private Role resolveAuthenticatedRole(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) {
+            throw new BadRequestException("Unable to resolve authenticated user role");
+        }
         return authentication.getAuthorities().stream()
                 .map(Object::toString)
                 .filter(roleName -> roleName.startsWith("ROLE_"))
                 .map(roleName -> roleName.substring(5))
-                .map(Role::valueOf)
+                .map(roleStr -> {
+                    try {
+                        return Role.valueOf(roleStr);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Unable to resolve authenticated user role"));
     }

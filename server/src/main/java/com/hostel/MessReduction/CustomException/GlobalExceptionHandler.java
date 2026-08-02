@@ -26,9 +26,16 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<HashMap<String, Object>> buildErrorResponse(String message, HttpStatus status) {
         HashMap<String, Object> map = new HashMap<>();
+        map.put("success", false);
         map.put("message", message);
         map.put("statusCode", status.value());
         return new ResponseEntity<>(map, status);
+    }
+
+    @ExceptionHandler(DuplicateStudentException.class)
+    public ResponseEntity<HashMap<String, Object>> handleDuplicateStudent(DuplicateStudentException exp) {
+        logger.info("Duplicate student registration attempt: {}", exp.getMessage());
+        return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -94,10 +101,17 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<HashMap<String, Object>> handleInvalidCredentials(InvalidCredentialsException exp) {
+        logger.warn("Invalid credentials attempt: {}", exp.getMessage());
+        return buildErrorResponse(exp.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(StudentVerificationFailedException.class)
     public ResponseEntity<HashMap<String, Object>> handleStudentVerificationFailed(StudentVerificationFailedException exp) {
         telegram.sendExceptionAlert(exp, "StudentVerificationFailedException");
         HashMap<String, Object> map = new HashMap<>();
+        map.put("success", false);
         map.put("message", exp.getMessage());
         return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
     }
@@ -106,15 +120,34 @@ public class GlobalExceptionHandler {
     public ResponseEntity<HashMap<String, Object>> handleStudentVerificationServiceUnavailable(StudentVerificationServiceUnavailableException exp) {
         telegram.sendExceptionAlert(exp, "StudentVerificationServiceUnavailableException");
         HashMap<String, Object> map = new HashMap<>();
+        map.put("success", false);
         map.put("message", exp.getMessage());
         return new ResponseEntity<>(map, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<HashMap<String, Object>> handleIllegalArgument(IllegalArgumentException exp) {
-        logger.error("IllegalArgumentException: ", exp);
-        telegram.sendExceptionAlert(exp, "IllegalArgumentException");
+        logger.warn("IllegalArgumentException: {}", exp.getMessage());
         return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<HashMap<String, Object>> handleNullPointer(NullPointerException exp) {
+        logger.error("NullPointerException encountered: ", exp);
+        telegram.sendExceptionAlert(exp, "NullPointerException");
+        return buildErrorResponse("Invalid request payload or missing required data", HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<HashMap<String, Object>> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException exp) {
+        logger.warn("Data integrity violation: {}", exp.getMostSpecificCause().getMessage());
+        return buildErrorResponse("Data integrity violation or duplicate record", HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class, org.springframework.web.bind.MissingServletRequestParameterException.class})
+    public ResponseEntity<HashMap<String, Object>> handleParameterExceptions(Exception exp) {
+        logger.warn("Invalid request parameters: {}", exp.getMessage());
+        return buildErrorResponse("Invalid or missing request parameter: " + exp.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

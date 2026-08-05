@@ -160,13 +160,25 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                     );
                                 }
                                 return (
-                                    <div className="space-y-4">
-                                        {visibleLogs.map((log) => (
-                                            <div key={log.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5 hover:bg-white/[0.04] transition-all">
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="text-white/40 text-xs font-semibold tracking-wider uppercase">Form #{log.formId}</span>
+                                    <div className="w-full overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.01]">
+                                        <table className="w-full text-left border-collapse min-w-[700px]">
+                                            <thead>
+                                                <tr className="border-b border-white/10 bg-white/[0.03] text-[11px] font-bold text-white/50 uppercase tracking-wider">
+                                                    <th className="py-2.5 px-3">Form ID</th>
+                                                    <th className="py-2.5 px-3">Student Name</th>
+                                                    <th className="py-2.5 px-3">Department</th>
+                                                    <th className="py-2.5 px-3">Status</th>
+                                                    <th className="py-2.5 px-3">Staff Role</th>
+                                                    <th className="py-2.5 px-3">Timestamp</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5 text-xs text-white/80">
+                                                {visibleLogs.map((log) => (
+                                                    <tr key={log.id} className="hover:bg-white/[0.04] transition-colors">
+                                                        <td className="py-2 px-3 font-semibold text-white/60 whitespace-nowrap">#{log.formId}</td>
+                                                        <td className="py-2 px-3 font-medium text-white whitespace-nowrap">{log.studentName}</td>
+                                                        <td className="py-2 px-3 text-white/60 uppercase whitespace-nowrap">{log.department || '—'}</td>
+                                                        <td className="py-2 px-3 whitespace-nowrap">
                                                             {log.staffName === "SYSTEM" ? (
                                                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
                                                                     Auto Accept
@@ -176,22 +188,15 @@ export default function ActivityLogModal({ isOpen, onClose, actionTitle, actionT
                                                                     {formatActionBadge(log.action, log.staffName)}
                                                                 </span>
                                                             )}
-                                                        </div>
-                                                        <h4 className="text-sm font-semibold text-white">{log.studentName}</h4>
-                                                        <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{log.department}</p>
-                                                    </div>
-                                                    
-                                                    <div className="flex flex-col sm:items-end gap-2 mt-2 sm:mt-0">
-                                                        <div className="flex items-center gap-2 text-sm text-white/50 font-medium">
-                                                            <FiUser size={14} /> {formatActorName(log.staffName)}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-xs text-white/30 font-semibold uppercase tracking-wider">
-                                                            <FiClock size={12} /> {new Date(log.timestamp).toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                        </td>
+                                                        <td className="py-2 px-3 text-white/70 whitespace-nowrap">{formatActorName(log.staffName)}</td>
+                                                        <td className="py-2 px-3 text-white/40 text-[11px] font-mono whitespace-nowrap">
+                                                            {log.timestamp ? new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 );
                             })()}

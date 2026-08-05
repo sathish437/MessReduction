@@ -39,11 +39,17 @@ public class ActivityLogService {
         log.setStaffRole(request.getStaffRole());
         log.setStaffName(request.getStaffName());
         log.setAction(request.getAction());
-        log.setTimestamp(LocalDateTime.now());
+        log.setTimestamp(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
         log.setArrivalDate(request.getArrivalDate());
         log.setActive(true);
 
         return mapToResponse(activityLogRepository.save(log));
+    }
+
+    public void deleteLogsByFormId(Long formId) {
+        if (formId != null) {
+            activityLogRepository.deleteByFormId(formId);
+        }
     }
 
     public List<ActivityLogResponse> findActiveLogsByStaffName(String staffName) {

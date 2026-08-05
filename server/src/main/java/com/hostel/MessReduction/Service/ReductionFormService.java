@@ -298,6 +298,9 @@ public class ReductionFormService {
             restoreSubmissionCountIfSubmittedToday(student, form);
         }
         
+        // Remove all activity log entries related to this request when deleted by student
+        activityLogService.deleteLogsByFormId(formId);
+
         saveFormHistory(form, "Student Deleted Request", currentStatus, null, "student", "Request deleted by student.");
         notificationService.createNotification(student.getEmailId(), "Your request was successfully deleted.", "DELETED", form.getFormId());
     }
@@ -1129,24 +1132,34 @@ public class ReductionFormService {
             return false;
         }
 
-        // Department check
+        // Department check (supports multi-select comma-separated values)
         String reqDept = settings.getDepartment();
         if (reqDept != null && !reqDept.trim().isEmpty() && !"ALL".equalsIgnoreCase(reqDept.trim())) {
             String formDept = form.getStudentDetails() != null ? form.getStudentDetails().getDepartment() : null;
-            if (formDept == null || !formDept.trim().equalsIgnoreCase(reqDept.trim())) {
+            if (formDept == null) {
+                return false;
+            }
+            java.util.List<String> depts = java.util.Arrays.stream(reqDept.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            if (!depts.isEmpty() && !depts.stream().anyMatch(d -> "ALL".equalsIgnoreCase(d) || d.equalsIgnoreCase(formDept.trim()))) {
                 return false;
             }
         }
 
-        // Year check
+        // Year check (supports multi-select comma-separated values)
         String reqYear = settings.getYear();
         if (reqYear != null && !reqYear.trim().isEmpty() && !"ALL".equalsIgnoreCase(reqYear.trim())) {
             Integer formYear = form.getYear();
             if (formYear == null) {
                 return false;
             }
-            String cleanReqYear = reqYear.replaceAll("[^0-9]", "").trim();
-            if (!cleanReqYear.isEmpty() && !cleanReqYear.equalsIgnoreCase(String.valueOf(formYear))) {
+            java.util.List<String> years = java.util.Arrays.stream(reqYear.split(","))
+                    .map(s -> s.replaceAll("[^0-9]", "").trim())
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            if (!years.isEmpty() && !years.stream().anyMatch(y -> "ALL".equalsIgnoreCase(y) || y.equalsIgnoreCase(String.valueOf(formYear)))) {
                 return false;
             }
         }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   MdSearch, MdCheckCircle, MdCancel, MdVisibility, MdPendingActions
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
@@ -21,7 +21,7 @@ const AdminExtraSubmissions = () => {
       }
     });
   }, []);
-  
+
   // Client-side pagination and filtering
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -29,7 +29,7 @@ const AdminExtraSubmissions = () => {
   const [selectedDept, setSelectedDept] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
-  
+
   // Details Modal
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -136,14 +136,14 @@ const AdminExtraSubmissions = () => {
       req.studentDetails?.department?.toLowerCase().includes(s)
     );
     const matchesDept = !selectedDept || req.studentDetails?.department === selectedDept;
-    
+
     return matchesSearch && matchesDept;
   });
 
   // Client-side sorting
   const sortedRequests = [...filteredRequests].sort((a, b) => {
     let valA, valB;
-    
+
     switch (sortBy) {
       case 'name': valA = a.studentDetails?.name; valB = b.studentDetails?.name; break;
       case 'registerNo': valA = a.studentDetails?.registerNo; valB = b.studentDetails?.registerNo; break;
@@ -174,7 +174,7 @@ const AdminExtraSubmissions = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
-    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -182,49 +182,50 @@ const AdminExtraSubmissions = () => {
       {/* Toast Notification Panel */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Header Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 sm:gap-4 w-full">
+      {/* Page Header */}
+      <div className="flex items-center justify-between gap-3 w-full">
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-text-primary)]">Extra Submission Requests</h2>
-        
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
-            <input 
-              type="text"
-              placeholder="Search Name, Reg No, Dept..."
-              className="w-full h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); setSelectedIds([]); }}
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select 
-              value={selectedDept}
-              onChange={(e) => { setSelectedDept(e.target.value); setPage(0); setSelectedIds([]); }}
-              className="h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full sm:w-auto"
-            >
-              <option value="">All Departments</option>
-              {activeDepts.length > 0 ? (
-                activeDepts.map(d => (
-                  <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
-                ))
-              ) : (
-                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
-                  <option key={code} value={code}>{code}</option>
-                ))
-              )}
-            </select>
-          </div>
+      </div>
+
+      {/* Admin Filters Card */}
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-3 sm:p-4 shadow-soft flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+        <div className="relative flex-1">
+          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
+          <input 
+            type="text"
+            placeholder="Search Name, Reg No, Dept..."
+            className="w-full h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); setSelectedIds([]); }}
+          />
+        </div>
+
+        <div className="w-full sm:w-60 shrink-0">
+          <select 
+            value={selectedDept}
+            onChange={(e) => { setSelectedDept(e.target.value); setPage(0); setSelectedIds([]); }}
+            className="h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full"
+          >
+            <option value="">All Departments</option>
+            {activeDepts.length > 0 ? (
+              activeDepts.map(d => (
+                <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
+              ))
+            ) : (
+              ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                <option key={code} value={code}>{code}</option>
+              ))
+            )}
+          </select>
         </div>
       </div>
 
       {/* Bulk Actions Banner */}
       <AnimatePresence>
         {selectedIds.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: 'auto' }} 
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="flex items-center justify-between gap-3 bg-purple-500/10 border border-purple-500/30 p-3.5 rounded-2xl text-purple-300"
           >
@@ -248,8 +249,8 @@ const AdminExtraSubmissions = () => {
             <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
               <tr>
                 <th className="px-4 py-3.5 w-12 text-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
                     checked={currentRequests.length > 0 && selectedIds.length === currentRequests.length}
                     onChange={(e) => {
@@ -286,8 +287,8 @@ const AdminExtraSubmissions = () => {
                 currentRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-[var(--color-card)]/50 transition-colors">
                     <td className="px-4 py-3.5 text-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
                         checked={selectedIds.includes(req.id)}
                         onChange={(e) => {
@@ -327,7 +328,7 @@ const AdminExtraSubmissions = () => {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-center gap-2">
-                        <button 
+                        <button
                           onClick={() => { setSelectedRequest(req); setShowDetails(true); }}
                           className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title="View Details"
@@ -335,22 +336,22 @@ const AdminExtraSubmissions = () => {
                           <MdVisibility size={18} />
                         </button>
                         {req.status === 'PENDING' && (
-                           <>
-                             <button 
-                               onClick={() => handleAction(req.id, 'approve')}
-                               className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                               title="Approve"
-                             >
-                               <MdCheckCircle size={18} />
-                             </button>
-                             <button 
-                               onClick={() => handleAction(req.id, 'reject')}
-                               className="w-9 h-9 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                               title="Reject"
-                             >
-                               <MdCancel size={18} />
-                             </button>
-                           </>
+                          <>
+                            <button
+                              onClick={() => handleAction(req.id, 'approve')}
+                              className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                              title="Approve"
+                            >
+                              <MdCheckCircle size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleAction(req.id, 'reject')}
+                              className="w-9 h-9 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                              title="Reject"
+                            >
+                              <MdCancel size={18} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -365,7 +366,7 @@ const AdminExtraSubmissions = () => {
         <div className="border-t border-[var(--color-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--color-surface)] w-full">
           <div className="flex items-center gap-3 text-xs sm:text-sm text-[var(--color-text-secondary)] font-semibold">
             <span>Rows per page:</span>
-            <select 
+            <select
               className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 outline-none focus:border-purple-500 text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
               value={size}
               onChange={(e) => { setSize(Number(e.target.value)); setPage(0); }}
@@ -377,7 +378,7 @@ const AdminExtraSubmissions = () => {
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
@@ -385,7 +386,7 @@ const AdminExtraSubmissions = () => {
               Previous
             </button>
             <span className="text-sm px-2">Page {page + 1} of {Math.max(1, totalPages)}</span>
-            <button 
+            <button
               className="px-3 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-card)] disabled:opacity-50 transition-colors text-sm"
               onClick={() => setPage(page + 1)}
               disabled={page >= totalPages - 1}
@@ -395,11 +396,11 @@ const AdminExtraSubmissions = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Details Dialog */}
       {showDetails && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -408,8 +409,8 @@ const AdminExtraSubmissions = () => {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
               <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Request Details</h3>
-              <button 
-                onClick={() => setShowDetails(false)} 
+              <button
+                onClick={() => setShowDetails(false)}
                 className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-primary-bg)] transition-colors text-base cursor-pointer"
               >
                 ✕
@@ -495,13 +496,13 @@ const AdminExtraSubmissions = () => {
             <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-3 bg-[var(--color-surface)]">
               {selectedRequest.status === 'PENDING' && (
                 <>
-                  <button 
+                  <button
                     onClick={() => handleAction(selectedRequest.id, 'reject')}
                     className="px-4 py-2 border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                   >
                     Reject
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleAction(selectedRequest.id, 'approve')}
                     className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md"
                   >
@@ -509,8 +510,8 @@ const AdminExtraSubmissions = () => {
                   </button>
                 </>
               )}
-              <button 
-                onClick={() => setShowDetails(false)} 
+              <button
+                onClick={() => setShowDetails(false)}
                 className="px-5 py-2 rounded-xl bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-purple-500/40 transition-all cursor-pointer"
               >
                 Close

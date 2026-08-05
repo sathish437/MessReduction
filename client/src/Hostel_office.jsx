@@ -948,7 +948,7 @@ function HostelOffice() {
                             </div>
 
                             {/* Date and Filter selectors row */}
-                            <div className="flex flex-col sm:flex-row items-end gap-4 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 no-print">
+                            <div className="flex flex-col sm:flex-row items-end gap-4 bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-2xl p-6 no-print relative z-50 overflow-visible">
                                 <div className="flex-1 w-full">
                                     <MultiSelect
                                         label="Department"

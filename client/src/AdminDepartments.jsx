@@ -118,7 +118,7 @@ const AdminDepartments = () => {
     }
   };
 
-  const filteredDepts = departments.filter(d => 
+  const filteredDepts = departments.filter(d =>
     d.departmentCode?.toLowerCase().includes(search.toLowerCase()) ||
     d.departmentName?.toLowerCase().includes(search.toLowerCase()) ||
     d.shortName?.toLowerCase().includes(search.toLowerCase())
@@ -126,8 +126,8 @@ const AdminDepartments = () => {
 
   return (
     <div className="flex flex-col h-full space-y-4 min-w-0 w-full text-[var(--color-text-primary)]">
-      {/* Header Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5 sm:gap-4 w-full">
+      {/* Page Header */}
+      <div className="flex items-center justify-between gap-3 w-full">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2 text-[var(--color-text-primary)]">
             <MdSchool className="text-purple-500" />
@@ -135,37 +135,36 @@ const AdminDepartments = () => {
           </h2>
           <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-1">Manage master departments used across student registration, profiles, and reports.</p>
         </div>
+        <button 
+          onClick={handleOpenAddModal}
+          className="h-10 sm:h-11 px-3.5 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-95"
+        >
+          <MdAdd size={20} />
+          <span className="hidden sm:inline">Add Department</span>
+          <span className="sm:hidden">Add</span>
+        </button>
+      </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
-            <input 
-              type="text"
-              placeholder="Search code, name..."
-              className="w-full h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchDepartments}
-              className="w-11 h-11 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
-              title="Refresh list"
-            >
-              <MdRefresh size={20} />
-            </button>
-
-            <button 
-              onClick={handleOpenAddModal}
-              className="h-11 px-4 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
-            >
-              <MdAdd size={20} />
-              Add Department
-            </button>
-          </div>
+      {/* Admin Filters Card */}
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-3 sm:p-4 shadow-soft flex items-center gap-3 w-full">
+        <div className="relative flex-1">
+          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
+          <input 
+            type="text"
+            placeholder="Search code, name..."
+            className="w-full h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+
+        <button
+          onClick={fetchDepartments}
+          className="w-10 sm:w-11 h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
+          title="Refresh list"
+        >
+          <MdRefresh size={20} />
+        </button>
       </div>
 
       {/* Toast Notifications */}
@@ -217,9 +216,8 @@ const AdminDepartments = () => {
                       {dept.shortName}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${
-                        dept.isActive ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
-                      }`}>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${dept.isActive ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+                        }`}>
                         <span className={`w-2 h-2 rounded-full ${dept.isActive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                         {dept.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -228,11 +226,10 @@ const AdminDepartments = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleToggleStatus(dept)}
-                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                            dept.isActive 
-                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20' 
+                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${dept.isActive
+                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                               : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
-                          }`}
+                            }`}
                           title={dept.isActive ? "Deactivate Department" : "Activate Department"}
                         >
                           {dept.isActive ? <MdToggleOn size={22} /> : <MdToggleOff size={22} />}

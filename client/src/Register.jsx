@@ -440,7 +440,7 @@ function Register({ onNavigate }) {
       </main>
 
       <footer className="pb-8 text-center mt-auto z-10">
-        <p className="text-xs text-[var(--color-text-secondary)]/40 tracking-widest uppercase font-bold">© 2025 GCES · Student Portal</p>
+        <p className="text-xs text-[var(--color-text-secondary)]/40 tracking-widest uppercase font-bold">© 2025 GCES · Mess Reduction Request Form</p>
       </footer>
     </div>
   )

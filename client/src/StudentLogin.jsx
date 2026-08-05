@@ -88,7 +88,7 @@ function StudentLogin({ onNavigate }) {
             <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             <div className="relative z-10">
               <div className="mb-5 sm:mb-8">
-                <p className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-[var(--color-btn-primary)] uppercase mb-1 sm:mb-2">Student Portal</p>
+                <p className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-[var(--color-btn-primary)] uppercase mb-1 sm:mb-2">Mess Reduction Request Form</p>
                 <h2 className="text-xl sm:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">{TITLE}</h2>
                 <p className="text-xs sm:text-[15px] text-[var(--color-text-secondary)] mt-1 sm:mt-2 font-medium">Sign in with your student credentials</p>
               </div>
@@ -149,7 +149,7 @@ function StudentLogin({ onNavigate }) {
       </main>
 
       <footer className="pb-6 sm:pb-8 text-center mt-auto z-10">
-        <p className="text-[10px] sm:text-xs text-[var(--color-text-secondary)]/40 tracking-widest uppercase font-bold">© 2025 GCES · Student Portal</p>
+        <p className="text-[10px] sm:text-xs text-[var(--color-text-secondary)]/40 tracking-widest uppercase font-bold">© 2025 GCES · Mess Reduction Request Form</p>
       </footer>
     </div>
   )

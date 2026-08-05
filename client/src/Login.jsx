@@ -18,7 +18,7 @@ function AnimatedTitle() {
   return (
     <div className="mb-6">
       <p className="text-sm font-bold tracking-[0.3em] text-teal-400/80 uppercase mb-2">
-        Student Portal
+        Mess Reduction Request Form
       </p>
       <motion.h2
         className="font-black text-4xl text-white tracking-tight flex gap-[1px]"

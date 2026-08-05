@@ -836,7 +836,7 @@ function MessReductionPage() {
                     <img src={image} alt="GCES Logo" className="w-12 h-12 object-contain drop-shadow-md" />
                     <div className="flex flex-col">
                         <span className="text-[11px] font-bold tracking-widest text-white/80 uppercase mb-0.5">GCES Srirangam</span>
-                        <span className="text-xl font-bold tracking-tight">Student Portal</span>
+                        <span className="text-xl font-bold tracking-tight">Mess Reduction Request Form</span>
                     </div>
                 </div>
 
@@ -876,7 +876,7 @@ function MessReductionPage() {
                 <header className="md:hidden flex items-center justify-between px-3 py-3 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
                     <div className="flex items-center gap-2.5">
                         <img src={image} alt="GCES Logo" className="w-7 h-7 object-contain" />
-                        <span className="text-sm font-bold tracking-tight">Student Portal</span>
+                        <span className="text-sm font-bold tracking-tight">Mess Reduction Request Form</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={toggleTheme} className="text-white/80 hover:text-white p-1.5 bg-white/10 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">

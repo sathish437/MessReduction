@@ -1,5 +1,6 @@
 package com.hostel.MessReduction.DTO.ResDTO;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hostel.MessReduction.Entity.Role;
 
 import java.time.LocalDate;
@@ -15,6 +16,8 @@ public class ActivityLogResponse {
     private Role staffRole;
     private String staffName;
     private String action;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
     private LocalDate arrivalDate;
     private boolean isActive;

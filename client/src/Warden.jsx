@@ -14,6 +14,7 @@ import ActivityLogModal from "./ActivityLogModal";
 import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
 import Toast from "./components/Toast";
+import MultiSelect from "./MultiSelect";
 
 const handleLogout = () => {
   logout();
@@ -93,8 +94,8 @@ function AutoAcceptSettingsCard() {
     const [enabled, setEnabled] = useState(false);
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
-    const [department, setDepartment] = useState("ALL");
-    const [year, setYear] = useState("ALL");
+    const [selectedDepts, setSelectedDepts] = useState([]);
+    const [selectedYears, setSelectedYears] = useState([]);
     const [reason, setReason] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -117,8 +118,13 @@ function AutoAcceptSettingsCard() {
                     setEnabled(res.data.enabled);
                     setFromDate(res.data.fromDate || "");
                     setToDate(res.data.toDate || "");
-                    setDepartment(res.data.department || "ALL");
-                    setYear(res.data.year || "ALL");
+                    
+                    const d = res.data.department || "ALL";
+                    setSelectedDepts(!d || d === "ALL" ? [] : d.split(",").map(s => s.trim()));
+
+                    const y = res.data.year || "ALL";
+                    setSelectedYears(!y || y === "ALL" ? [] : y.split(",").map(s => s.trim()));
+
                     setReason(res.data.reason || "");
                 }
             } catch (err) {
@@ -154,13 +160,16 @@ function AutoAcceptSettingsCard() {
             return;
         }
 
+        const deptStr = !selectedDepts || selectedDepts.length === 0 ? "ALL" : selectedDepts.join(",");
+        const yearStr = !selectedYears || selectedYears.length === 0 ? "ALL" : selectedYears.join(",");
+
         try {
             await apiClient.post("/api/hostelStaff/staff/auto-accept", {
                 enabled,
                 fromDate,
                 toDate,
-                department,
-                year,
+                department: deptStr,
+                year: yearStr,
                 reason
             });
             setMessage("Settings saved successfully!");
@@ -200,6 +209,17 @@ function AutoAcceptSettingsCard() {
     const statusInfo = getStatusInfo();
     const isSaveDisabled = !fromDate || !toDate || new Date(fromDate) > new Date(toDate);
 
+    const deptOptions = activeDepts.length > 0 
+        ? activeDepts.map(d => ({ value: d.departmentCode, label: d.departmentCode }))
+        : ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => ({ value: code, label: code }));
+
+    const yearOptions = [
+        { value: "1", label: "1st Year (1)" },
+        { value: "2", label: "2nd Year (2)" },
+        { value: "3", label: "3rd Year (3)" },
+        { value: "4", label: "4th Year (4)" }
+    ];
+
     if (loading) {
         return (
             <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 shadow-sm flex items-center justify-center">
@@ -210,7 +230,7 @@ function AutoAcceptSettingsCard() {
     }
 
     return (
-        <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+        <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-6 sm:p-8 shadow-sm relative group">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--theme-border)] pb-4 mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-[var(--theme-text-primary)] flex items-center gap-2">
@@ -245,7 +265,6 @@ function AutoAcceptSettingsCard() {
                             const newEnabled = !enabled;
                             setEnabled(newEnabled);
                             if (newEnabled) {
-                                // Default fromDate to today if turning on and it's missing or before today
                                 const todayStr = new Date().toISOString().split('T')[0];
                                 if (!fromDate || fromDate < todayStr) {
                                     setFromDate(todayStr);
@@ -290,41 +309,28 @@ function AutoAcceptSettingsCard() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-20">
                     <div>
-                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">Department</label>
-                        <select
+                        <MultiSelect
+                            label="Department"
+                            options={deptOptions}
+                            value={selectedDepts}
+                            onChange={setSelectedDepts}
+                            placeholder="Select Departments"
+                            allOptionLabel="All Departments"
                             disabled={!enabled || saving}
-                            value={department}
-                            onChange={(e) => setDepartment(e.target.value)}
-                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                            <option value="ALL">All Departments</option>
-                            {activeDepts.length > 0 ? (
-                                activeDepts.map(d => (
-                                    <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
-                                ))
-                            ) : (
-                                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
-                                    <option key={code} value={code}>{code}</option>
-                                ))
-                            )}
-                        </select>
+                        />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-2">Year</label>
-                        <select
+                        <MultiSelect
+                            label="Year"
+                            options={yearOptions}
+                            value={selectedYears}
+                            onChange={setSelectedYears}
+                            placeholder="Select Years"
+                            allOptionLabel="All Years"
                             disabled={!enabled || saving}
-                            value={year}
-                            onChange={(e) => setYear(e.target.value)}
-                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--theme-text-primary)] focus:outline-none focus:border-teal-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                            <option value="ALL">All Years</option>
-                            <option value="1">1st Year (1)</option>
-                            <option value="2">2nd Year (2)</option>
-                            <option value="3">3rd Year (3)</option>
-                            <option value="4">4th Year (4)</option>
-                        </select>
+                        />
                     </div>
                 </div>
 

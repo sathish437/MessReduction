@@ -192,42 +192,42 @@ const AdminLayout = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         {/* Top Header */}
-        <header className="h-16 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="h-14 sm:h-16 border-b border-[var(--color-border)] backdrop-blur-xl bg-[var(--color-primary-bg)]/80 flex items-center justify-between px-3 sm:px-6 z-10 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={() => setSidebarOpen(true)} 
-              className="md:hidden p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors text-[var(--color-text-primary)] cursor-pointer"
+              className="md:hidden p-1.5 sm:p-2 hover:bg-[var(--color-card)] rounded-xl transition-colors text-[var(--color-text-primary)] cursor-pointer shrink-0"
             >
-              <MdMenu size={24} />
+              <MdMenu size={22} />
             </button>
-            <div className="text-base sm:text-xl font-extrabold tracking-tight truncate text-[var(--color-text-primary)]">
+            <div className="text-sm sm:text-xl font-extrabold tracking-tight truncate text-[var(--color-text-primary)]">
               {menuItems.find(item => location.pathname.startsWith(item.path))?.label || 'Students'}
             </div>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => { fetchSettings(); setShowSettingsModal(true); }}
-              className="h-10 px-3 sm:px-3.5 hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer flex items-center gap-2 text-xs font-bold"
+              className="h-8 sm:h-10 px-2.5 sm:px-3.5 hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer flex items-center gap-1.5 text-xs font-bold"
               title="Admin Settings"
             >
-              <FiSettings size={18} />
+              <FiSettings size={16} />
               <span className="hidden sm:inline">Settings</span>
             </button>
-            <button onClick={toggleTheme} className="w-10 h-10 flex items-center justify-center hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer">
-              {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+            <button onClick={toggleTheme} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-[var(--color-card)] rounded-xl transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] shadow-sm cursor-pointer">
+              {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
             </button>
             <div className="text-sm text-right hidden sm:block">
               <div className="font-bold text-xs sm:text-sm text-[var(--color-text-primary)]">Master Admin</div>
               <div className="text-[var(--color-text-secondary)] text-[11px] sm:text-xs font-medium">Administrator</div>
             </div>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-purple-500/20 shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-xs sm:text-sm shadow-md shadow-purple-500/20 shrink-0">
               A
             </div>
           </div>
         </header>
 
         {/* Content Outlet */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 z-0 w-full relative">
+        <div className="flex-1 overflow-auto p-3 sm:p-6 lg:p-8 z-0 w-full relative min-w-0">
           {renderAdminContent()}
         </div>
 

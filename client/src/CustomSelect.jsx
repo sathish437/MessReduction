@@ -91,7 +91,7 @@ export default function CustomSelect({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-xl backdrop-blur-md"
+            className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-2xl backdrop-blur-xl"
           >
             {normalizedOptions.length === 0 ? (
               <div className="p-3 text-center text-sm text-[var(--color-text-secondary)]">
@@ -106,10 +106,10 @@ export default function CustomSelect({
                     type="button"
                     onClick={() => handleSelect(opt.value)}
                     className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-[8px] text-sm font-medium transition-colors text-left cursor-pointer
-                      ${isSelected ? 'bg-[var(--color-btn-primary)]/10 text-[var(--color-btn-primary)] font-bold' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-primary-bg)]'}`}
+                      ${isSelected ? 'bg-[var(--color-btn-primary)]/20 text-[var(--color-btn-primary)] font-bold' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-btn-primary)]/10 hover:text-[var(--color-btn-primary)]'}`}
                   >
-                    <span>{opt.label}</span>
-                    {isSelected && <FiCheck size={16} className="text-[var(--color-btn-primary)] shrink-0" />}
+                    <span className="truncate">{opt.label}</span>
+                    {isSelected && <FiCheck size={16} className="text-[var(--color-btn-primary)] shrink-0 ml-2" />}
                   </button>
                 );
               })

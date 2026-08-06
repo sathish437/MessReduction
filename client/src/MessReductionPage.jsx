@@ -1117,9 +1117,26 @@ function MessReductionPage() {
                                             />
 
                                             <AnimatePresence>
-                                                {formData.reason === "other" && (
-                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                                                        <Field label="Specify Reason" icon={<FiFileText size={18} />} type="text" placeholder="Enter your detailed reason" name="otherReason" value={formData.otherReason} onChange={handleChange} required id="other-reason-input" />
+                                                {(formData.reason === "other" || formData.reason === "Other Reason" || formData.reason === "Other") && (
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, height: 0, marginTop: 0 }} 
+                                                        animate={{ opacity: 1, height: "auto", marginTop: 8 }} 
+                                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="overflow-visible w-full"
+                                                    >
+                                                        <Field 
+                                                            label="Specify Reason" 
+                                                            icon={<FiFileText size={18} />} 
+                                                            type="text" 
+                                                            placeholder="Enter your specific reason for leave" 
+                                                            name="otherReason" 
+                                                            value={formData.otherReason} 
+                                                            onChange={handleChange} 
+                                                            required 
+                                                            id="other-reason-input"
+                                                            error={formErrors.otherReason}
+                                                        />
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>

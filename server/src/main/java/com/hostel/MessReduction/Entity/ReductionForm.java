@@ -27,6 +27,14 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(name = "reduction_form", indexes = {
+        @Index(name = "idx_rf_status_active", columnList = "current_status, is_active"),
+        @Index(name = "idx_rf_deputy_active", columnList = "assigned_deputy_warden, is_active"),
+        @Index(name = "idx_rf_year_status_active", columnList = "year, current_status, is_active"),
+        @Index(name = "idx_rf_student_active", columnList = "student_id, is_active"),
+        @Index(name = "idx_rf_dates", columnList = "leave_date, arrival_date"),
+        @Index(name = "idx_rf_submitted_at", columnList = "submitted_at")
+})
 public class ReductionForm {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

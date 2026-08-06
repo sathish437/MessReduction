@@ -21,6 +21,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name = "student_details", indexes = {
+        @Index(name = "idx_sd_register_no", columnList = "registerNo"),
+        @Index(name = "idx_sd_roll_no", columnList = "rollNo"),
+        @Index(name = "idx_sd_email", columnList = "emailId"),
+        @Index(name = "idx_sd_department", columnList = "department")
+})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class StudentDetails {
     @Id

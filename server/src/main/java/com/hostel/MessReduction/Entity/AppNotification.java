@@ -14,6 +14,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name = "app_notification", indexes = {
+        @Index(name = "idx_an_recipient_read", columnList = "recipientUsername, isRead"),
+        @Index(name = "idx_an_whatsapp_status", columnList = "whatsappStatus"),
+        @Index(name = "idx_an_created_at", columnList = "createdAt")
+})
 public class AppNotification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

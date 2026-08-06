@@ -1,6 +1,6 @@
 import { useTheme } from './context/ThemeContext';
 import { FiSun, FiMoon } from 'react-icons/fi';
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
@@ -11,6 +11,7 @@ import apiClient from "./api/apiClient";
 import { logout } from "./services/authService";
 import Toast from "./components/Toast";
 import ConfirmModal from "./components/ConfirmModal";
+import MobileBottomNav from "./components/MobileBottomNav";
 import CustomSelect from "./CustomSelect";
 
 import image from "./assets/1000088399.png";
@@ -464,9 +465,33 @@ function MessReductionPage() {
 
     const isAnyProcessing = isSubmitting || isDeleting || isRequestingExtra || loading;
 
-    const latestForm = Array.isArray(studentForm) && studentForm.length > 0
-        ? studentForm[0]
-        : null;
+    // Helper function to check if a request is expired based on Arrival Date + 1 day <= Current Local Date
+    const isRequestExpiredByArrivalDate = useCallback((arrivalDateStr) => {
+        if (!arrivalDateStr) return false;
+        const parts = arrivalDateStr.split('T')[0].split('-');
+        if (parts.length !== 3) return false;
+
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // 0-indexed month
+        const day = parseInt(parts[2], 10);
+
+        // expiryDate = arrivalDate + 1 day (00:00:00 local time)
+        const expiryDate = new Date(year, month, day + 1, 0, 0, 0, 0);
+
+        // Current Local Date (00:00:00 local time)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Current Local Date >= expiryDate
+        return today.getTime() >= expiryDate.getTime();
+    }, []);
+
+    // Filter out expired forms to determine active tracking request
+    const unexpiredForms = Array.isArray(studentForm)
+        ? studentForm.filter(form => !isRequestExpiredByArrivalDate(form?.arrivalDate))
+        : [];
+
+    const latestForm = unexpiredForms.length > 0 ? unexpiredForms[0] : null;
     const activeRequest = latestForm;
 
     const isInProgressRequest = latestForm && latestForm.currentStatus && latestForm.currentStatus.startsWith('Pending');
@@ -571,7 +596,8 @@ function MessReductionPage() {
                 if (sortedForms.length > 0) {
                     const req = sortedForms[0];
                     const isPending = req.currentStatus?.startsWith('Pending') || req.currentStatus === 'Approved';
-                    if (isPending && req.isActive) {
+                    const isExpired = isRequestExpiredByArrivalDate(req.arrivalDate);
+                    if (isPending && req.isActive && !isExpired) {
                         setActiveTab('track');
                     }
                 }
@@ -585,6 +611,22 @@ function MessReductionPage() {
             setLoading(false);
         }
     };
+
+    const checkedExpiredFormIdsRef = useRef(new Set());
+
+    // Automatic refresh when any request's Arrival Date + 1 day <= Current Local Date
+    useEffect(() => {
+        if (!studentId || !Array.isArray(studentForm) || studentForm.length === 0) return;
+
+        const expiredForm = studentForm.find(form => 
+            form && form.arrivalDate && isRequestExpiredByArrivalDate(form.arrivalDate)
+        );
+
+        if (expiredForm && expiredForm.formId && !checkedExpiredFormIdsRef.current.has(expiredForm.formId)) {
+            checkedExpiredFormIdsRef.current.add(expiredForm.formId);
+            fetchStudentData(studentId);
+        }
+    }, [studentForm, studentId, isRequestExpiredByArrivalDate]);
 
     useEffect(() => {
         if (activeRequest && activeRequest.formId) {
@@ -826,7 +868,7 @@ function MessReductionPage() {
     }
 
     return (
-        <div className="min-h-[100dvh] w-full flex flex-col bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-btn-primary)]/30">
+        <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-btn-primary)]/30">
             {/* Toast Notification Panel */}
             <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -870,7 +912,7 @@ function MessReductionPage() {
             </header>
 
             {/* Mobile Layout Container */}
-            <div className="flex-1 flex flex-col overflow-hidden relative">
+            <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
                 
                 {/* Mobile Header */}
                 <header className="md:hidden flex items-center justify-between px-3 py-3 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
@@ -890,7 +932,7 @@ function MessReductionPage() {
 
 
                 {/* Main Scrollable Area */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-6">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-6 pb-28 md:pb-6">
                     <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-5">
 
                         {activeTab === 'dashboard' && (
@@ -1212,27 +1254,14 @@ function MessReductionPage() {
                         )}
                     </div>
                 </main>
-
-                {/* Mobile Bottom Navigation */}
-                <nav className="md:hidden shrink-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex items-center justify-around px-2 py-2 z-30">
-                    <button 
-                        onClick={() => setActiveTab('dashboard')} 
-                        disabled={isAnyProcessing}
-                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'dashboard' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-                    >
-                        <FiHome size={20} className="mb-1" />
-                        <span className="text-[10px] font-semibold">Home</span>
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('track')} 
-                        disabled={isAnyProcessing}
-                        className={`flex flex-col items-center justify-center w-full py-2 rounded-xl transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'track' ? 'text-[var(--color-btn-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-                    >
-                        <FiActivity size={20} className="mb-1" />
-                        <span className="text-[10px] font-semibold">Track</span>
-                    </button>
-                </nav>
             </div>
+
+            {/* Mobile Bottom Navigation - Viewport Pinned */}
+            <MobileBottomNav
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                isAnyProcessing={isAnyProcessing}
+            />
 
             {/* Extra Submission Request Dialog */}
             <AnimatePresence>

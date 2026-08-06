@@ -589,9 +589,9 @@ function Deputy_warden_side() {
 
     // Dashboard aggregates
     const totalForms     = requests.length;
-    const totalPending   = requests.filter(r => r.status === "pending").length;
-    const totalAccepted  = requests.filter(r => ["accepted","approved_by_warden","fully_approved"].includes(r.status)).length;
-    const totalRejected  = requests.filter(r => ["rejected","final_rejected"].includes(r.status)).length;
+    const totalPending   = requests.filter(r => r.status?.startsWith("Pending")).length;
+    const totalAccepted  = requests.filter(r => r.status === "Approved").length;
+    const totalRejected  = requests.filter(r => r.status?.startsWith("Rejected")).length;
 
     if (isLoading) {
         return (

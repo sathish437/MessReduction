@@ -900,17 +900,21 @@ public class ReductionFormService {
     }
 
     private void checkSubmissionLimit(StudentDetails student) {
-        student.resetSubmissionCountIfNewDay();
+        boolean reset = student.resetSubmissionCountIfNewDay();
 
         int totalCount = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
         int granted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
         int maxAllowed = 3 + granted;
 
         if (totalCount >= maxAllowed) {
+            if (reset) {
+                studentDetailsRepo.save(student);
+            }
             throw new BadRequestException("You have reached the maximum limit of 3 mess reduction requests.\n\nIf you need another reduction request, please contact the Hostel Administration through the existing Admin Request process.");
         }
 
         student.setDailySubmissionCount(totalCount + 1);
+        student.setLastSubmissionDate(LocalDate.now());
         studentDetailsRepo.save(student);
     }
 

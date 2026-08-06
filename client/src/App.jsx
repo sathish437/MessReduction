@@ -167,9 +167,7 @@ function App() {
       case 'student-dashboard':
         return (
           <ProtectedRoute requiredType="student" onNavigate={navigate}>
-            <div className="relative">
-              <MessReductionPage />
-            </div>
+            <MessReductionPage />
           </ProtectedRoute>
         );
 

@@ -82,6 +82,15 @@ public class StudentDetails {
         if (this.dailySubmissionCount == null) { this.dailySubmissionCount = 0; updated = true; }
         if (this.extraSubmissionGranted == null) { this.extraSubmissionGranted = 0; updated = true; }
         if (this.extraSubmissionUsed == null) { this.extraSubmissionUsed = 0; updated = true; }
+
+        LocalDate today = LocalDate.now();
+        if (this.lastSubmissionDate == null || !this.lastSubmissionDate.equals(today)) {
+            this.dailySubmissionCount = 0;
+            this.extraSubmissionGranted = 0;
+            this.extraSubmissionUsed = 0;
+            this.lastSubmissionDate = today;
+            updated = true;
+        }
         return updated;
     }
 }

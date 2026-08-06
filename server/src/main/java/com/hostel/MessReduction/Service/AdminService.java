@@ -65,11 +65,7 @@ public class AdminService {
 
             if (department != null && !department.trim().isEmpty()) {
                 String d = department.trim().toLowerCase();
-                predicates.add(cb.or(
-                        cb.equal(cb.lower(root.get("department").get("departmentCode")), d),
-                        cb.equal(cb.lower(root.get("department").get("shortName")), d),
-                        cb.equal(cb.lower(root.get("department").get("departmentName")), d)
-                ));
+                predicates.add(cb.equal(cb.lower(root.get("department")), d));
             }
 
             if (gender != null) {

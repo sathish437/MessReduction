@@ -726,17 +726,7 @@ function MessReductionPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Room number validation (Starts with 4, second digit is 0,1,2, or 3, length is 4, 5, or 6 digits)
-        const roomVal = formData.room ? formData.room.toString().trim() : "";
-        const roomRegex = /^4[0-3]\d{2,4}$/;
-        if (!roomRegex.test(roomVal)) {
-            setFormErrors({ room: "Room number must start with 4, second digit must be 0, 1, 2, or 3, and contain 4 to 6 digits." });
-            showToast("Room number must start with 4, second digit must be 0, 1, 2, or 3, and contain 4 to 6 digits.", 'error');
-            return;
-        } else {
-            setFormErrors({});
-        }
+        setFormErrors({});
 
         if (isInvalidDateDifference) {
             showToast("Mess reduction is not applicable for leaves of 3 days or less.", 'error');

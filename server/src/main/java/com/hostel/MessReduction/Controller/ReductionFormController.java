@@ -29,6 +29,18 @@ public class ReductionFormController {
         this.extraSubmissionService = extraSubmissionService;
     }
 
+    @GetMapping("/server-time")
+    public ResponseEntity<?> getServerTime() {
+        java.time.ZoneId systemZone = java.time.ZoneId.of("Asia/Kolkata");
+        java.time.LocalDate today = java.time.LocalDate.now(systemZone);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(systemZone);
+        return ResponseEntity.ok(java.util.Map.of(
+            "serverDate", today.toString(),
+            "serverDateTime", now.toString(),
+            "timeZone", "Asia/Kolkata"
+        ));
+    }
+
     @GetMapping("/Student/{studentId}")
     public ResponseEntity<?> fetchStudentData(@PathVariable Long studentId) {
         logger.info("Student controller entered: GET /Student/{}", studentId);

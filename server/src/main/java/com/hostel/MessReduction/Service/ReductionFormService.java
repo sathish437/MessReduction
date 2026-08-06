@@ -135,6 +135,12 @@ public class ReductionFormService {
         response.put("dob", studentDetails.getDob());
         response.put("emailId", studentDetails.getEmailId());
         response.put("phoneNo", studentDetails.getPhoneNo());
+        ZoneId systemZone = ZoneId.of("Asia/Kolkata");
+        java.time.LocalDate todayInIst = java.time.LocalDate.now(systemZone);
+        java.time.LocalDateTime nowInIst = java.time.LocalDateTime.now(systemZone);
+        response.put("serverDate", todayInIst.toString());
+        response.put("serverDateTime", nowInIst.toString());
+
         response.put("dailySubmissionCount", studentDetails.getDailySubmissionCount());
         response.put("extraSubmissionGranted", studentDetails.getExtraSubmissionGranted());
         response.put("extraSubmissionUsed", studentDetails.getExtraSubmissionUsed());

@@ -18,13 +18,23 @@ import image from "./assets/1000088399.png";
 
 const TITLE = "MESS REDUCTION";
 
-const getMinArrivalDate = (leaveDate) => {
-    if (!leaveDate) {
+const getMinArrivalDate = (leaveDate, todayServerStr) => {
+    const baseDateStr = leaveDate || todayServerStr;
+    if (!baseDateStr) {
         const today = new Date();
         today.setDate(today.getDate() + 3);
         return today.toISOString().split('T')[0];
     }
-    const leave = new Date(leaveDate);
+    const parts = baseDateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        d.setDate(d.getDate() + 3);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    const leave = new Date(baseDateStr);
     leave.setDate(leave.getDate() + 3);
     return leave.toISOString().split('T')[0];
 };

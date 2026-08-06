@@ -1021,7 +1021,7 @@ function MessReductionPage() {
                                     </div>
                                 </div>
 
-                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-hidden">
+                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-visible">
                                     <div className="px-4 py-3.5 sm:px-6 sm:py-5 border-b border-[var(--color-border)] flex justify-between items-center flex-wrap gap-3 sm:gap-4">
                                         <div>
                                             <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
@@ -1109,6 +1109,7 @@ function MessReductionPage() {
                                                 onChange={handleChange}
                                                 required
                                                 placeholder="Select Reason"
+                                                position="top"
                                                 options={[
                                                     { value: "Study Holidays", label: "Study Holidays" },
                                                     { value: "Medical Leave", label: "Medical Leave" },

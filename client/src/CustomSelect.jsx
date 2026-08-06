@@ -14,12 +14,15 @@ export default function CustomSelect({
   disabled = false,
   className = "",
   id,
-  name
+  name,
+  position = "bottom", // "bottom" or "top"
+  dropUp = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const fieldName = name || id;
+  const isTop = position === "top" || dropUp;
 
   // Normalize options to objects { value, label }
   const normalizedOptions = options.map(opt =>
@@ -87,11 +90,13 @@ export default function CustomSelect({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 4, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            initial={isTop ? { opacity: 0, y: 6, scale: 0.98 } : { opacity: 0, y: -6, scale: 0.98 }}
+            animate={isTop ? { opacity: 1, y: -4, scale: 1 } : { opacity: 1, y: 4, scale: 1 }}
+            exit={isTop ? { opacity: 0, y: 6, scale: 0.98 } : { opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-2xl backdrop-blur-xl"
+            className={`absolute left-0 right-0 z-[100] max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-2xl backdrop-blur-xl ${
+              isTop ? 'bottom-full mb-1' : 'top-full mt-1'
+            }`}
           >
             {normalizedOptions.length === 0 ? (
               <div className="p-3 text-center text-sm text-[var(--color-text-secondary)]">

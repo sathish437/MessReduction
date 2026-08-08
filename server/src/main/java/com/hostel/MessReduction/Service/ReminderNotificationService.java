@@ -45,7 +45,6 @@ public class ReminderNotificationService {
         this.systemSettingsRepo = systemSettingsRepo;
     }
 
-    @Transactional
     public void processReminders() {
         if (!reminderEnabled) {
             logger.info("Reminder Browser Push Notifications are disabled.");

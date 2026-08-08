@@ -46,7 +46,6 @@ public class BatchNotificationService {
         }
     }
 
-    @Transactional
     public void processBatch() {
         logger.info("Batch Scheduler processBatch started");
         List<QueuedNotification> pending = queuedRepo.findUnprocessedForUpdate();

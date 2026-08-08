@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
-@Transactional
 public class ReminderScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);

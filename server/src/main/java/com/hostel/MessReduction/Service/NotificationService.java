@@ -12,6 +12,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,20 +143,15 @@ public class NotificationService {
             notificationRepo.saveAll(toSave);
         }
 
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    for (Runnable task : pushTasks) {
-                        task.run();
-                    }
-                }
-            });
-        } else {
+        CompletableFuture.runAsync(() -> {
             for (Runnable task : pushTasks) {
-                task.run();
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    logger.error("Error executing background push task", e);
+                }
             }
-        }
+        });
     }
 
     public void createAggregatedNotification(String recipientUsername, String message, String type) {

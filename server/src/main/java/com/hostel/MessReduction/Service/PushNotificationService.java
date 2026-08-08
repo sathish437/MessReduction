@@ -31,6 +31,8 @@ import com.hostel.MessReduction.Entity.StaffUsers;
 import com.hostel.MessReduction.Repo.ReductionFormRepo;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 
+import java.util.concurrent.CompletableFuture;
+
 @Service
 public class PushNotificationService {
     private static final Logger log = LoggerFactory.getLogger(PushNotificationService.class);
@@ -88,6 +90,17 @@ public class PushNotificationService {
             log.warn("Web Push Service is not initialized. Cannot send push notification to {}", username);
             return;
         }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                doSendPushNotification(username, title, message, redirectUrl, requestId);
+            } catch (Exception e) {
+                log.error("Async push notification error for user {}: {}", username, e.getMessage());
+            }
+        });
+    }
+
+    private void doSendPushNotification(String username, String title, String message, String redirectUrl, Long requestId) {
 
         String assignedDW = "N/A";
         String assignedWarden = "N/A";

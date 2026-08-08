@@ -607,6 +607,7 @@ public class ReductionFormService {
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
+        List<StaffUsers> officeUsers = staffUsersRepo.findByRole(Role.Office);
 
         for (ReductionForm form : forms) {
             if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingWarden) {
@@ -644,6 +645,12 @@ public class ReductionFormService {
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
 
+            for (StaffUsers office : officeUsers) {
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    office.getUserName(), "New request pending for approval.", "NORMAL_REQUEST", form.getFormId(), "Office"
+                ));
+            }
+
             validForms.add(form);
         }
 
@@ -652,9 +659,6 @@ public class ReductionFormService {
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            for (ReductionForm vf : validForms) {
-                sendWorkflowNotifications(vf);
-            }
             log.info("Warden bulk approval completed for {} forms", validForms.size());
         }
     }
@@ -678,6 +682,7 @@ public class ReductionFormService {
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
+        List<StaffUsers> wardens = staffUsersRepo.findByRole(Role.Warden);
 
         for (ReductionForm form : forms) {
             if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
@@ -715,6 +720,14 @@ public class ReductionFormService {
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
 
+            for (StaffUsers warden : wardens) {
+                if ("warden".equals(warden.getUserName()) || ("warden" + form.getYear()).equals(warden.getUserName())) {
+                    notificationItems.add(new NotificationService.BatchNotificationItem(
+                        warden.getUserName(), "New Mess Reduction Request Pending.", "NORMAL_REQUEST", form.getFormId(), "Warden"
+                    ));
+                }
+            }
+
             validForms.add(form);
         }
 
@@ -723,11 +736,6 @@ public class ReductionFormService {
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-
-            for (ReductionForm form : validForms) {
-                processAutoAcceptIfApplicable(form);
-                sendWorkflowNotifications(form);
-            }
             log.info("Deputy Warden bulk approval completed for {} forms", validForms.size());
         }
     }

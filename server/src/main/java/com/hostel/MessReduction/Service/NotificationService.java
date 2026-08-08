@@ -10,6 +10,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -83,6 +84,77 @@ public class NotificationService {
             triggerPushNotificationSafely(recipientUsername, title, message, redirectUrl, type, relatedFormId);
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
+        }
+    }
+
+    public record BatchNotificationItem(String recipientUsername, String message, String type, Long relatedFormId, String recipientRole) {}
+
+    public void createNotificationsBatch(List<BatchNotificationItem> items) {
+        if (items == null || items.isEmpty()) return;
+        List<AppNotification> toSave = new ArrayList<>();
+        List<Runnable> pushTasks = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+
+        for (BatchNotificationItem item : items) {
+            if (item == null) continue;
+            String recipientUsername = item.recipientUsername();
+            String message = item.message();
+            String type = item.type();
+            Long relatedFormId = item.relatedFormId();
+            if (recipientUsername == null) continue;
+
+            String lockKey = recipientUsername + ":" + type + ":" + relatedFormId;
+            if (notificationLocks.containsKey(lockKey)) {
+                long lastSent = notificationLocks.get(lockKey);
+                if (currentTime - lastSent < 30000) {
+                    continue;
+                }
+            }
+            notificationLocks.put(lockKey, currentTime);
+
+            AppNotification notification = new AppNotification();
+            notification.setRecipientUsername(recipientUsername);
+            notification.setMessage(message);
+            notification.setType(type);
+            notification.setRelatedFormId(relatedFormId);
+
+            if (item.recipientRole() != null) {
+                notification.setRecipientRole(item.recipientRole());
+            } else {
+                staffUsersRepo.findByUserName(recipientUsername).ifPresent(staff -> {
+                    notification.setRecipientRole(staff.getRole().name());
+                });
+            }
+            toSave.add(notification);
+
+            String title = getPushTitle(recipientUsername, type, message);
+            String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
+            pushTasks.add(() -> {
+                try {
+                    batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, relatedFormId);
+                } catch (Exception e) {
+                    logger.error("Failed to send push notification for user: {}", recipientUsername, e);
+                }
+            });
+        }
+
+        if (!toSave.isEmpty()) {
+            notificationRepo.saveAll(toSave);
+        }
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (Runnable task : pushTasks) {
+                        task.run();
+                    }
+                }
+            });
+        } else {
+            for (Runnable task : pushTasks) {
+                task.run();
+            }
         }
     }
 

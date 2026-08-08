@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -44,6 +45,30 @@ public class ActivityLogService {
         log.setActive(true);
 
         return mapToResponse(activityLogRepository.save(log));
+    }
+
+    public void createLogs(List<ActivityLogRequest> requests) {
+        if (requests == null || requests.isEmpty()) return;
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
+        List<ActivityLog> logs = new ArrayList<>();
+        for (ActivityLogRequest request : requests) {
+            if (request == null || request.getStaffRole() == null || request.getArrivalDate() == null) continue;
+            ActivityLog log = new ActivityLog();
+            log.setFormId(request.getFormId());
+            log.setStudentId(request.getStudentId());
+            log.setStudentName(request.getStudentName());
+            log.setDepartment(request.getDepartment());
+            log.setStaffRole(request.getStaffRole());
+            log.setStaffName(request.getStaffName());
+            log.setAction(request.getAction());
+            log.setTimestamp(now);
+            log.setArrivalDate(request.getArrivalDate());
+            log.setActive(true);
+            logs.add(log);
+        }
+        if (!logs.isEmpty()) {
+            activityLogRepository.saveAll(logs);
+        }
     }
 
     public void deleteLogsByFormId(Long formId) {

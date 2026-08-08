@@ -541,18 +541,17 @@ function Deputy_warden_side() {
         }
     };
 
-    const handleBulkAction = async (newStatus) => {
+    const handleBulkAction = async () => {
         if (selectedIds.length === 0 || isBulkProcessing) return;
 
         setIsBulkProcessing(true);
-        const action = newStatus === "accepted" ? "Approve" : "Reject";
         try {
-            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=${action}`, selectedIds);
-            showToast(`Bulk ${action.toLowerCase()} completed successfully`, 'success');
+            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=Approve`, selectedIds);
+            showToast("Bulk approval completed successfully", 'success');
             setSelectedIds([]);
             await refreshData();
         } catch (err) {
-            showToast("Failed to perform bulk action.", 'error');
+            showToast("Failed to perform bulk approval.", 'error');
         } finally {
             setIsBulkProcessing(false);
         }
@@ -858,7 +857,7 @@ function Deputy_warden_side() {
                                         </span>
                                         <div className="flex items-center gap-3 w-full sm:w-auto">
                                             <button
-                                                onClick={() => handleBulkAction("accepted")}
+                                                onClick={handleBulkAction}
                                                 disabled={isBulkProcessing}
                                                 className="flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold tracking-wider uppercase hover:bg-emerald-400 transition-colors shadow-glow sm:shadow-sm flex-1 sm:flex-none disabled:opacity-70 disabled:cursor-not-allowed"
                                             >

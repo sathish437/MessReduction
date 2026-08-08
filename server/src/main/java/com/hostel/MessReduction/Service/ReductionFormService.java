@@ -38,6 +38,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -601,33 +603,60 @@ public class ReductionFormService {
         }
 
         List<ReductionForm> validForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
         for (ReductionForm form : forms) {
-            // Skip inactive forms
-            if (!form.isActive()) {
+            if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingWarden) {
                 continue;
             }
-            // Skip forms not in PendingWarden status instead of throwing error
-            if (form.getCurrentStatus() != FormStatus.PendingWarden) {
-                continue;
-            }
-            // Skip forms that don't match warden year validation
             if (year != null && !Objects.equals(form.getYear(), year)) {
                 continue;
             }
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.PendingOffice);
-            saveFormHistory(form, "Approved by Warden (Bulk)", previousStatus, FormStatus.PendingOffice, userName, null);
-            createActivityLog(form, Role.Warden, userName, "Approved");
-            
-            log.info("Warden manual approval completed");
-            
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId());
-            
-            sendWorkflowNotifications(form);
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.PendingOffice);
+            history.setEventType("Approved by Warden (Bulk)");
+            history.setPerformedBy(userName);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.Warden);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Approved");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
             validForms.add(form);
         }
 
-        reductionFormRepo.saveAll(validForms);
+        if (!validForms.isEmpty()) {
+            reductionFormRepo.saveAll(validForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+            for (ReductionForm vf : validForms) {
+                sendWorkflowNotifications(vf);
+            }
+            log.info("Warden bulk approval completed for {} forms", validForms.size());
+        }
     }
 
     public void updateDeputyWardenPendingBulkStatus(List<Long> formIds, String action, String userName) {
@@ -644,30 +673,62 @@ public class ReductionFormService {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
+        List<ReductionForm> validForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
         for (ReductionForm form : forms) {
-            // Skip inactive forms
-            if (!form.isActive()) {
+            if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
                 continue;
             }
-            validateCurrentStatus(form, FormStatus.PendingDeputyWarden, "Form is not in deputy warden stage");
-            validateAssignedDeputyWarden(form, userName);
+            if (!Objects.equals(form.getAssignedDeputyWarden(), userName)) {
+                continue;
+            }
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.PendingWarden);
-            saveFormHistory(form, "Approved by Deputy Warden (Bulk)", previousStatus, FormStatus.PendingWarden, userName, null);
-            createActivityLog(form, Role.DeputyWarden, userName, "Approved");
-            
-            log.info("Deputy Warden manual approval completed");
-            
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId());
-            
-            processAutoAcceptIfApplicable(form);
-            
-            sendWorkflowNotifications(form);
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.PendingWarden);
+            history.setEventType("Approved by Deputy Warden (Bulk)");
+            history.setPerformedBy(userName);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.DeputyWarden);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Approved");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
+            validForms.add(form);
         }
 
-        reductionFormRepo.saveAll(forms);
-        for (ReductionForm form : forms) {
-            processAutoAcceptIfApplicable(form);
+        if (!validForms.isEmpty()) {
+            reductionFormRepo.saveAll(validForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+
+            for (ReductionForm form : validForms) {
+                processAutoAcceptIfApplicable(form);
+                sendWorkflowNotifications(form);
+            }
+            log.info("Deputy Warden bulk approval completed for {} forms", validForms.size());
         }
     }
 
@@ -685,20 +746,55 @@ public class ReductionFormService {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
+        List<ReductionForm> validForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
         for (ReductionForm form : forms) {
-            // Skip inactive forms
-            if (!form.isActive()) {
+            if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingOffice) {
                 continue;
             }
-            validateCurrentStatus(form, FormStatus.PendingOffice, "Form is not in office stage");
             FormStatus previousStatus = form.getCurrentStatus();
             form.setCurrentStatus(FormStatus.Approved);
-            saveFormHistory(form, "Approved by Office (Bulk)", previousStatus, FormStatus.Approved, userName, null);
-            createActivityLog(form, Role.Office, userName, "Approved");
-            notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId());
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.Approved);
+            history.setEventType("Approved by Office (Bulk)");
+            history.setPerformedBy(userName);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.Office);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Approved");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
+            validForms.add(form);
         }
 
-        reductionFormRepo.saveAll(forms);
+        if (!validForms.isEmpty()) {
+            reductionFormRepo.saveAll(validForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+            log.info("Office bulk approval completed for {} forms", validForms.size());
+        }
     }
 
     public BulkRejectSummaryDTO rejectWardenBulk(List<Long> formIds, String rejectReason, String userName) {
@@ -706,48 +802,79 @@ public class ReductionFormService {
         validateRejectReason(rejectReason);
         Integer year = resolveWardenYear(userName);
 
+        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
+
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
+
+        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
             if (formId == null) {
                 failed++;
                 continue;
             }
-            try {
-                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
-                if (form == null || !form.isActive()) {
-                    failed++;
-                    continue;
-                }
-                if (form.getCurrentStatus() != FormStatus.PendingWarden) {
-                    failed++;
-                    continue;
-                }
-                if (year != null && !Objects.equals(form.getYear(), year)) {
-                    failed++;
-                    continue;
-                }
-
-                FormStatus previousStatus = form.getCurrentStatus();
-                form.setCurrentStatus(FormStatus.RejectedWarden);
-                form.setRejectReason(rejectReason.trim());
-                reductionFormRepo.save(form);
-                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
-                
-                saveFormHistory(form, "Rejected by Warden (Bulk)", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
-                createActivityLog(form, Role.Warden, userName, "Rejected");
-                
-                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
-                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
-                
-                rejected++;
-            } catch (Exception e) {
-                log.error("Failed to reject form ID " + formId + " by warden " + userName, e);
+            ReductionForm form = formMap.get(formId);
+            if (form == null || !form.isActive() || form.getCurrentStatus() != FormStatus.PendingWarden) {
                 failed++;
+                continue;
             }
+            if (year != null && !Objects.equals(form.getYear(), year)) {
+                failed++;
+                continue;
+            }
+
+            FormStatus previousStatus = form.getCurrentStatus();
+            form.setCurrentStatus(FormStatus.RejectedWarden);
+            form.setRejectReason(trimmedReason);
+            restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.RejectedWarden);
+            history.setEventType("Rejected by Warden (Bulk)");
+            history.setPerformedBy(userName);
+            history.setComment(trimmedReason);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.Warden);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Rejected");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
+            rejectedForms.add(form);
+            rejected++;
         }
+
+        if (!rejectedForms.isEmpty()) {
+            reductionFormRepo.saveAll(rejectedForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+            log.info("Warden bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+        }
+
         return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 
@@ -756,48 +883,79 @@ public class ReductionFormService {
         validateRejectReason(rejectReason);
         validateDeputyWardenUser(userName);
 
+        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
+
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
+
+        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
             if (formId == null) {
                 failed++;
                 continue;
             }
-            try {
-                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
-                if (form == null || !form.isActive()) {
-                    failed++;
-                    continue;
-                }
-                if (form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
-                    failed++;
-                    continue;
-                }
-                if (!Objects.equals(form.getAssignedDeputyWarden(), userName)) {
-                    failed++;
-                    continue;
-                }
-
-                FormStatus previousStatus = form.getCurrentStatus();
-                form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
-                form.setRejectReason(rejectReason.trim());
-                reductionFormRepo.save(form);
-                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
-                
-                saveFormHistory(form, "Rejected by Deputy Warden (Bulk)", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
-                createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
-                
-                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
-                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
-                
-                rejected++;
-            } catch (Exception e) {
-                log.error("Failed to reject form ID " + formId + " by deputy warden " + userName, e);
+            ReductionForm form = formMap.get(formId);
+            if (form == null || !form.isActive() || form.getCurrentStatus() != FormStatus.PendingDeputyWarden) {
                 failed++;
+                continue;
             }
+            if (!Objects.equals(form.getAssignedDeputyWarden(), userName)) {
+                failed++;
+                continue;
+            }
+
+            FormStatus previousStatus = form.getCurrentStatus();
+            form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
+            form.setRejectReason(trimmedReason);
+            restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.RejectedDeputyWarden);
+            history.setEventType("Rejected by Deputy Warden (Bulk)");
+            history.setPerformedBy(userName);
+            history.setComment(trimmedReason);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.DeputyWarden);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Rejected");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
+            rejectedForms.add(form);
+            rejected++;
         }
+
+        if (!rejectedForms.isEmpty()) {
+            reductionFormRepo.saveAll(rejectedForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+            log.info("Deputy Warden bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+        }
+
         return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 
@@ -806,44 +964,75 @@ public class ReductionFormService {
         validateRejectReason(rejectReason);
         validateOfficeUser(userName);
 
+        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
+
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
+
+        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<ReductionFormHistory> histories = new ArrayList<>();
+        List<ActivityLogRequest> activityLogs = new ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
             if (formId == null) {
                 failed++;
                 continue;
             }
-            try {
-                ReductionForm form = reductionFormRepo.findById(formId).orElse(null);
-                if (form == null || !form.isActive()) {
-                    failed++;
-                    continue;
-                }
-                if (form.getCurrentStatus() != FormStatus.PendingOffice) {
-                    failed++;
-                    continue;
-                }
-
-                FormStatus previousStatus = form.getCurrentStatus();
-                form.setCurrentStatus(FormStatus.RejectedOffice);
-                form.setRejectReason(rejectReason.trim());
-                reductionFormRepo.save(form);
-                restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
-                
-                saveFormHistory(form, "Rejected by Office (Bulk)", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
-                createActivityLog(form, Role.Office, userName, "Rejected");
-                
-                String notificationMessage = "Your request was rejected.\nReason:\n" + rejectReason.trim();
-                notificationService.createNotification(form.getStudentDetails().getEmailId(), notificationMessage, "REJECTED", form.getFormId());
-                
-                rejected++;
-            } catch (Exception e) {
-                log.error("Failed to reject form ID " + formId + " by office " + userName, e);
+            ReductionForm form = formMap.get(formId);
+            if (form == null || !form.isActive() || form.getCurrentStatus() != FormStatus.PendingOffice) {
                 failed++;
+                continue;
             }
+
+            FormStatus previousStatus = form.getCurrentStatus();
+            form.setCurrentStatus(FormStatus.RejectedOffice);
+            form.setRejectReason(trimmedReason);
+            restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
+
+            ReductionFormHistory history = new ReductionFormHistory();
+            history.setReductionForm(form);
+            history.setFromStatus(previousStatus);
+            history.setToStatus(FormStatus.RejectedOffice);
+            history.setEventType("Rejected by Office (Bulk)");
+            history.setPerformedBy(userName);
+            history.setComment(trimmedReason);
+            history.setEventTimestamp(now);
+            histories.add(history);
+
+            ActivityLogRequest activityLogRequest = new ActivityLogRequest();
+            activityLogRequest.setFormId(form.getFormId());
+            StudentDetails studentDetails = form.getStudentDetails();
+            if (studentDetails != null) {
+                activityLogRequest.setStudentId(studentDetails.getStudentId());
+                activityLogRequest.setStudentName(studentDetails.getName());
+                activityLogRequest.setDepartment(studentDetails.getDepartment());
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                ));
+            }
+            activityLogRequest.setStaffRole(Role.Office);
+            activityLogRequest.setStaffName(userName);
+            activityLogRequest.setAction("Rejected");
+            activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogs.add(activityLogRequest);
+
+            rejectedForms.add(form);
+            rejected++;
         }
+
+        if (!rejectedForms.isEmpty()) {
+            reductionFormRepo.saveAll(rejectedForms);
+            reductionFormHistoryRepo.saveAll(histories);
+            activityLogService.createLogs(activityLogs);
+            notificationService.createNotificationsBatch(notificationItems);
+            log.info("Office bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+        }
+
         return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 

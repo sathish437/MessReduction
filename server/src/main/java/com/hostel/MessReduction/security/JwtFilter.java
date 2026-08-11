@@ -81,9 +81,13 @@ public class JwtFilter extends OncePerRequestFilter {
                 boolean isValid;
 
                 if ("STUDENT".equals(role)) {
-                    logger.debug("Loading student user details for email: {}", username);
+                    logger.debug("Loading student user details for identifier: {}", username);
                     userDetails = customUserDetailsService.loadUserByUsername(username);
                     isValid = jwtUtil.validateToken(jwt, userDetails.getUsername());
+                } else if ("ADMIN".equals(role)) {
+                    logger.debug("Loading admin user details for username: {}", username);
+                    userDetails = staffUserDetailsService.loadUserByUsername(username);
+                    isValid = staffJwtUtil.validateToken(jwt, userDetails.getUsername());
                 } else {
                     logger.debug("Loading staff user details for username: {}", username);
                     userDetails = staffUserDetailsService.loadUserByUsername(username);
@@ -114,6 +118,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
 
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+            logger.warn("User lookup failed in JwtFilter for {}: {}", request.getRequestURI(), e.getMessage());
         } catch (Exception e) {
             logger.error("Authentication filter failed for {}: {}", request.getRequestURI(), e.getMessage());
         }

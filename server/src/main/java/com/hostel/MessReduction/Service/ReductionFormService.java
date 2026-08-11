@@ -1247,6 +1247,12 @@ public class ReductionFormService {
     }
 
     private Integer resolveWardenYear(String userName) {
+        if (userName != null) {
+            Optional<StaffUsers> staffOpt = staffUsersRepo.findByUserName(userName);
+            if (staffOpt.isPresent() && staffOpt.get().getRole() == Role.Warden) {
+                return staffOpt.get().getYear();
+            }
+        }
         if ("warden".equals(userName)) {
             return null;
         }
@@ -1266,9 +1272,18 @@ public class ReductionFormService {
     }
 
     private int resolveDeputyWardenYear(String userName) {
+        if (userName != null) {
+            Optional<StaffUsers> staffOpt = staffUsersRepo.findByUserName(userName);
+            if (staffOpt.isPresent() && staffOpt.get().getRole() == Role.DeputyWarden && staffOpt.get().getYear() != null) {
+                return staffOpt.get().getYear();
+            }
+        }
         validateDeputyWardenUser(userName);
-        int deputyNumber = Integer.parseInt(userName.substring("deputyWarden".length()));
-        return deputyNumber > 4 ? deputyNumber - 4 : deputyNumber;
+        if (userName != null && userName.matches("deputyWarden[1-8]")) {
+            int deputyNumber = Integer.parseInt(userName.substring("deputyWarden".length()));
+            return deputyNumber > 4 ? deputyNumber - 4 : deputyNumber;
+        }
+        return 1;
     }
 
     private String resolveAssignedDeputyWarden(Gender gender, Integer year) {
@@ -1287,12 +1302,26 @@ public class ReductionFormService {
     }
 
     private void validateDeputyWardenUser(String userName) {
-        if (userName == null || !userName.matches("deputyWarden[1-8]")) {
+        if (userName == null) {
+            throw new UnauthorizedUserException("Unauthorized user");
+        }
+        Optional<StaffUsers> staffOpt = staffUsersRepo.findByUserName(userName);
+        if (staffOpt.isPresent() && staffOpt.get().getRole() == Role.DeputyWarden) {
+            return;
+        }
+        if (!userName.matches("deputyWarden[1-8]")) {
             throw new UnauthorizedUserException("Unauthorized user");
         }
     }
 
     private void validateOfficeUser(String userName) {
+        if (userName == null) {
+            throw new UnauthorizedUserException("Unauthorized user");
+        }
+        Optional<StaffUsers> staffOpt = staffUsersRepo.findByUserName(userName);
+        if (staffOpt.isPresent() && staffOpt.get().getRole() == Role.Office) {
+            return;
+        }
         if (!"office".equals(userName)) {
             throw new UnauthorizedUserException("Unauthorized user");
         }

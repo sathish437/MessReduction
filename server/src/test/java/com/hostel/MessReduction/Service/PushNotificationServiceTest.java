@@ -40,20 +40,21 @@ public class PushNotificationServiceTest {
     }
 
     @Test
-    void testSendPushNotification_NoSubscriptions() {
+    void testSendPushNotification_NoSubscriptions() throws InterruptedException {
         // Arrange
         String username = "deputy01";
         when(pushSubscriptionRepository.findByUsername(username)).thenReturn(Optional.empty());
 
         // Act
         pushNotificationService.sendPushNotification(username, "Test Title", "Test Message");
+        Thread.sleep(200);
 
         // Assert
         verify(pushSubscriptionRepository, times(1)).findByUsername(username);
     }
 
     @Test
-    void testSendPushNotification_WithEmailResolution() {
+    void testSendPushNotification_WithEmailResolution() throws InterruptedException {
         // Arrange
         String email = "student@example.com";
         StudentDetails student = new StudentDetails();
@@ -67,6 +68,7 @@ public class PushNotificationServiceTest {
 
         // Act
         pushNotificationService.sendPushNotification(email, "Approved", "Approved by Warden");
+        Thread.sleep(200);
 
         // Assert
         verify(studentDetailsRepo, times(1)).findByEmailId(email);

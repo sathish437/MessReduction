@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MdPeople, MdLogout, MdMenu, MdPendingActions, MdSchool, MdSettings
+  MdPeople, MdLogout, MdMenu, MdPendingActions, MdSchool, MdSettings, MdVpnKey
 } from 'react-icons/md';
 import { logout } from './services/authService';
 import apiClient from './api/apiClient';
 import AdminStudents from './AdminStudents';
 import AdminExtraSubmissions from './AdminExtraSubmissions';
 import AdminDepartments from './AdminDepartments';
+import AdminStaffCredentials from './AdminStaffCredentials';
 import AdminSettings from './AdminSettings';
 
 const AdminLayout = () => {
@@ -77,6 +78,7 @@ const AdminLayout = () => {
     { path: '/admin/students', icon: <MdPeople size={24} />, label: 'Students' },
     { path: '/admin/departments', icon: <MdSchool size={24} />, label: 'Departments' },
     { path: '/admin/extra-submissions', icon: <MdPendingActions size={24} />, label: 'Extra Submissions' },
+    { path: '/admin/staff-credentials', icon: <MdVpnKey size={24} />, label: 'Staff Credentials' },
     { path: '/admin/settings', icon: <MdSettings size={24} />, label: 'Reminder Settings' }
   ];
 
@@ -87,6 +89,7 @@ const AdminLayout = () => {
   const renderAdminContent = () => {
     if (location.pathname.startsWith('/admin/departments')) return <AdminDepartments />;
     if (location.pathname.startsWith('/admin/extra-submissions')) return <AdminExtraSubmissions />;
+    if (location.pathname.startsWith('/admin/staff-credentials')) return <AdminStaffCredentials />;
     if (location.pathname.startsWith('/admin/settings')) return <AdminSettings />;
     // Default to Students
     return <AdminStudents />;

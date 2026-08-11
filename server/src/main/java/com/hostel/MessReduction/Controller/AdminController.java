@@ -114,4 +114,16 @@ public class AdminController {
         int updated = adminService.updateReminderOffsetDays(days);
         return ResponseEntity.ok(java.util.Map.of("reminderDays", updated));
     }
+
+    @GetMapping("/staff-credentials")
+    public ResponseEntity<List<com.hostel.MessReduction.DTO.ResDTO.StaffCredentialResponseDTO>> getStaffCredentials() {
+        return ResponseEntity.ok(adminService.getStaffCredentials());
+    }
+
+    @PutMapping("/staff-credentials/{id}")
+    public ResponseEntity<java.util.Map<String, Object>> updateStaffCredential(
+            @PathVariable Long id,
+            @Valid @RequestBody com.hostel.MessReduction.DTO.ReqDTO.UpdateStaffCredentialReqDTO dto) {
+        return ResponseEntity.ok(adminService.updateStaffCredential(id, dto));
+    }
 }

@@ -22,9 +22,19 @@ import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
+import com.hostel.MessReduction.DTO.ReqDTO.UpdateStaffCredentialReqDTO;
+import com.hostel.MessReduction.DTO.ResDTO.StaffCredentialResponseDTO;
+import com.hostel.MessReduction.Entity.AuditLog;
+import com.hostel.MessReduction.Entity.Role;
+import com.hostel.MessReduction.Entity.StaffUsers;
+import com.hostel.MessReduction.Repo.AuditLogRepo;
+import com.hostel.MessReduction.Repo.AutoAcceptSettingsRepo;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +46,11 @@ public class AdminService {
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
     private final com.hostel.MessReduction.Repo.ActivityLogRepository activityLogRepository;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
+    private final AuditLogRepo auditLogRepo;
+    private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final DepartmentService departmentService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.hostel.MessReduction.security.StaffJwtUtil staffJwtUtil;
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public PaginatedResponseDTO<StudentResponseDTO> getStudents(
@@ -218,5 +231,150 @@ public class AdminService {
         setting.setSettingValue(String.valueOf(days));
         systemSettingsRepo.save(setting);
         return days;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<StaffCredentialResponseDTO> getStaffCredentials() {
+        return staffUsersRepo.findAll().stream()
+                .sorted((a, b) -> {
+                    int roleOrderA = getRoleOrder(a.getRole());
+                    int roleOrderB = getRoleOrder(b.getRole());
+                    if (roleOrderA != roleOrderB) {
+                        return Integer.compare(roleOrderA, roleOrderB);
+                    }
+                    if (a.getYear() != null && b.getYear() != null) {
+                        int yearComp = Integer.compare(a.getYear(), b.getYear());
+                        if (yearComp != 0) return yearComp;
+                    }
+                    if (a.getGender() != null && b.getGender() != null) {
+                        int genComp = a.getGender().compareTo(b.getGender());
+                        if (genComp != 0) return genComp;
+                    }
+                    return a.getUserName().compareToIgnoreCase(b.getUserName());
+                })
+                .map(this::mapToStaffCredentialDTO)
+                .collect(Collectors.toList());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public Map<String, Object> updateStaffCredential(Long id, UpdateStaffCredentialReqDTO dto) {
+        StaffUsers staff = staffUsersRepo.findById(id)
+                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.BadRequestException("Staff user not found with ID: " + id));
+
+        String newUsername = dto.getUsername() != null ? dto.getUsername().trim() : "";
+        if (newUsername.isEmpty()) {
+            throw new com.hostel.MessReduction.CustomException.BadRequestException("Username cannot be empty");
+        }
+
+        String oldUsername = staff.getUserName();
+        boolean usernameChanged = !oldUsername.equals(newUsername);
+
+        if (usernameChanged) {
+            Optional<StaffUsers> existingUser = staffUsersRepo.findByUserName(newUsername);
+            if (existingUser.isPresent() && !existingUser.get().getUserId().equals(id)) {
+                throw new com.hostel.MessReduction.CustomException.BadRequestException("Username already exists.");
+            }
+        }
+
+        boolean passwordChanged = false;
+        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
+            String newPassword = dto.getPassword().trim();
+            if (newPassword.length() < 4) {
+                throw new com.hostel.MessReduction.CustomException.BadRequestException("Password must be at least 4 characters long.");
+            }
+            staff.setPassword(passwordEncoder.encode(newPassword));
+            passwordChanged = true;
+        }
+
+        if (usernameChanged) {
+            staff.setUserName(newUsername);
+
+            // Update assignedDeputyWarden in active reduction forms if applicable
+            if (staff.getRole() == Role.DeputyWarden) {
+                List<com.hostel.MessReduction.Entity.ReductionForm> assignedForms = 
+                        reductionFormRepo.findByCurrentStatusAndAssignedDeputyWarden(
+                                com.hostel.MessReduction.Entity.FormStatus.PendingDeputyWarden, oldUsername);
+                for (com.hostel.MessReduction.Entity.ReductionForm form : assignedForms) {
+                    form.setAssignedDeputyWarden(newUsername);
+                }
+                reductionFormRepo.saveAll(assignedForms);
+            }
+
+            // Update auto-accept settings username if present
+            autoAcceptSettingsRepo.findByUsername(oldUsername).ifPresent(settings -> {
+                settings.setUsername(newUsername);
+                autoAcceptSettingsRepo.save(settings);
+            });
+        }
+
+        boolean contactChanged = false;
+        if (dto.getGmail() != null && !dto.getGmail().trim().isEmpty()) {
+            String newGmail = dto.getGmail().trim();
+            if (!newGmail.equals(staff.getGmail())) {
+                staff.setGmail(newGmail);
+                contactChanged = true;
+            }
+        }
+
+        if (dto.getPhoneNo() != null) {
+            String newPhone = dto.getPhoneNo().trim();
+            if (!newPhone.equals(staff.getPhoneNo())) {
+                staff.setPhoneNo(newPhone);
+                contactChanged = true;
+            }
+        }
+
+        staffUsersRepo.save(staff);
+
+        // Record in audit log
+        String currentAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                ? org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName()
+                : "MasterAdmin";
+
+        AuditLog auditLog = new AuditLog();
+        auditLog.setEventType("STAFF_CREDENTIAL_UPDATE");
+        auditLog.setPerformedBy(currentAdmin);
+        auditLog.setPerformedByRole("ADMIN");
+        auditLog.setTimestamp(LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+        auditLog.setMessage(String.format("Admin changed credentials for: %s (ID: %d). Username: %s. Password: %s. Contact details: %s.",
+                staff.getRole(), id,
+                usernameChanged ? (oldUsername + " -> " + newUsername) : "Unchanged",
+                passwordChanged ? "Changed" : "Unchanged",
+                contactChanged ? "Updated" : "Unchanged"));
+        auditLogRepo.save(auditLog);
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.put("message", "Staff credentials updated successfully");
+
+        if (usernameChanged && oldUsername.equalsIgnoreCase(currentAdmin)) {
+            String newToken = staffJwtUtil.generateToken(newUsername, staff.getRole());
+            response.put("newToken", newToken);
+            response.put("newUsername", newUsername);
+        }
+
+        return response;
+    }
+
+    private int getRoleOrder(Role role) {
+        if (role == null) return 99;
+        return switch (role) {
+            case Warden -> 1;
+            case DeputyWarden -> 2;
+            case Office -> 3;
+            case ADMIN -> 4;
+        };
+    }
+
+    private StaffCredentialResponseDTO mapToStaffCredentialDTO(StaffUsers staff) {
+        return new StaffCredentialResponseDTO(
+                staff.getUserId(),
+                staff.getRole(),
+                staff.getUserName(),
+                staff.getGender(),
+                staff.getYear(),
+                staff.getGmail(),
+                staff.getPhoneNo()
+        );
     }
 }

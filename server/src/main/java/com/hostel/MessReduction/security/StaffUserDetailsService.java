@@ -19,7 +19,7 @@ public class StaffUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         StaffUsers staff = staffUsersRepo.findByUserName(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Staff not found with username: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
         return new StaffUserDetails(staff);
     }
 }

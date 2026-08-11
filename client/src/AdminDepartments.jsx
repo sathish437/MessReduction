@@ -33,7 +33,6 @@ const AdminDepartments = () => {
 
   const fetchDepartments = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const data = await getAllDepartments({ search });
       if (Array.isArray(data)) {
@@ -88,7 +87,6 @@ const AdminDepartments = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
     try {
       if (editingDept) {
         await updateDepartment(editingDept.id, formData);

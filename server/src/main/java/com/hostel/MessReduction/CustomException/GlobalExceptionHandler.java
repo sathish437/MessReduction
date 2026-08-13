@@ -95,6 +95,18 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(ConcurrentModificationException.class)
+    public ResponseEntity<HashMap<String, Object>> handleConcurrentModification(ConcurrentModificationException exp) {
+        logger.warn("Concurrent bulk operation conflict: {}", exp.getMessage());
+        return buildErrorResponse(exp.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(BulkValidationException.class)
+    public ResponseEntity<HashMap<String, Object>> handleBulkValidation(BulkValidationException exp) {
+        logger.warn("Bulk operation validation failed: {}", exp.getMessage());
+        return buildErrorResponse(exp.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidActionException.class)
     public ResponseEntity<HashMap<String, Object>> handleInvalidAction(InvalidActionException exp) {
         telegram.sendExceptionAlert(exp, "InvalidActionException");

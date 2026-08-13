@@ -35,6 +35,9 @@ public class ReminderNotificationServiceTest {
     private PushNotificationService pushNotificationService;
 
     @Mock
+    private FirebaseNotificationService firebaseNotificationService;
+
+    @Mock
     private com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     @InjectMocks
@@ -95,8 +98,8 @@ public class ReminderNotificationServiceTest {
         // Assert
         verify(pushNotificationService, times(1)).sendPushNotification(
             eq("deputyWarden1"),
-            eq("Pending Approval Reminder"),
-            eq("You have 1 pending Mess Reduction request waiting for your approval."),
+            eq("Pending Mess Reduction Request"),
+            eq("You have a pending mess reduction request waiting for your action."),
             eq("/deputy"),
             eq(-1L)
         );
@@ -139,8 +142,8 @@ public class ReminderNotificationServiceTest {
         // Assert
         verify(pushNotificationService, times(1)).sendPushNotification(
             eq("warden2"),
-            eq("Pending Approval Reminder"),
-            eq("You have 1 pending Mess Reduction request waiting for your approval."),
+            eq("Pending Mess Reduction Request"),
+            eq("You have a pending mess reduction request waiting for your action."),
             eq("/warden"),
             eq(-1L)
         );
@@ -174,8 +177,8 @@ public class ReminderNotificationServiceTest {
         // Assert
         verify(pushNotificationService, times(1)).sendPushNotification(
             eq("deputyWarden1"),
-            eq("Pending Approval Reminder"),
-            eq("You have 2 pending Mess Reduction requests waiting for your approval."),
+            eq("Pending Mess Reduction Request"),
+            eq("You have a pending mess reduction request waiting for your action."),
             eq("/deputy"),
             eq(-1L)
         );

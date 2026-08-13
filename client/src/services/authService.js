@@ -3,6 +3,8 @@
 
 import apiClient from '../api/apiClient';
 import { getCookie, setCookie, deleteCookie } from '../utils/cookieUtils';
+import { registerPush, unregisterPush } from '../utils/pushNotificationHelper';
+import { requestFcmToken, unregisterFcmToken } from '../firebase/messaging';
 
 // Helper to parse JWT and check if it's expired
 export const parseJwt = (token) => {
@@ -55,8 +57,9 @@ export const setStaffAuth = (token, username, role) => {
   localStorage.setItem('staff_role', role);
   localStorage.setItem('staff_data', JSON.stringify({ username, role }));
 
-  // Register push notifications
-  registerPush().catch(err => {});
+  // Register push notifications (VAPID + FCM)
+  registerPush().catch(() => {});
+  requestFcmToken().catch(() => {});
 };
 
 export const clearStaffAuth = () => {
@@ -110,8 +113,6 @@ export const getStudentAuth = () => {
   return { token: null, user: null };
 };
 
-import { registerPush, unregisterPush } from '../utils/pushNotificationHelper';
-
 export const setStudentAuth = (token, userData) => {
   localStorage.setItem('auth_token', token);
   localStorage.setItem('user_type', 'STUDENT');
@@ -120,8 +121,9 @@ export const setStudentAuth = (token, userData) => {
   sessionStorage.setItem('token', token);
   sessionStorage.setItem('currentUser', JSON.stringify(userData));
   
-  // Register push notifications
-  registerPush().catch(err => {});
+  // Register push notifications (VAPID + FCM)
+  registerPush().catch(() => {});
+  requestFcmToken().catch(() => {});
 };
 
 export const clearStudentAuth = () => {
@@ -133,9 +135,12 @@ export const clearStudentAuth = () => {
 };
 
 export const logout = async () => {
-  // Clear push subscription first before navigating away
+  // Clear push subscriptions first before navigating away
   try {
-    await unregisterPush();
+    await Promise.allSettled([
+      unregisterPush(),
+      unregisterFcmToken()
+    ]);
   } catch (e) {
   }
 
@@ -191,5 +196,3 @@ export const getHostelVerificationEnabled = async () => {
     return true;
   }
 };
-
-

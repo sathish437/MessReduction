@@ -11,6 +11,7 @@ public interface ReductionFormHistoryRepo extends JpaRepository<ReductionFormHis
     List<ReductionFormHistory> findByReductionFormFormIdOrderByEventTimestampAsc(Long formId);
     List<ReductionFormHistory> findByReductionFormFormIdAndIsActiveTrueOrderByEventTimestampAsc(Long formId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(h) FROM ReductionFormHistory h WHERE h.toStatus = :status AND h.eventTimestamp BETWEEN :start AND :end")
-    Long countByToStatusAndEventTimestampBetween(@org.springframework.data.repository.query.Param("status") com.hostel.MessReduction.Entity.FormStatus status, @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM ReductionFormHistory h WHERE h.reductionForm.id IN (SELECT r.id FROM ReductionForm r WHERE r.studentDetails.id IN :studentIds)")
+    int deleteHistoriesByStudentIdsIn(@org.springframework.data.repository.query.Param("studentIds") List<Long> studentIds);
 }

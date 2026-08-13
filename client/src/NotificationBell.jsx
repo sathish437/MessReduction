@@ -19,8 +19,17 @@ const NotificationBell = () => {
 
     useEffect(() => {
         fetchNotifications();
-        const intervalId = setInterval(fetchNotifications, 3000); // refresh every 3 seconds for near real-time updates
-        return () => clearInterval(intervalId);
+        const intervalId = setInterval(fetchNotifications, 5000);
+
+        const handleRefreshEvent = () => {
+            fetchNotifications();
+        };
+        window.addEventListener('app-notification-refresh', handleRefreshEvent);
+
+        return () => {
+            clearInterval(intervalId);
+            window.removeEventListener('app-notification-refresh', handleRefreshEvent);
+        };
     }, []);
 
     const markAsRead = async (id) => {

@@ -14,6 +14,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(name = "reduction_form_history", indexes = {
+        @Index(name = "idx_rfh_form_id", columnList = "form_id"),
+        @Index(name = "idx_rfh_event_timestamp", columnList = "eventTimestamp")
+})
 public class ReductionFormHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

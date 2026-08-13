@@ -15,6 +15,8 @@ import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
 import Toast from "./components/Toast";
 import MultiSelect from "./MultiSelect";
+import BulkOperationProgress from "./components/BulkOperationProgress";
+import useBulkOperation from "./hooks/useBulkOperation";
 
 const handleLogout = () => {
   logout();
@@ -406,7 +408,15 @@ const Warden = () => {
     }, [searchQuery, selectedYear, genderFilter, deptFilter, itemsPerPage]);
 
     const [processingIds, setProcessingIds] = useState(new Set());
-    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const {
+        bulkState,
+        isBulkProcessing,
+        startBulkOperation,
+        completeSuccess,
+        completePartial,
+        completeFailure,
+        closeProgress
+    } = useBulkOperation();
     const [isRejecting, setIsRejecting] = useState(false);
 
     // Toast Notification State
@@ -435,8 +445,8 @@ const Warden = () => {
         };
     }, [genderFilter, selectedYear]);
 
-    const fetchData = async (signal = null) => {
-        setLoading(true);
+    const fetchData = async (signal = null, silent = false) => {
+        if (!silent) setLoading(true);
         try {
             // Get logged-in username from cookie
             const username = getCookie('staffUsername');
@@ -451,14 +461,13 @@ const Warden = () => {
                 queryParams += `&year=${yearNum}`;
             }
 
-            // Fetch warden-specific dashboard counts (filtered by year)
-            const countsRes = await apiClient.get(`/api/hostelStaff/staff/dashboard-count/warden?userName=${username}`, signal ? { signal } : {});
+            // Fetch warden counts and forms concurrently
+            const [countsRes, formsRes] = await Promise.all([
+                apiClient.get(`/api/hostelStaff/staff/dashboard-count/warden?userName=${username}`, signal ? { signal } : {}),
+                apiClient.get(`/api/hostelStaff/staff/warden?${queryParams}`, signal ? { signal } : {})
+            ]);
             if (signal && signal.aborted) return;
             setCounts(countsRes.data);
-
-            // Fetch warden pending forms with filter parameters
-            const formsRes = await apiClient.get(`/api/hostelStaff/staff/warden?${queryParams}`, signal ? { signal } : {});
-            if (signal && signal.aborted) return;
 
             // Backend returns array (may be empty) - map to frontend format
             const data = Array.isArray(formsRes.data) ? formsRes.data.map(r => ({
@@ -483,14 +492,14 @@ const Warden = () => {
             setRequests([]);
             setCounts({ pendingWarden: 0, pendingDeputyWarden: 0, pendingOffice: 0, approved: 0, rejectedWarden: 0, rejectedDeputyWarden: 0, rejectedOffice: 0 });
         } finally {
-            if (!signal || !signal.aborted) {
+            if (!silent && (!signal || !signal.aborted)) {
                 setLoading(false);
             }
         }
     };
     const handleAction = async (formId, action) => {
         // Prevent concurrent execution for the same formId
-        if (processingIds.has(formId)) return;
+        if (processingIds.has(formId) || isBulkProcessing) return;
 
         // Optimistically lock item
         setProcessingIds(prev => new Set(prev).add(formId));
@@ -519,8 +528,15 @@ const Warden = () => {
         try {
             await apiClient.patch(`/api/hostelStaff/staff/warden/${formId}?action=${action}`);
             showToast(`Request ${action.toLowerCase()}d successfully`, 'success');
-            // Refresh data after action
-            await fetchData();
+            // Optimistic update
+            setRequests(prev => prev.filter(r => r.id !== formId));
+            setCounts(prev => prev ? {
+                ...prev,
+                pendingWarden: Math.max(0, (prev.pendingWarden || 0) - 1),
+                pendingOffice: (prev.pendingOffice || 0) + 1
+            } : prev);
+            // Silent refresh data after action
+            await fetchData(null, true);
         } catch (err) {
             if (err.response?.status === 401) {
                 showToast("Session expired. Please login again.", 'error');
@@ -539,15 +555,13 @@ const Warden = () => {
     };
 
     const handleRejectSubmit = async () => {
-        if (isRejecting) return;
+        if (isRejecting || isBulkProcessing) return;
         
         if (!rejectReason.trim()) {
             showToast("Please enter a reason for rejection.", 'error');
             return;
         }
 
-        setIsRejecting(true);
-
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
         if (!token) {
@@ -556,66 +570,118 @@ const Warden = () => {
             return;
         }
 
-        try {
-            if (isBulkReject) {
-                const res = await apiClient.patch(`/api/hostelStaff/staff/warden/bulk-reject`, {
-                    formIds: selectedIds,
-                    rejectReason
-                });
-                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
-                setSelectedIds([]);
-            } else {
-                await apiClient.patch(`/api/hostelStaff/staff/warden/${rejectFormId}/reject`, { rejectReason });
-                showToast("Request rejected successfully", 'success');
-            }
+        if (isBulkReject) {
+            const idsToReject = [...selectedIds];
+            const reason = rejectReason;
             setIsRejectModalOpen(false);
             setRejectFormId(null);
             setIsBulkReject(false);
             setRejectReason("");
-            await fetchData();
-        } catch (err) {
-            if (err.response?.status === 401) {
-                showToast("Session expired. Please login again.", 'error');
-                handleLogout();
-            } else {
-                showToast("Failed to reject request.", 'error');
+            startBulkOperation('REJECT', idsToReject.length, 'Rejecting Requests...');
+
+            try {
+                const res = await apiClient.patch(`/api/hostelStaff/staff/warden/bulk-reject`, {
+                    formIds: idsToReject,
+                    rejectReason: reason
+                });
+                const processedSet = new Set(idsToReject);
+                const rejCount = res.data?.rejected || 0;
+                const failCount = res.data?.failed || 0;
+
+                setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+                setCounts(prev => prev ? {
+                    ...prev,
+                    pendingWarden: Math.max(0, (prev.pendingWarden || 0) - (rejCount || processedSet.size)),
+                    rejectedWarden: (prev.rejectedWarden || 0) + (rejCount || processedSet.size)
+                } : prev);
+                setSelectedIds([]);
+
+                if (failCount > 0) {
+                    completePartial(res.data?.selected || idsToReject.length, rejCount, failCount);
+                } else {
+                    completeSuccess(rejCount, res.data?.selected || idsToReject.length);
+                }
+                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    closeProgress();
+                    showToast("Session expired. Please login again.", 'error');
+                    handleLogout();
+                } else {
+                    const errorMsg = err.response?.data?.message || "Failed to reject request.";
+                    completeFailure(errorMsg);
+                    showToast(errorMsg, 'error');
+                }
             }
-        } finally {
-            setIsRejecting(false); // Enable retry on failure
+        } else {
+            setIsRejecting(true);
+            try {
+                await apiClient.patch(`/api/hostelStaff/staff/warden/${rejectFormId}/reject`, { rejectReason });
+                setRequests(prev => prev.filter(r => r.id !== rejectFormId));
+                setCounts(prev => prev ? {
+                    ...prev,
+                    pendingWarden: Math.max(0, (prev.pendingWarden || 0) - 1),
+                    rejectedWarden: (prev.rejectedWarden || 0) + 1
+                } : prev);
+                showToast("Request rejected successfully", 'success');
+                setIsRejectModalOpen(false);
+                setRejectFormId(null);
+                setIsBulkReject(false);
+                setRejectReason("");
+                await fetchData(null, true);
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    showToast("Session expired. Please login again.", 'error');
+                    handleLogout();
+                } else {
+                    showToast("Failed to reject request.", 'error');
+                }
+            } finally {
+                setIsRejecting(false); // Enable retry on failure
+            }
         }
     };
 
     const handleBulkAction = async () => {
         if (selectedIds.length === 0 || isBulkProcessing) return;
 
-        setIsBulkProcessing(true);
-
         // Check token before making request
         const token = getCookie('staffToken') || sessionStorage.getItem('staffToken') || localStorage.getItem('staffToken');
         if (!token) {
             showToast("Authentication token not found. Please login again.", 'error');
             handleLogout();
-            setIsBulkProcessing(false);
             return;
         }
 
+        const idsToProcess = [...selectedIds];
+        startBulkOperation('APPROVE', idsToProcess.length, 'Approving Requests...');
+
         try {
-            await apiClient.patch(`/api/hostelStaff/staff/warden/bulk?action=Approve`, selectedIds);
-            showToast("Bulk approval completed successfully", 'success');
+            await apiClient.patch(`/api/hostelStaff/staff/warden/bulk?action=Approve`, idsToProcess);
+            const processedSet = new Set(idsToProcess);
+            setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+            setCounts(prev => prev ? {
+                ...prev,
+                pendingWarden: Math.max(0, (prev.pendingWarden || 0) - processedSet.size),
+                pendingOffice: (prev.pendingOffice || 0) + processedSet.size
+            } : prev);
             setSelectedIds([]);
-            await fetchData();
+            completeSuccess(idsToProcess.length, idsToProcess.length);
+            showToast("Bulk approval completed successfully", 'success');
         } catch (err) {
             if (err.response?.status === 401) {
+                closeProgress();
                 showToast("Session expired. Please login again.", 'error');
                 handleLogout();
             } else if (err.response?.status === 409) {
+                completeFailure("Some selected forms are not in the correct status for approval. Please refresh and try again.");
                 showToast("Some selected forms are not in the correct status for approval. Please refresh and try again.", 'error');
-                await fetchData();
+                await fetchData(null, true);
             } else {
-                showToast("Failed to perform bulk approval.", 'error');
+                const errorMsg = err.response?.data?.message || "Failed to perform bulk approval.";
+                completeFailure(errorMsg);
+                showToast(errorMsg, 'error');
             }
-        } finally {
-            setIsBulkProcessing(false);
         }
     };
 
@@ -648,13 +714,13 @@ const Warden = () => {
     const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
     const toggleSelectAll = () => {
-        const paginatedIds = paginatedForms.map(r => r.id);
-        const allSelectedOnPage = paginatedIds.every(id => selectedIds.includes(id));
+        const allPendingIds = pendingForms.map(r => r.id);
+        const allSelected = allPendingIds.length > 0 && allPendingIds.every(id => selectedIds.includes(id));
         setSelectedIds(prev => {
-            if (allSelectedOnPage) {
-                return prev.filter(id => !paginatedIds.includes(id));
+            if (allSelected) {
+                return prev.filter(id => !allPendingIds.includes(id));
             } else {
-                return Array.from(new Set([...prev, ...paginatedIds]));
+                return Array.from(new Set([...prev, ...allPendingIds]));
             }
         });
     };
@@ -998,7 +1064,7 @@ const Warden = () => {
                                                         onClick={toggleSelectAll} 
                                                         className="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
-                                                        {paginatedForms.length > 0 && paginatedForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                                                        {pendingForms.length > 0 && pendingForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)]">Student Name</th>
@@ -1254,6 +1320,20 @@ const Warden = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Bulk Operation Progress Modal */}
+            <BulkOperationProgress
+                isOpen={bulkState.isOpen}
+                status={bulkState.status}
+                operationType={bulkState.operationType}
+                title={bulkState.title}
+                total={bulkState.total}
+                processed={bulkState.processed}
+                successCount={bulkState.successCount}
+                failedCount={bulkState.failedCount}
+                error={bulkState.error}
+                onClose={closeProgress}
+            />
         </div>
     );
 };

@@ -9,6 +9,8 @@ import { getActiveDepartments } from './api/departmentService';
 import { useDebounce } from './hooks/useDebounce';
 import Toast from './components/Toast';
 import ConfirmModal from './components/ConfirmModal';
+import BulkOperationProgress from './components/BulkOperationProgress';
+import useBulkOperation from './hooks/useBulkOperation';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -25,6 +27,16 @@ const AdminStudents = () => {
   const [sortBy, setSortBy] = useState('studentId');
   const [activeDepts, setActiveDepts] = useState([]);
 
+  const {
+    bulkState,
+    isBulkProcessing,
+    startBulkOperation,
+    completeSuccess,
+    completePartial,
+    completeFailure,
+    closeProgress
+  } = useBulkOperation();
+
   useEffect(() => {
     getActiveDepartments().then(depts => {
       if (Array.isArray(depts)) {
@@ -32,50 +44,75 @@ const AdminStudents = () => {
       }
     });
   }, []);
+
   const [sortDir, setSortDir] = useState('desc');
 
   // Student Details Modal
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // CRUD State
+  // Modal and Form States
   const [showForm, setShowForm] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: ''
+    name: '',
+    emailId: '',
+    registerNo: '',
+    rollNo: '',
+    phoneNo: '',
+    dob: '',
+    department: '',
+    gender: '',
+    currentYear: ''
   });
 
-  // Toast State
+  // Action Menu Dropdown State
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
+
+  // Toast Notification State
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (formData.studentId) {
-        await apiClient.put(`/api/admin/students/${formData.studentId}`, formData);
-        showToast('Student updated successfully', 'success');
-      } else {
-        await apiClient.post('/api/admin/students', formData);
-        showToast('Student created successfully', 'success');
-      }
-      setShowForm(false);
-      fetchStudents();
-    } catch (error) {
-      showToast(error.response?.data?.message || 'Error saving student', 'error');
-    }
-  };
-
+  // Confirmation Modal State
   const [confirmState, setConfirmState] = useState({
     isOpen: false,
-    title: "Confirm Action",
+    title: "",
     message: "",
     confirmText: "Delete",
     confirmVariant: "danger",
-    onConfirm: null
+    onConfirm: () => {}
   });
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page,
+        size,
+        sortBy,
+        sortDir
+      });
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      if (selectedDept) params.append('department', selectedDept);
+      if (selectedGender) params.append('gender', selectedGender);
+      if (selectedYear) params.append('year', selectedYear);
+
+      const res = await apiClient.get(`/api/admin/students?${params.toString()}`);
+      setStudents(res.data.content || []);
+      setTotalPages(res.data.totalPages || 0);
+    } catch (error) {
+      showToast('Error fetching students', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, size, debouncedSearch, selectedDept, selectedGender, selectedYear, sortBy, sortDir]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
 
   const handleDeleteOne = (id) => {
     setConfirmState({
@@ -99,38 +136,42 @@ const AdminStudents = () => {
     }
   };
 
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
+  const handleEdit = (student) => {
+    setEditingStudent(student);
+    setFormData({
+      name: student.name,
+      emailId: student.emailId,
+      registerNo: student.registerNo,
+      rollNo: student.rollNo,
+      phoneNo: student.phoneNo,
+      dob: student.dob,
+      department: student.department,
+      gender: student.gender,
+      currentYear: student.currentYear || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const params = { page, size, search: debouncedSearch, sortBy, sortDir };
-      if (selectedDept) params.department = selectedDept;
-      if (selectedGender) params.gender = selectedGender;
-      if (selectedYear) params.year = selectedYear;
-
-      const response = await apiClient.get('/api/admin/students', { params });
-      setStudents(response.data.content);
-      setTotalPages(response.data.totalPages);
+      if (editingStudent) {
+        await apiClient.put(`/api/admin/students/${editingStudent.studentId}`, formData);
+        showToast('Student updated successfully', 'success');
+      } else {
+        await apiClient.post('/api/admin/students', formData);
+        showToast('Student created successfully', 'success');
+      }
+      setShowForm(false);
+      setEditingStudent(null);
+      fetchStudents();
     } catch (error) {
-      showToast('Error fetching students', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, size, debouncedSearch, selectedDept, selectedGender, selectedYear, sortBy, sortDir]);
-
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
-
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortDir('asc');
+      showToast(error.response?.data?.message || 'Error saving student', 'error');
     }
   };
 
   const handleSelectAll = (e) => {
+    if (isBulkProcessing) return;
     if (e.target.checked) {
       setSelectedIds(students.map(s => s.studentId));
     } else {
@@ -139,6 +180,7 @@ const AdminStudents = () => {
   };
 
   const handleSelectOne = (id) => {
+    if (isBulkProcessing) return;
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
     } else {
@@ -147,6 +189,7 @@ const AdminStudents = () => {
   };
 
   const handleBulkDelete = () => {
+    if (selectedIds.length === 0 || isBulkProcessing) return;
     setConfirmState({
       isOpen: true,
       title: "Delete Multiple Students",
@@ -158,14 +201,22 @@ const AdminStudents = () => {
   };
 
   const executeBulkDelete = async () => {
+    if (selectedIds.length === 0 || isBulkProcessing) return;
     setConfirmState(prev => ({ ...prev, isOpen: false }));
+    const idsToDelete = [...selectedIds];
+    startBulkOperation('DELETE', idsToDelete.length, 'Deleting Selected Students...');
+
     try {
-      await apiClient.post('/api/admin/students/bulk-delete', selectedIds);
+      await apiClient.post('/api/admin/students/bulk-delete', idsToDelete);
+      setStudents(prev => prev.filter(s => !idsToDelete.includes(s.studentId)));
       setSelectedIds([]);
+      completeSuccess(idsToDelete.length, idsToDelete.length);
       showToast('Students deleted successfully', 'success');
       fetchStudents();
     } catch (error) {
-      showToast('Error deleting students', 'error');
+      const errorMsg = error.response?.data?.message || 'Error deleting students';
+      completeFailure(errorMsg);
+      showToast(errorMsg, 'error');
     }
   };
 
@@ -577,6 +628,20 @@ const AdminStudents = () => {
         confirmVariant={confirmState.confirmVariant}
         onConfirm={confirmState.onConfirm}
         onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Bulk Operation Progress Modal */}
+      <BulkOperationProgress
+        isOpen={bulkState.isOpen}
+        status={bulkState.status}
+        operationType={bulkState.operationType}
+        title={bulkState.title}
+        total={bulkState.total}
+        processed={bulkState.processed}
+        successCount={bulkState.successCount}
+        failedCount={bulkState.failedCount}
+        error={bulkState.error}
+        onClose={closeProgress}
       />
     </div>
   );

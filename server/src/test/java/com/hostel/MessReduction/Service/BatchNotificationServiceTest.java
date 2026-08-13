@@ -27,6 +27,9 @@ public class BatchNotificationServiceTest {
     @Mock
     private PushNotificationService pushNotificationService;
 
+    @Mock
+    private FirebaseNotificationService firebaseNotificationService;
+
     @InjectMocks
     private BatchNotificationService batchNotificationService;
 
@@ -106,7 +109,7 @@ public class BatchNotificationServiceTest {
         verify(pushNotificationService, times(1)).sendPushNotification(
             eq("deputyWarden1"),
             eq("New Mess Reduction Request"),
-            eq("You have 1 new request waiting for approval."),
+            eq("A new mess reduction request requires your approval."),
             eq("/deputy/request/101"),
             eq(-1L)
         );

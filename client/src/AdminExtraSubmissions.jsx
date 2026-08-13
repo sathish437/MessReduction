@@ -7,12 +7,24 @@ import apiClient from './api/apiClient';
 import { getActiveDepartments } from './api/departmentService';
 import Toast from './components/Toast';
 import ConfirmModal from './components/ConfirmModal';
+import BulkOperationProgress from './components/BulkOperationProgress';
+import useBulkOperation from './hooks/useBulkOperation';
 
 const AdminExtraSubmissions = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [activeDepts, setActiveDepts] = useState([]);
+
+  const {
+    bulkState,
+    isBulkProcessing,
+    startBulkOperation,
+    completeSuccess,
+    completePartial,
+    completeFailure,
+    closeProgress
+  } = useBulkOperation();
 
   useEffect(() => {
     getActiveDepartments().then(depts => {
@@ -30,7 +42,7 @@ const AdminExtraSubmissions = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
 
-  // Details Modal
+  // Modal States
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -41,13 +53,23 @@ const AdminExtraSubmissions = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Confirmation Modal State
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    confirmVariant: "primary",
+    onConfirm: () => {}
+  });
+
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/api/admin/extra-submissions');
-      setRequests(response.data || []);
+      const res = await apiClient.get('/api/admin/extra-submissions');
+      setRequests(res.data || []);
     } catch (error) {
-      showToast('Error fetching extra submissions', 'error');
+      showToast('Error fetching extra submission requests', 'error');
     } finally {
       setLoading(false);
     }
@@ -57,21 +79,30 @@ const AdminExtraSubmissions = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const [confirmState, setConfirmState] = useState({
-    isOpen: false,
-    title: "Confirm Action",
-    message: "",
-    confirmText: "Confirm",
-    confirmVariant: "danger",
-    onConfirm: null
-  });
+  const handleSelectAll = (e) => {
+    if (isBulkProcessing) return;
+    if (e.target.checked) {
+      setSelectedIds(filteredRequests.map(r => r.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id) => {
+    if (isBulkProcessing) return;
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
 
   const handleAction = (id, action) => {
     const isApprove = action === 'approve';
     setConfirmState({
       isOpen: true,
       title: isApprove ? "Approve Extra Submission" : "Reject Extra Submission",
-      message: `Are you sure you want to ${isApprove ? 'approve' : 'reject'} this extra submission request?`,
+      message: `Are you sure you want to ${action} this extra submission request?`,
       confirmText: isApprove ? "Approve" : "Reject",
       confirmVariant: isApprove ? "primary" : "danger",
       onConfirm: () => executeAction(id, action)
@@ -92,7 +123,7 @@ const AdminExtraSubmissions = () => {
   };
 
   const handleBulkAction = (action) => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 || isBulkProcessing) return;
     const isApprove = action === 'approve';
     setConfirmState({
       isOpen: true,
@@ -105,15 +136,23 @@ const AdminExtraSubmissions = () => {
   };
 
   const executeBulkAction = async (action) => {
+    if (selectedIds.length === 0 || isBulkProcessing) return;
     setConfirmState(prev => ({ ...prev, isOpen: false }));
     const isApprove = action === 'approve';
+    const opType = isApprove ? 'APPROVE' : 'REJECT';
+    const idsToProcess = [...selectedIds];
+    startBulkOperation(opType, idsToProcess.length, isApprove ? 'Approving Requests...' : 'Rejecting Requests...');
+
     try {
-      await apiClient.post(`/api/admin/extra-submissions/bulk-${action}`, selectedIds);
-      showToast(`Bulk ${isApprove ? 'approval' : 'rejection'} completed successfully`, 'success');
+      await apiClient.post(`/api/admin/extra-submissions/bulk-${action}`, idsToProcess);
       setSelectedIds([]);
+      completeSuccess(idsToProcess.length, idsToProcess.length);
+      showToast(`Bulk ${isApprove ? 'approval' : 'rejection'} completed successfully`, 'success');
       fetchRequests();
     } catch (error) {
-      showToast(`Error bulk ${isApprove ? 'approving' : 'rejecting'}: ` + (error.response?.data?.message || 'Unknown error'), 'error');
+      const errorMsg = error.response?.data?.message || `Error bulk ${isApprove ? 'approving' : 'rejecting'}`;
+      completeFailure(errorMsg);
+      showToast(errorMsg, 'error');
     }
   };
 
@@ -530,6 +569,20 @@ const AdminExtraSubmissions = () => {
         confirmVariant={confirmState.confirmVariant}
         onConfirm={confirmState.onConfirm}
         onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Bulk Operation Progress Modal */}
+      <BulkOperationProgress
+        isOpen={bulkState.isOpen}
+        status={bulkState.status}
+        operationType={bulkState.operationType}
+        title={bulkState.title}
+        total={bulkState.total}
+        processed={bulkState.processed}
+        successCount={bulkState.successCount}
+        failedCount={bulkState.failedCount}
+        error={bulkState.error}
+        onClose={closeProgress}
       />
     </div>
   );

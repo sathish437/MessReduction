@@ -10,6 +10,8 @@ import { getActiveDepartments } from "./api/departmentService";
 import { logout } from "./services/authService";
 import Toast from "./components/Toast";
 import MultiSelect from "./MultiSelect";
+import BulkOperationProgress from "./components/BulkOperationProgress";
+import useBulkOperation from "./hooks/useBulkOperation";
 
 
 const handleLogout = () => {
@@ -26,7 +28,7 @@ const YEAR_COLORS = {
 };
 
 function YearStatCard({ year, requests }) {
-    const pending = requests.filter(r => r.year === year).length;
+    const pending = requests ? requests.length : 0;
 
     return (
         <motion.div
@@ -376,17 +378,22 @@ function Deputy_warden_side() {
             const currentUsername = getCookie('staffUsername');
             const currentDeputyDetails = getDeputyDetails(currentUsername);
 
-            // Fetch pending forms for Deputy Warden
-            const response = await apiClient.get("/api/hostelStaff/staff/deputyWarden", signal ? { signal } : {});
+            // Fetch forms, dashboard counts, and year-wise counts concurrently
+            const [response, countRes, yearCountRes] = await Promise.all([
+                apiClient.get("/api/hostelStaff/staff/deputyWarden", signal ? { signal } : {}),
+                apiClient.get("/api/hostelStaff/staff/dashboard-count", signal ? { signal } : {}),
+                apiClient.get("/api/hostelStaff/staff/deputyWarden/year-count", signal ? { signal } : {})
+            ]);
             if (signal && signal.aborted) return;
 
             // Filter forms in frontend
-            const filteredData = response.data.filter(form => {
+            const filteredData = (response.data || []).filter(form => {
                 if (!currentDeputyDetails) return true;
+                const isAssigned = form.assignedDeputyWarden === currentUsername;
+                if (isAssigned) return true;
                 const isGenderMatch = !form.gender || form.gender === currentDeputyDetails.gender;
                 const isYearMatch = form.year === currentDeputyDetails.year;
-                const isAssigned = form.assignedDeputyWarden === currentUsername;
-                return (isGenderMatch && isYearMatch) || isAssigned;
+                return isGenderMatch && isYearMatch;
             });
 
             const data = filteredData.map(r => ({
@@ -399,15 +406,7 @@ function Deputy_warden_side() {
                 status: r.currentStatus || "PendingDeputyWarden"
             }));
             setRequests(data);
-
-            // Fetch dashboard counts
-            const countRes = await apiClient.get("/api/hostelStaff/staff/dashboard-count", signal ? { signal } : {});
-            if (signal && signal.aborted) return;
             setDashboardStats(countRes.data);
-
-            // Fetch year-wise counts
-            const yearCountRes = await apiClient.get("/api/hostelStaff/staff/deputyWarden/year-count", signal ? { signal } : {});
-            if (signal && signal.aborted) return;
             setYearStats(yearCountRes.data);
 
         } catch (err) {
@@ -466,7 +465,15 @@ function Deputy_warden_side() {
 
     // Processing State for Action Locking
     const [processingIds, setProcessingIds] = useState(new Set());
-    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const {
+        bulkState,
+        isBulkProcessing,
+        startBulkOperation,
+        completeSuccess,
+        completePartial,
+        completeFailure,
+        closeProgress
+    } = useBulkOperation();
     const [isRejecting, setIsRejecting] = useState(false);
 
     // Activity Log Modal State
@@ -496,6 +503,12 @@ function Deputy_warden_side() {
         try {
             await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${id}?action=${action}`);
             showToast(`Request ${action.toLowerCase()}d successfully`, 'success');
+            setRequests(prev => prev.filter(r => r.id !== id));
+            setDashboardStats(prev => prev ? {
+                ...prev,
+                pendingDeputyWarden: Math.max(0, (prev.pendingDeputyWarden || 0) - 1),
+                pendingWarden: (prev.pendingWarden || 0) + 1
+            } : prev);
             await refreshData();
         } catch (err) {
             showToast("Failed to update status.", 'error');
@@ -509,56 +522,100 @@ function Deputy_warden_side() {
     };
 
     const handleRejectSubmit = async () => {
-        if (isRejecting) return;
+        if (isRejecting || isBulkProcessing) return;
 
         if (!rejectReason.trim()) {
             showToast("Please enter a reason for rejection.", 'error');
             return;
         }
 
-        setIsRejecting(true);
-        try {
-            if (isBulkReject) {
-                const res = await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk-reject`, {
-                    formIds: selectedIds,
-                    rejectReason
-                });
-                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
-                setSelectedIds([]);
-            } else {
-                await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
-                showToast("Request rejected successfully", 'success');
-            }
+        if (isBulkReject) {
+            const idsToReject = [...selectedIds];
+            const reason = rejectReason;
             setIsRejectModalOpen(false);
             setRejectFormId(null);
             setIsBulkReject(false);
             setRejectReason("");
-            await refreshData();
-        } catch (err) {
-            showToast("Failed to reject request.", 'error');
-        } finally {
-            setIsRejecting(false);
+            startBulkOperation('REJECT', idsToReject.length, 'Rejecting Requests...');
+
+            try {
+                const res = await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk-reject`, {
+                    formIds: idsToReject,
+                    rejectReason: reason
+                });
+                const processedSet = new Set(idsToReject);
+                const rejCount = res.data?.rejected || 0;
+                const failCount = res.data?.failed || 0;
+
+                setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+                setDashboardStats(prev => prev ? {
+                    ...prev,
+                    pendingDeputyWarden: Math.max(0, (prev.pendingDeputyWarden || 0) - (rejCount || processedSet.size)),
+                    rejectedDeputyWarden: (prev.rejectedDeputyWarden || 0) + (rejCount || processedSet.size)
+                } : prev);
+                setSelectedIds([]);
+
+                if (failCount > 0) {
+                    completePartial(res.data?.selected || idsToReject.length, rejCount, failCount);
+                } else {
+                    completeSuccess(rejCount, res.data?.selected || idsToReject.length);
+                }
+                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
+            } catch (err) {
+                const errorMsg = err.response?.data?.message || "Failed to reject requests.";
+                completeFailure(errorMsg);
+                showToast(errorMsg, 'error');
+            }
+        } else {
+            setIsRejecting(true);
+            try {
+                await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/${rejectFormId}/reject`, { rejectReason });
+                setRequests(prev => prev.filter(r => r.id !== rejectFormId));
+                setDashboardStats(prev => prev ? {
+                    ...prev,
+                    pendingDeputyWarden: Math.max(0, (prev.pendingDeputyWarden || 0) - 1),
+                    rejectedDeputyWarden: (prev.rejectedDeputyWarden || 0) + 1
+                } : prev);
+                showToast("Request rejected successfully", 'success');
+                setIsRejectModalOpen(false);
+                setRejectFormId(null);
+                setIsBulkReject(false);
+                setRejectReason("");
+                await refreshData();
+            } catch (err) {
+                showToast("Failed to reject request.", 'error');
+            } finally {
+                setIsRejecting(false);
+            }
         }
     };
 
     const handleBulkAction = async () => {
         if (selectedIds.length === 0 || isBulkProcessing) return;
 
-        setIsBulkProcessing(true);
+        const idsToProcess = [...selectedIds];
+        startBulkOperation('APPROVE', idsToProcess.length, 'Approving Requests...');
+
         try {
-            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=Approve`, selectedIds);
-            showToast("Bulk approval completed successfully", 'success');
+            await apiClient.patch(`/api/hostelStaff/staff/deputyWarden/bulk?action=Approve`, idsToProcess);
+            const processedSet = new Set(idsToProcess);
+            setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+            setDashboardStats(prev => prev ? {
+                ...prev,
+                pendingDeputyWarden: Math.max(0, (prev.pendingDeputyWarden || 0) - processedSet.size),
+                pendingWarden: (prev.pendingWarden || 0) + processedSet.size
+            } : prev);
             setSelectedIds([]);
-            await refreshData();
+            completeSuccess(idsToProcess.length, idsToProcess.length);
+            showToast("Bulk approval completed successfully", 'success');
         } catch (err) {
-            showToast("Failed to perform bulk approval.", 'error');
-        } finally {
-            setIsBulkProcessing(false);
+            const errorMsg = err.response?.data?.message || "Failed to perform bulk approval.";
+            completeFailure(errorMsg);
+            showToast(errorMsg, 'error');
         }
     };
 
     const filteredRequests = requests
-        .filter(r => selectedYear === "all" ? true : r.year === selectedYear)
         .filter(r => deptFilter === "ALL" ? true : (r.dept || r.department) === deptFilter)
         .filter(r => {
             const q = search.trim().toLowerCase();
@@ -575,13 +632,13 @@ function Deputy_warden_side() {
     const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
     const toggleSelectAll = () => {
-        const paginatedIds = paginatedForms.map(r => r.id);
-        const allSelectedOnPage = paginatedIds.every(id => selectedIds.includes(id));
+        const allFilteredIds = filteredRequests.map(r => r.id);
+        const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.includes(id));
         setSelectedIds(prev => {
-            if (allSelectedOnPage) {
-                return prev.filter(id => !paginatedIds.includes(id));
+            if (allSelected) {
+                return prev.filter(id => !allFilteredIds.includes(id));
             } else {
-                return Array.from(new Set([...prev, ...paginatedIds]));
+                return Array.from(new Set([...prev, ...allFilteredIds]));
             }
         });
     };
@@ -900,7 +957,7 @@ function Deputy_warden_side() {
                                                         onClick={toggleSelectAll} 
                                                         className="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
-                                                        {paginatedForms.length > 0 && paginatedForms.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                                                        {filteredRequests.length > 0 && filteredRequests.every(r => selectedIds.includes(r.id)) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                                                     </button>
                                                 </th>
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)]">Student Name</th>
@@ -1156,6 +1213,20 @@ function Deputy_warden_side() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Bulk Operation Progress Modal */}
+            <BulkOperationProgress
+                isOpen={bulkState.isOpen}
+                status={bulkState.status}
+                operationType={bulkState.operationType}
+                title={bulkState.title}
+                total={bulkState.total}
+                processed={bulkState.processed}
+                successCount={bulkState.successCount}
+                failedCount={bulkState.failedCount}
+                error={bulkState.error}
+                onClose={closeProgress}
+            />
         </div>
     );
 }

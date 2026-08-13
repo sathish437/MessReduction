@@ -160,8 +160,8 @@ public class PushNotificationService {
                     );
 
                     Map<String, String> payloadMap = new HashMap<>();
-                    payloadMap.put("title", title != null ? title : "Test Notification");
-                    payloadMap.put("message", message != null ? message : "No payload received.");
+                    payloadMap.put("title", title != null ? title : "Mess Reduction Update");
+                    payloadMap.put("message", message != null ? message : "You have a new update in the Mess Reduction portal.");
                     payloadMap.put("url", finalUrl != null ? finalUrl : "/");
 
                     String payload = objectMapper.writeValueAsString(payloadMap);

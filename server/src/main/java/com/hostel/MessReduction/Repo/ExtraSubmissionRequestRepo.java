@@ -13,4 +13,8 @@ public interface ExtraSubmissionRequestRepo extends JpaRepository<ExtraSubmissio
     
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ExtraSubmissionRequest> findByStatus(RequestStatus status);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM ExtraSubmissionRequest e WHERE e.studentDetails.id IN :studentIds")
+    int deleteExtraSubmissionsByStudentIdsIn(@org.springframework.data.repository.query.Param("studentIds") List<Long> studentIds);
 }

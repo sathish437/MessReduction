@@ -28,4 +28,8 @@ public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long>, 
 
     @org.springframework.data.jpa.repository.Query("SELECT s.department, COUNT(s) FROM StudentDetails s GROUP BY s.department")
     List<Object[]> countStudentsByDepartment();
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM StudentDetails s WHERE s.studentId IN :studentIds")
+    int deleteStudentsByIdsIn(@org.springframework.data.repository.query.Param("studentIds") List<Long> studentIds);
 }

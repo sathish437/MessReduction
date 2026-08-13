@@ -527,16 +527,27 @@ public class ReductionFormService {
         }
     }
 
-    public StaffDashboardCountDTO getDashboardCount() {
+    private StaffDashboardCountDTO buildDashboardCountDTO(List<Object[]> statusCounts) {
+        Map<FormStatus, Long> map = statusCounts.stream()
+                .filter(row -> row[0] != null && row[1] != null)
+                .collect(Collectors.toMap(
+                        row -> (FormStatus) row[0],
+                        row -> (Long) row[1],
+                        (a, b) -> a
+                ));
         return new StaffDashboardCountDTO(
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingWarden),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingDeputyWarden),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.PendingOffice),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.Approved),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedWarden),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedDeputyWarden),
-                reductionFormRepo.countByCurrentStatusAndIsActiveTrue(FormStatus.RejectedOffice)
+                map.getOrDefault(FormStatus.PendingWarden, 0L),
+                map.getOrDefault(FormStatus.PendingDeputyWarden, 0L),
+                map.getOrDefault(FormStatus.PendingOffice, 0L),
+                map.getOrDefault(FormStatus.Approved, 0L),
+                map.getOrDefault(FormStatus.RejectedWarden, 0L),
+                map.getOrDefault(FormStatus.RejectedDeputyWarden, 0L),
+                map.getOrDefault(FormStatus.RejectedOffice, 0L)
         );
+    }
+
+    public StaffDashboardCountDTO getDashboardCount() {
+        return buildDashboardCountDTO(reductionFormRepo.countGroupByStatus());
     }
 
     public StaffDashboardCountDTO getDashboardCountForWarden(String userName) {
@@ -544,28 +555,12 @@ public class ReductionFormService {
         if (year == null) {
             return getDashboardCount();
         }
-        return new StaffDashboardCountDTO(
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingDeputyWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.PendingOffice, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.Approved, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedDeputyWarden, year),
-                reductionFormRepo.countByCurrentStatusAndYearAndIsActiveTrue(FormStatus.RejectedOffice, year)
-        );
+        return buildDashboardCountDTO(reductionFormRepo.countGroupByStatusAndYear(year));
     }
 
     public StaffDashboardCountDTO getDashboardCountForDeputy(String userName) {
         validateDeputyWardenUser(userName);
-        return new StaffDashboardCountDTO(
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingWarden, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingDeputyWarden, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.PendingOffice, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.Approved, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedWarden, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedDeputyWarden, userName),
-                reductionFormRepo.countByCurrentStatusAndAssignedDeputyWardenAndIsActiveTrue(FormStatus.RejectedOffice, userName)
-        );
+        return buildDashboardCountDTO(reductionFormRepo.countGroupByStatusAndDeputy(userName));
     }
 
     public YearWiseCountDTO deputyWardenYearWiseCount(String userName) {
@@ -589,20 +584,28 @@ public class ReductionFormService {
     }
 
     public void updateWardenBulkStatus(List<Long> formIds, String action, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateApproveAction(action, "Bulk rejection is not supported. Use the individual reject endpoint with a rejectReason.");
         Integer year = resolveWardenYear(userName);
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) {
+            throw new BadRequestException("Form ID list cannot be empty");
+        }
+
+        // Single eager fetch with studentDetails (Zero N+1)
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         if (forms.isEmpty()) {
             throw new ReductionFormNotFoundException("No forms found for the provided IDs");
         }
-        long distinctIds = formIds.stream().filter(Objects::nonNull).distinct().count();
-        if (forms.size() != distinctIds) {
+        if (forms.size() != distinctIds.size()) {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
-        List<ReductionForm> validForms = new ArrayList<>();
+        List<Long> validFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -617,7 +620,7 @@ public class ReductionFormService {
                 continue;
             }
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.PendingOffice);
+            validFormIds.add(form.getFormId());
 
             ReductionFormHistory history = new ReductionFormHistory();
             history.setReductionForm(form);
@@ -636,7 +639,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Warden);
@@ -650,34 +653,56 @@ public class ReductionFormService {
                     office.getUserName(), "New request pending for approval.", "NORMAL_REQUEST", form.getFormId(), "Office"
                 ));
             }
-
-            validForms.add(form);
         }
 
-        if (!validForms.isEmpty()) {
-            reductionFormRepo.saveAll(validForms);
+        if (!validFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK UPDATE
+            long updateStart = System.nanoTime();
+            int updatedRows = (year != null)
+                ? reductionFormRepo.bulkUpdateWardenStatusWithYear(validFormIds, FormStatus.PendingWarden, FormStatus.PendingOffice, year)
+                : reductionFormRepo.bulkUpdateWardenStatusAllYears(validFormIds, FormStatus.PendingWarden, FormStatus.PendingOffice);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+            if (updatedRows < validFormIds.size()) {
+                log.warn("Warden Bulk Approval concurrency discrepancy: expected {} updates but only {} rows updated. Some forms may have been concurrently processed.",
+                        validFormIds.size(), updatedRows);
+            }
+
+            // Batch persistence for histories, activity logs, and in-app notifications (utilizing JDBC batching)
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Warden bulk approval completed for {} forms", validForms.size());
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Warden Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
         }
     }
 
     public void updateDeputyWardenPendingBulkStatus(List<Long> formIds, String action, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateDeputyWardenUser(userName);
         validateApproveAction(action, "Bulk rejection is not supported. Use the individual reject endpoint with a rejectReason.");
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) {
+            throw new BadRequestException("Form ID list cannot be empty");
+        }
+
+        // Single eager fetch with studentDetails (Zero N+1)
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         if (forms.isEmpty()) {
             throw new ReductionFormNotFoundException("No forms found for the provided IDs");
         }
-        long distinctIds = formIds.stream().filter(Objects::nonNull).distinct().count();
-        if (forms.size() != distinctIds) {
+        if (forms.size() != distinctIds.size()) {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
-        List<ReductionForm> validForms = new ArrayList<>();
+        List<Long> validFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -692,7 +717,7 @@ public class ReductionFormService {
                 continue;
             }
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.PendingWarden);
+            validFormIds.add(form.getFormId());
 
             ReductionFormHistory history = new ReductionFormHistory();
             history.setReductionForm(form);
@@ -711,7 +736,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.DeputyWarden);
@@ -727,34 +752,53 @@ public class ReductionFormService {
                     ));
                 }
             }
-
-            validForms.add(form);
         }
 
-        if (!validForms.isEmpty()) {
-            reductionFormRepo.saveAll(validForms);
+        if (!validFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK UPDATE
+            long updateStart = System.nanoTime();
+            int updatedRows = reductionFormRepo.bulkUpdateDeputyWardenStatus(validFormIds, FormStatus.PendingDeputyWarden, FormStatus.PendingWarden, userName);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+            if (updatedRows < validFormIds.size()) {
+                log.warn("Deputy Warden Bulk Approval concurrency discrepancy: expected {} updates but only {} rows updated. Some forms may have been concurrently processed.",
+                        validFormIds.size(), updatedRows);
+            }
+
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Deputy Warden bulk approval completed for {} forms", validForms.size());
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Deputy Warden Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
         }
     }
 
     public void updateOfficePendingBulkStatus(List<Long> formIds, String action, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateOfficeUser(userName);
         validateApproveAction(action, "Bulk rejection is not supported. Use the individual reject endpoint with a rejectReason.");
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) {
+            throw new BadRequestException("Form ID list cannot be empty");
+        }
+
+        // Single eager fetch with studentDetails (Zero N+1)
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         if (forms.isEmpty()) {
             throw new ReductionFormNotFoundException("No forms found for the provided IDs");
         }
-        long distinctIds = formIds.stream().filter(Objects::nonNull).distinct().count();
-        if (forms.size() != distinctIds) {
+        if (forms.size() != distinctIds.size()) {
             throw new ReductionFormNotFoundException("Some form IDs were not found for the provided IDs");
         }
 
-        List<ReductionForm> validForms = new ArrayList<>();
+        List<Long> validFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -765,7 +809,7 @@ public class ReductionFormService {
                 continue;
             }
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.Approved);
+            validFormIds.add(form.getFormId());
 
             ReductionFormHistory history = new ReductionFormHistory();
             history.setReductionForm(form);
@@ -784,7 +828,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Office);
@@ -792,32 +836,47 @@ public class ReductionFormService {
             activityLogRequest.setAction("Approved");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
-
-            validForms.add(form);
         }
 
-        if (!validForms.isEmpty()) {
-            reductionFormRepo.saveAll(validForms);
+        if (!validFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK UPDATE
+            long updateStart = System.nanoTime();
+            int updatedRows = reductionFormRepo.bulkUpdateOfficeStatus(validFormIds, FormStatus.PendingOffice, FormStatus.Approved);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+            if (updatedRows < validFormIds.size()) {
+                log.warn("Office Bulk Approval concurrency discrepancy: expected {} updates but only {} rows updated. Some forms may have been concurrently processed.",
+                        validFormIds.size(), updatedRows);
+            }
+
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Office bulk approval completed for {} forms", validForms.size());
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Office Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
         }
     }
 
     public BulkRejectSummaryDTO rejectWardenBulk(List<Long> formIds, String rejectReason, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateRejectReason(rejectReason);
         Integer year = resolveWardenYear(userName);
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
 
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
 
-        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<Long> rejectedFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -840,8 +899,7 @@ public class ReductionFormService {
             }
 
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.RejectedWarden);
-            form.setRejectReason(trimmedReason);
+            rejectedFormIds.add(form.getFormId());
             restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
 
             ReductionFormHistory history = new ReductionFormHistory();
@@ -862,7 +920,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Warden);
@@ -871,34 +929,48 @@ public class ReductionFormService {
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
 
-            rejectedForms.add(form);
             rejected++;
         }
 
-        if (!rejectedForms.isEmpty()) {
-            reductionFormRepo.saveAll(rejectedForms);
+        if (!rejectedFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK REJECT
+            long updateStart = System.nanoTime();
+            int updatedRows = (year != null)
+                ? reductionFormRepo.bulkRejectWardenStatusWithYear(rejectedFormIds, FormStatus.PendingWarden, FormStatus.RejectedWarden, trimmedReason, year)
+                : reductionFormRepo.bulkRejectWardenStatusAllYears(rejectedFormIds, FormStatus.PendingWarden, FormStatus.RejectedWarden, trimmedReason);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Warden bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Warden Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 
     public BulkRejectSummaryDTO rejectDeputyWardenBulk(List<Long> formIds, String rejectReason, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateRejectReason(rejectReason);
         validateDeputyWardenUser(userName);
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
 
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
 
-        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<Long> rejectedFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -921,8 +993,7 @@ public class ReductionFormService {
             }
 
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
-            form.setRejectReason(trimmedReason);
+            rejectedFormIds.add(form.getFormId());
             restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
 
             ReductionFormHistory history = new ReductionFormHistory();
@@ -943,7 +1014,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.DeputyWarden);
@@ -952,34 +1023,46 @@ public class ReductionFormService {
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
 
-            rejectedForms.add(form);
             rejected++;
         }
 
-        if (!rejectedForms.isEmpty()) {
-            reductionFormRepo.saveAll(rejectedForms);
+        if (!rejectedFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK REJECT
+            long updateStart = System.nanoTime();
+            int updatedRows = reductionFormRepo.bulkRejectDeputyWardenStatus(rejectedFormIds, FormStatus.PendingDeputyWarden, FormStatus.RejectedDeputyWarden, trimmedReason, userName);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Deputy Warden bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Deputy Warden Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
     }
 
     public BulkRejectSummaryDTO rejectOfficeBulk(List<Long> formIds, String rejectReason, String userName) {
+        long start = System.nanoTime();
         validateBulkRequest(formIds);
         validateRejectReason(rejectReason);
         validateOfficeUser(userName);
 
-        List<ReductionForm> forms = reductionFormRepo.findAllById(formIds);
+        List<Long> distinctIds = formIds.stream().filter(Objects::nonNull).distinct().toList();
+        long fetchStart = System.nanoTime();
+        List<ReductionForm> forms = reductionFormRepo.findByFormIdIn(distinctIds);
+        long fetchDurationMs = (System.nanoTime() - fetchStart) / 1_000_000;
         Map<Long, ReductionForm> formMap = forms.stream().collect(Collectors.toMap(ReductionForm::getFormId, f -> f, (a, b) -> a));
 
         int selected = formIds.size();
         int rejected = 0;
         int failed = 0;
 
-        List<ReductionForm> rejectedForms = new ArrayList<>();
+        List<Long> rejectedFormIds = new ArrayList<>();
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
@@ -998,8 +1081,7 @@ public class ReductionFormService {
             }
 
             FormStatus previousStatus = form.getCurrentStatus();
-            form.setCurrentStatus(FormStatus.RejectedOffice);
-            form.setRejectReason(trimmedReason);
+            rejectedFormIds.add(form.getFormId());
             restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
 
             ReductionFormHistory history = new ReductionFormHistory();
@@ -1020,7 +1102,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), null
+                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Office);
@@ -1029,16 +1111,24 @@ public class ReductionFormService {
             activityLogRequest.setArrivalDate(form.getArrivalDate());
             activityLogs.add(activityLogRequest);
 
-            rejectedForms.add(form);
             rejected++;
         }
 
-        if (!rejectedForms.isEmpty()) {
-            reductionFormRepo.saveAll(rejectedForms);
+        if (!rejectedFormIds.isEmpty()) {
+            // Database-level conditional set-based BULK REJECT
+            long updateStart = System.nanoTime();
+            int updatedRows = reductionFormRepo.bulkRejectOfficeStatus(rejectedFormIds, FormStatus.PendingOffice, FormStatus.RejectedOffice, trimmedReason);
+            long updateDurationMs = (System.nanoTime() - updateStart) / 1_000_000;
+
+            long batchInsertStart = System.nanoTime();
             reductionFormHistoryRepo.saveAll(histories);
             activityLogService.createLogs(activityLogs);
             notificationService.createNotificationsBatch(notificationItems);
-            log.info("Office bulk reject completed: selected={}, rejected={}, failed={}", selected, rejected, failed);
+            long batchInsertDurationMs = (System.nanoTime() - batchInsertStart) / 1_000_000;
+
+            long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Office Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
+                    totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
@@ -1087,19 +1177,8 @@ public class ReductionFormService {
 
     public void autoDeactivateAllExpiredForms() {
         LocalDateTime now = LocalDateTime.now();
-        List<ReductionForm> activeForms = reductionFormRepo.findByIsActiveTrue();
-        List<ReductionForm> updated = new ArrayList<>();
-        for (ReductionForm form : activeForms) {
-            LocalDateTime arrivalDateTime = LocalDateTime.of(form.getArrivalDate(), form.getArrivalTime());
-            if (!now.isBefore(arrivalDateTime)) {
-                form.setActive(false);
-                form.getHistory().forEach(history -> history.setActive(false));
-                updated.add(form);
-            }
-        }
-        if (!updated.isEmpty()) {
-            reductionFormRepo.saveAll(updated);
-        }
+        reductionFormRepo.deactivateExpiredForms(now.toLocalDate(), now.toLocalTime());
+        reductionFormRepo.deactivateExpiredFormHistories();
     }
 
     private void checkSubmissionLimit(StudentDetails student) {

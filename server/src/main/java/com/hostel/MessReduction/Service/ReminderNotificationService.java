@@ -25,6 +25,7 @@ public class ReminderNotificationService {
     private final StaffUsersRepo staffUsersRepo;
     private final NotificationReminderLogRepository reminderLogRepo;
     private final PushNotificationService pushNotificationService;
+    private final FirebaseNotificationService firebaseNotificationService;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     @Value("${notification.reminder.enabled:true}")
@@ -37,11 +38,13 @@ public class ReminderNotificationService {
                                        StaffUsersRepo staffUsersRepo,
                                        NotificationReminderLogRepository reminderLogRepo,
                                        PushNotificationService pushNotificationService,
+                                       FirebaseNotificationService firebaseNotificationService,
                                        com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.reminderLogRepo = reminderLogRepo;
         this.pushNotificationService = pushNotificationService;
+        this.firebaseNotificationService = firebaseNotificationService;
         this.systemSettingsRepo = systemSettingsRepo;
     }
 
@@ -108,19 +111,21 @@ public class ReminderNotificationService {
 
             logger.info("Found {} pending requests for {}", count, recipient);
 
-            String title = "Pending Approval Reminder";
-            String body;
-            if (count == 1) {
-                body = "You have 1 pending Mess Reduction request waiting for your approval.";
-            } else {
-                body = "You have " + count + " pending Mess Reduction requests waiting for your approval.";
-            }
+            String title = "Pending Mess Reduction Request";
+            String body = "You have a pending mess reduction request waiting for your action.";
 
             String redirectUrl = getRedirectUrl(recipient);
 
             logger.info("Sending reminder push notification");
             try {
                 pushNotificationService.sendPushNotification(recipient, title, body, redirectUrl, -1L);
+                
+                Map<String, String> fcmData = new HashMap<>();
+                fcmData.put("type", "REMINDER");
+                fcmData.put("url", redirectUrl);
+                fcmData.put("count", String.valueOf(count));
+                firebaseNotificationService.sendNotificationToUser(recipient, title, body, fcmData);
+                
                 logger.info("Reminder push sent successfully");
 
                 // Update logs

@@ -16,6 +16,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name = "extra_submission_request", indexes = {
+        @Index(name = "idx_esr_student_id", columnList = "student_id"),
+        @Index(name = "idx_esr_status", columnList = "status")
+})
 public class ExtraSubmissionRequest {
     
     @Id

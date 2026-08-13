@@ -7,6 +7,7 @@ import StaffLogin from './StaffLogin'
 import ProtectedRoute from './ProtectedRoute'
 import { isTokenExpired, getStaffDashboardRoute, logout } from './services/authService'
 import { setCookie, deleteCookie } from './utils/cookieUtils'
+import { requestFcmToken, setupForegroundNotificationListener } from './firebase/messaging'
 
 // Lazy load heavy dashboard and admin routes for code splitting & initial bundle optimization
 const Register = lazy(() => import('./Register'));
@@ -65,6 +66,24 @@ function App() {
   const navigateReactRouter = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
+
+  // Foreground FCM notification listener & token setup
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('token');
+    if (token && !isTokenExpired(token)) {
+      requestFcmToken().catch(() => {});
+    }
+
+    const cleanupListener = setupForegroundNotificationListener((payload) => {
+      window.dispatchEvent(new CustomEvent('app-notification-refresh', { detail: payload }));
+    });
+
+    return () => {
+      if (typeof cleanupListener === 'function') {
+        cleanupListener();
+      }
+    };
+  }, []);
 
   // Startup session checks & redirection
   useEffect(() => {
@@ -226,11 +245,6 @@ function App() {
       </Suspense>
     </div>
   );
-}
-
-function navCls(href, current, inactive, active) {
-  const isActive = current === href;
-  return `px-3 py-2 rounded-md text-xs font-bold border transition-all text-center ${isActive ? active : inactive}`;
 }
 
 export default App

@@ -86,22 +86,71 @@ public class ExtraSubmissionService {
     }
 
     public void bulkApproveRequests(List<Long> requestIds, String adminUsername) {
-        for (Long id : requestIds) {
-            try {
-                approveRequest(id, adminUsername);
-            } catch (BadRequestException e) {
-                // Skip if already processed or not found to continue bulk operation
+        if (requestIds == null || requestIds.isEmpty()) return;
+        List<Long> distinctIds = requestIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) return;
+
+        List<ExtraSubmissionRequest> requests = extraSubmissionRequestRepo.findAllById(distinctIds);
+        List<ExtraSubmissionRequest> toUpdate = new java.util.ArrayList<>();
+        List<StudentDetails> studentsToUpdate = new java.util.ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new java.util.ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (ExtraSubmissionRequest req : requests) {
+            if (req.getStatus() != RequestStatus.PENDING) continue;
+            req.setStatus(RequestStatus.APPROVED);
+            req.setApprovedBy(adminUsername);
+            req.setApprovedAt(now);
+            toUpdate.add(req);
+
+            StudentDetails student = req.getStudentDetails();
+            if (student != null) {
+                student.resetSubmissionCountIfNewDay();
+                int currentGranted = student.getExtraSubmissionGranted() != null ? student.getExtraSubmissionGranted() : 0;
+                student.setExtraSubmissionGranted(currentGranted + 1);
+                studentsToUpdate.add(student);
+
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    student.getEmailId(), "Your extra submission request was approved.", "EXTRA_APPROVED", req.getId(), "STUDENT"
+                ));
             }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            extraSubmissionRequestRepo.saveAll(toUpdate);
+            studentDetailsRepo.saveAll(studentsToUpdate);
+            notificationService.createNotificationsBatch(notificationItems);
         }
     }
 
     public void bulkRejectRequests(List<Long> requestIds, String adminUsername) {
-        for (Long id : requestIds) {
-            try {
-                rejectRequest(id, adminUsername);
-            } catch (BadRequestException e) {
-                // Skip if already processed or not found to continue bulk operation
+        if (requestIds == null || requestIds.isEmpty()) return;
+        List<Long> distinctIds = requestIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) return;
+
+        List<ExtraSubmissionRequest> requests = extraSubmissionRequestRepo.findAllById(distinctIds);
+        List<ExtraSubmissionRequest> toUpdate = new java.util.ArrayList<>();
+        List<NotificationService.BatchNotificationItem> notificationItems = new java.util.ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (ExtraSubmissionRequest req : requests) {
+            if (req.getStatus() != RequestStatus.PENDING) continue;
+            req.setStatus(RequestStatus.REJECTED);
+            req.setApprovedBy(adminUsername);
+            req.setApprovedAt(now);
+            toUpdate.add(req);
+
+            StudentDetails student = req.getStudentDetails();
+            if (student != null) {
+                notificationItems.add(new NotificationService.BatchNotificationItem(
+                    student.getEmailId(), "Your extra submission request was rejected.", "EXTRA_REJECTED", req.getId(), "STUDENT"
+                ));
             }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            extraSubmissionRequestRepo.saveAll(toUpdate);
+            notificationService.createNotificationsBatch(notificationItems);
         }
     }
 

@@ -14,58 +14,109 @@ self.addEventListener("push", (event) => {
     return;
   }
 
-  // B. Define default values in case payload is missing or invalid
-  let title = "Test Notification";
-  let body = "No payload received.";
+  // B. Parse incoming payload safely
+  let title = "";
+  let body = "";
   let url = "/";
+  let formId = null;
+  let type = null;
+  let status = null;
 
-  // C. Parse incoming payload safely
   if (event.data) {
     try {
-      // 1. Try to parse as JSON first (Requirement 3 & 5)
+      // Try to parse as JSON first
       const data = event.data.json();
+      console.log("Parsed JSON payload:", data);
 
-      // Check if the parsed object is a valid JSON object structure
       if (data && typeof data === "object" && !Array.isArray(data)) {
-        console.log("Received JSON payload");
-        title = data.title || "Test Notification";
-        body = data.message || "No payload received.";
-        url = data.url || "/";
+        // Check if this is a nested FCM payload structure
+        const hasNotification = data.notification && typeof data.notification === "object";
+        const hasData = data.data && typeof data.data === "object";
+
+        if (hasNotification || hasData) {
+          title = (data.notification && data.notification.title) || 
+                  (data.data && data.data.title) || 
+                  data.title;
+          body = (data.notification && data.notification.body) || 
+                 (data.data && data.data.message) || 
+                 (data.data && data.data.body) || 
+                 data.message || 
+                 data.body;
+          url = (data.data && data.data.url) || data.url || "/";
+          formId = (data.data && data.data.formId) || data.formId || null;
+          type = (data.data && data.data.type) || data.type || null;
+          status = (data.data && data.data.status) || data.status || null;
+        } else {
+          // Flat JSON structure (e.g. from VAPID PushNotificationService)
+          title = data.title;
+          body = data.message || data.body;
+          url = data.url || "/";
+          formId = data.formId || null;
+          type = data.type || null;
+          status = data.status || null;
+        }
       } else {
-        // Parsed successfully but not an object, fallback to text format (Requirement 5)
-        console.log("Received text payload");
-        body = event.data.text() || "No payload received.";
+        // Parsed successfully but not an object, fallback to text format
+        body = event.data.text();
       }
     } catch (err) {
-      // 2. If event.data.json() fails, fall back to event.data.text() (Requirement 4, 5 & 7)
-      console.log("Received text payload");
+      // Fall back to event.data.text()
       try {
         const textPayload = event.data.text();
         if (textPayload) {
-          // Check if the text itself contains a valid JSON string (double safety check)
           try {
             const parsedText = JSON.parse(textPayload);
             if (parsedText && typeof parsedText === "object" && !Array.isArray(parsedText)) {
-              title = parsedText.title || "Test Notification";
-              body = parsedText.message || "No payload received.";
-              url = parsedText.url || "/";
+              const hasNotification = parsedText.notification && typeof parsedText.notification === "object";
+              const hasData = parsedText.data && typeof parsedText.data === "object";
+
+              if (hasNotification || hasData) {
+                title = (parsedText.notification && parsedText.notification.title) || 
+                        (parsedText.data && parsedText.data.title) || 
+                        parsedText.title;
+                body = (parsedText.notification && parsedText.notification.body) || 
+                       (parsedText.data && parsedText.data.message) || 
+                       (parsedText.data && parsedText.data.body) || 
+                       parsedText.message || 
+                       parsedText.body;
+                url = (parsedText.data && parsedText.data.url) || parsedText.url || "/";
+                formId = (parsedText.data && parsedText.data.formId) || parsedText.formId || null;
+                type = (parsedText.data && parsedText.data.type) || parsedText.type || null;
+                status = (parsedText.data && parsedText.data.status) || parsedText.status || null;
+              } else {
+                title = parsedText.title;
+                body = parsedText.message || parsedText.body;
+                url = parsedText.url || "/";
+                formId = parsedText.formId || null;
+                type = parsedText.type || null;
+                status = parsedText.status || null;
+              }
             } else {
               body = textPayload;
             }
           } catch (jsonErr) {
-            // If text is not JSON, treat it as plain text payload
             body = textPayload;
           }
         }
       } catch (textErr) {
         console.error("Failed to extract plain text payload:", textErr);
-        body = "No payload received.";
       }
     }
-  } else {
-    // 3. Handle missing payload (Requirement 7)
-    console.log("Received text payload");
   }
+
+  // Clean values
+  if (title) title = title.trim();
+  if (body) body = body.trim();
+
+  // If both are completely missing, do not show any notification
+  if (!title && !body) {
+    console.warn("FCM notification payload is missing or empty.");
+    return;
+  }
+
+  // Fallback defaults only if one of them is missing but not both
+  if (!title) title = "Mess Reduction Update";
+  if (!body) body = "You have a new update in the Mess Reduction portal.";
 
   // D. Construct options safely, ensuring fallback assets exist
   const options = {
@@ -73,15 +124,20 @@ self.addEventListener("push", (event) => {
     icon: "/logo.png", // Web app public folder fallback icon
     badge: "/badge.png", // Web app public folder fallback badge
     data: {
-      url: url
-    }
+      url: url,
+      formId: formId,
+      type: type,
+      status: status
+    },
+    tag: formId ? 'form-' + formId : 'general-alert',
+    renotify: true
   };
 
   // E. Display the notification within the event lifecycle
   event.waitUntil(
     self.registration.showNotification(title, options)
       .then(() => {
-        console.log("Notification displayed");
+        console.log("Notification displayed successfully");
       })
       .catch((err) => {
         console.error("Failed to display push notification:", err);

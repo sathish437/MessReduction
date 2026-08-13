@@ -38,12 +38,14 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AdminService {
 
     private final StudentDetailsRepo studentDetailsRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormRepo reductionFormRepo;
     private final com.hostel.MessReduction.Repo.StaffUsersRepo staffUsersRepo;
     private final com.hostel.MessReduction.Repo.ReductionFormHistoryRepo reductionFormHistoryRepo;
+    private final com.hostel.MessReduction.Repo.ExtraSubmissionRequestRepo extraSubmissionRequestRepo;
     private final com.hostel.MessReduction.Repo.ActivityLogRepository activityLogRepository;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
     private final AuditLogRepo auditLogRepo;
@@ -151,14 +153,41 @@ public class AdminService {
     }
 
     public void deleteStudent(Long id) {
-        StudentDetails student = studentDetailsRepo.findById(id)
-                .orElseThrow(() -> new com.hostel.MessReduction.CustomException.StudentNotFoundException("Student not found with ID: " + id));
-        studentDetailsRepo.delete(student);
+        if (id == null) return;
+        bulkDeleteStudents(List.of(id));
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void bulkDeleteStudents(List<Long> ids) {
-        List<StudentDetails> students = studentDetailsRepo.findAllById(ids);
-        studentDetailsRepo.deleteAll(students);
+        if (ids == null || ids.isEmpty()) return;
+        List<Long> distinctIds = ids.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) return;
+
+        long start = System.nanoTime();
+
+        // 1. Delete all ReductionFormHistory entries referencing forms of these students
+        long historyStart = System.nanoTime();
+        int deletedHistories = reductionFormHistoryRepo.deleteHistoriesByStudentIdsIn(distinctIds);
+        long historyDurationMs = (System.nanoTime() - historyStart) / 1_000_000;
+
+        // 2. Delete all ReductionForm entries of these students
+        long formStart = System.nanoTime();
+        int deletedForms = reductionFormRepo.deleteFormsByStudentIdsIn(distinctIds);
+        long formDurationMs = (System.nanoTime() - formStart) / 1_000_000;
+
+        // 3. Delete all ExtraSubmissionRequest entries of these students
+        long extraStart = System.nanoTime();
+        int deletedExtras = extraSubmissionRequestRepo.deleteExtraSubmissionsByStudentIdsIn(distinctIds);
+        long extraDurationMs = (System.nanoTime() - extraStart) / 1_000_000;
+
+        // 4. Delete the StudentDetails entries
+        long studentStart = System.nanoTime();
+        int deletedStudents = studentDetailsRepo.deleteStudentsByIdsIn(distinctIds);
+        long studentDurationMs = (System.nanoTime() - studentStart) / 1_000_000;
+
+        long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
+        log.info("Bulk Delete Students Performance [Total: {} ms]: deletedStudents={} ({} ms), deletedForms={} ({} ms), deletedHistories={} ({} ms), deletedExtraSubmissions={} ({} ms)",
+                totalDurationMs, deletedStudents, studentDurationMs, deletedForms, formDurationMs, deletedHistories, historyDurationMs, deletedExtras, extraDurationMs);
     }
 
     private void updateEntity(StudentDetails student, StudentRequestDTO dto) {

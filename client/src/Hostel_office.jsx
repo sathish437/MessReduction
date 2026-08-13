@@ -10,6 +10,8 @@ import { logout } from "./services/authService";
 import { getActiveDepartments } from "./api/departmentService";
 import MultiSelect from "./MultiSelect";
 import Toast from "./components/Toast";
+import BulkOperationProgress from "./components/BulkOperationProgress";
+import useBulkOperation from "./hooks/useBulkOperation";
 
 
 const handleLogout = () => {
@@ -208,11 +210,15 @@ function HostelOffice() {
 
     const refreshData = async (signal = null) => {
         try {
-            // Fetch ALL pending forms for Office (PendingOffice status) with cache-busting
-            const response = await apiClient.get(`/api/hostelStaff/staff/office?t=${Date.now()}`, signal ? { signal } : {});
+            // Fetch forms, dashboard counts, and year-wise counts concurrently
+            const [response, countRes, yearCountRes] = await Promise.all([
+                apiClient.get(`/api/hostelStaff/staff/office?t=${Date.now()}`, signal ? { signal } : {}),
+                apiClient.get(`/api/hostelStaff/staff/dashboard-count?t=${Date.now()}`, signal ? { signal } : {}),
+                apiClient.get(`/api/hostelStaff/staff/office/year-count?t=${Date.now()}`, signal ? { signal } : {})
+            ]);
             if (signal && signal.aborted) return;
             
-            const data = response.data.map(r => ({
+            const data = (response.data || []).map(r => ({
                 ...r,
                 id: r.formId,
                 year: r.year === 1 ? "1st" : r.year === 2 ? "2nd" : r.year === 3 ? "3rd" : "4th",
@@ -222,20 +228,8 @@ function HostelOffice() {
                 gender: r.gender || "ALL"
             }));
             setRequests(data);
-
-            // Fetch dashboard counts with cache-busting
-            const countRes = await apiClient.get(`/api/hostelStaff/staff/dashboard-count?t=${Date.now()}`, signal ? { signal } : {});
-            if (signal && signal.aborted) return;
             setDashboardStats(countRes.data);
-
-            // Fetch year-wise counts with cache-busting
-            const yearCountRes = await apiClient.get(`/api/hostelStaff/staff/office/year-count?t=${Date.now()}`, signal ? { signal } : {});
-            if (signal && signal.aborted) return;
             setYearStats(yearCountRes.data);
-
-            // Refresh Reports dynamically to maintain full synchronization across tabs
-            await handleGenerateReport();
-
         } catch (err) {
             if (signal && signal.aborted) return;
         }
@@ -292,7 +286,15 @@ function HostelOffice() {
 
     // Processing State for Action Locking
     const [processingIds, setProcessingIds] = useState(new Set());
-    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const {
+        bulkState,
+        isBulkProcessing,
+        startBulkOperation,
+        completeSuccess,
+        completePartial,
+        completeFailure,
+        closeProgress
+    } = useBulkOperation();
     const [isRejecting, setIsRejecting] = useState(false);
 
     // Activity Log Modal State
@@ -324,6 +326,12 @@ function HostelOffice() {
         try {
             await apiClient.patch(`/api/hostelStaff/staff/office/${id}?action=${action}`);
             showToast(`Request ${action.toLowerCase()}d successfully`, 'success');
+            setRequests(prev => prev.filter(r => r.id !== id));
+            setDashboardStats(prev => prev ? {
+                ...prev,
+                pendingOffice: Math.max(0, (prev.pendingOffice || 0) - 1),
+                approved: (prev.approved || 0) + 1
+            } : prev);
             // Refresh data after action
             await refreshData();
         } catch (err) {
@@ -339,51 +347,96 @@ function HostelOffice() {
     };
 
     const handleRejectSubmit = async () => {
-        if (isRejecting) return;
+        if (isRejecting || isBulkProcessing) return;
         
         if (!rejectReason.trim()) {
             showToast("Please enter a reason for rejection.", 'error');
             return;
         }
 
-        setIsRejecting(true);
-        try {
-            if (isBulkReject) {
-                const res = await apiClient.patch(`/api/hostelStaff/staff/office/bulk-reject`, {
-                    formIds: selectedIds,
-                    rejectReason
-                });
-                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
-                setSelectedIds([]);
-            } else {
-                await apiClient.patch(`/api/hostelStaff/staff/office/${rejectFormId}/reject`, { rejectReason });
-                showToast("Request rejected successfully", 'success');
-            }
+        if (isBulkReject) {
+            const idsToReject = [...selectedIds];
+            const reason = rejectReason;
             setIsRejectModalOpen(false);
             setRejectFormId(null);
             setIsBulkReject(false);
             setRejectReason("");
-            await refreshData();
-        } catch (err) {
-            showToast("Failed to reject request.", 'error');
-        } finally {
-            setIsRejecting(false); // Enable retry on failure
+            startBulkOperation('REJECT', idsToReject.length, 'Rejecting Requests...');
+
+            try {
+                const res = await apiClient.patch(`/api/hostelStaff/staff/office/bulk-reject`, {
+                    formIds: idsToReject,
+                    rejectReason: reason
+                });
+                const processedSet = new Set(idsToReject);
+                const rejCount = res.data?.rejected || 0;
+                const failCount = res.data?.failed || 0;
+
+                setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+                setDashboardStats(prev => prev ? {
+                    ...prev,
+                    pendingOffice: Math.max(0, (prev.pendingOffice || 0) - (rejCount || processedSet.size)),
+                    rejectedOffice: (prev.rejectedOffice || 0) + (rejCount || processedSet.size)
+                } : prev);
+                setSelectedIds([]);
+
+                if (failCount > 0) {
+                    completePartial(res.data?.selected || idsToReject.length, rejCount, failCount);
+                } else {
+                    completeSuccess(rejCount, res.data?.selected || idsToReject.length);
+                }
+                showToast(`Bulk Reject Summary: Selected: ${res.data.selected}, Rejected: ${res.data.rejected}, Failed: ${res.data.failed}`, 'success');
+            } catch (err) {
+                const errorMsg = err.response?.data?.message || "Failed to reject requests.";
+                completeFailure(errorMsg);
+                showToast(errorMsg, 'error');
+            }
+        } else {
+            setIsRejecting(true);
+            try {
+                await apiClient.patch(`/api/hostelStaff/staff/office/${rejectFormId}/reject`, { rejectReason });
+                setRequests(prev => prev.filter(r => r.id !== rejectFormId));
+                setDashboardStats(prev => prev ? {
+                    ...prev,
+                    pendingOffice: Math.max(0, (prev.pendingOffice || 0) - 1),
+                    rejectedOffice: (prev.rejectedOffice || 0) + 1
+                } : prev);
+                showToast("Request rejected successfully", 'success');
+                setIsRejectModalOpen(false);
+                setRejectFormId(null);
+                setIsBulkReject(false);
+                setRejectReason("");
+                await refreshData();
+            } catch (err) {
+                showToast("Failed to reject request.", 'error');
+            } finally {
+                setIsRejecting(false); // Enable retry on failure
+            }
         }
     };
 
     const handleBulkAction = async () => {
         if (selectedIds.length === 0 || isBulkProcessing) return;
 
-        setIsBulkProcessing(true);
+        const idsToProcess = [...selectedIds];
+        startBulkOperation('APPROVE', idsToProcess.length, 'Approving Requests...');
+
         try {
-            await apiClient.patch(`/api/hostelStaff/staff/office/bulk?action=Approve`, selectedIds);
-            showToast("Bulk approval completed successfully", 'success');
+            await apiClient.patch(`/api/hostelStaff/staff/office/bulk?action=Approve`, idsToProcess);
+            const processedSet = new Set(idsToProcess);
+            setRequests(prev => prev.filter(r => !processedSet.has(r.id)));
+            setDashboardStats(prev => prev ? {
+                ...prev,
+                pendingOffice: Math.max(0, (prev.pendingOffice || 0) - processedSet.size),
+                approved: (prev.approved || 0) + processedSet.size
+            } : prev);
             setSelectedIds([]);
-            await refreshData();
+            completeSuccess(idsToProcess.length, idsToProcess.length);
+            showToast("Bulk approval completed successfully", 'success');
         } catch (err) {
-            showToast("Failed to perform bulk approval.", 'error');
-        } finally {
-            setIsBulkProcessing(false); // Enable retry on failure
+            const errorMsg = err.response?.data?.message || "Failed to perform bulk approval.";
+            completeFailure(errorMsg);
+            showToast(errorMsg, 'error');
         }
     };
 
@@ -418,13 +471,13 @@ function HostelOffice() {
     const paginatedForms = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const toggleSelectAll = () => {
-        const paginatedIds = paginatedForms.map(r => r.id);
-        const allSelectedOnPage = paginatedIds.every(id => selectedIds.includes(id));
+        const allFilteredIds = filteredRequests.map(r => r.id);
+        const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.includes(id));
         setSelectedIds(prev => {
-            if (allSelectedOnPage) {
-                return prev.filter(id => !paginatedIds.includes(id));
+            if (allSelected) {
+                return prev.filter(id => !allFilteredIds.includes(id));
             } else {
-                return Array.from(new Set([...prev, ...paginatedIds]));
+                return Array.from(new Set([...prev, ...allFilteredIds]));
             }
         });
     };
@@ -1220,6 +1273,20 @@ function HostelOffice() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Bulk Operation Progress Modal */}
+            <BulkOperationProgress
+                isOpen={bulkState.isOpen}
+                status={bulkState.status}
+                operationType={bulkState.operationType}
+                title={bulkState.title}
+                total={bulkState.total}
+                processed={bulkState.processed}
+                successCount={bulkState.successCount}
+                failedCount={bulkState.failedCount}
+                error={bulkState.error}
+                onClose={closeProgress}
+            />
         </div>
     );
 }

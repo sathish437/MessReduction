@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,13 +20,17 @@ public class BatchNotificationService {
 
     private final QueuedNotificationRepository queuedRepo;
     private final PushNotificationService pushNotificationService;
+    private final FirebaseNotificationService firebaseNotificationService;
 
     @Value("${notification.batch.enabled:true}")
     private boolean batchEnabled;
 
-    public BatchNotificationService(QueuedNotificationRepository queuedRepo, PushNotificationService pushNotificationService) {
+    public BatchNotificationService(QueuedNotificationRepository queuedRepo, 
+                                    PushNotificationService pushNotificationService,
+                                    FirebaseNotificationService firebaseNotificationService) {
         this.queuedRepo = queuedRepo;
         this.pushNotificationService = pushNotificationService;
+        this.firebaseNotificationService = firebaseNotificationService;
     }
 
     public void enqueueOrSendPushNotification(String recipientUsername, String title, String message, String redirectUrl, String type, Long relatedFormId) {
@@ -46,6 +51,7 @@ public class BatchNotificationService {
         }
     }
 
+    @Transactional
     public void processBatch() {
         logger.info("Batch Scheduler processBatch started");
         List<QueuedNotification> pending = queuedRepo.findUnprocessedForUpdate();
@@ -69,7 +75,7 @@ public class BatchNotificationService {
             String body;
             if (count == 1) {
                 title = "New Mess Reduction Request";
-                body = "You have 1 new request waiting for approval.";
+                body = "A new mess reduction request requires your approval.";
             } else {
                 title = "New Mess Reduction Requests";
                 body = "You have " + count + " new requests waiting for approval.";
@@ -80,6 +86,13 @@ public class BatchNotificationService {
             logger.info("Sending Batch Push Notification to {}", recipient);
             try {
                 pushNotificationService.sendPushNotification(recipient, title, body, redirectUrl, -1L);
+                
+                Map<String, String> fcmData = new HashMap<>();
+                fcmData.put("type", "BATCH_REQUEST");
+                fcmData.put("url", redirectUrl);
+                fcmData.put("count", String.valueOf(count));
+                firebaseNotificationService.sendNotificationToUser(recipient, title, body, fcmData);
+                
                 logger.info("Batch Push Sent Successfully to {}", recipient);
 
                 LocalDateTime now = LocalDateTime.now();

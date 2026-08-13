@@ -51,10 +51,13 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     List<ReductionForm> findByCurrentStatusInAndSubmittedAtAfter(List<FormStatus> statuses, java.time.LocalDateTime time);
 
     // New methods for filtering by gender and year
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ReductionForm> findByCurrentStatusAndStudentDetailsGender(FormStatus status, Gender gender);
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ReductionForm> findByCurrentStatusAndYearAndStudentDetailsGender(FormStatus status, Integer year, Gender gender);
 
     // Method to check for active approved requests by student
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ReductionForm> findByStudentDetailsStudentIdAndCurrentStatusAndArrivalDateAfter(Long studentId, FormStatus status, java.time.LocalDate currentDate);
 
     // isActive filtering methods
@@ -82,6 +85,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     List<ReductionForm> findByIsActiveTrueAndArrivalDateBefore(java.time.LocalDate date);
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ReductionForm> findByIsActiveTrue();
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
     List<ReductionForm> findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(FormStatus status, java.time.LocalDate startDate, java.time.LocalDate endDate);
     List<ReductionForm> findByArrivalDateBefore(java.time.LocalDate date);
 
@@ -89,4 +93,55 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
 
     @org.springframework.data.jpa.repository.Query("SELECT r.studentDetails.department, COUNT(r) FROM ReductionForm r GROUP BY r.studentDetails.department")
     List<Object[]> countRequestsByDepartment();
+
+    // High-performance single-query group by counts for dashboard
+    @Query("SELECT r.currentStatus, COUNT(r) FROM ReductionForm r WHERE r.isActive = true GROUP BY r.currentStatus")
+    List<Object[]> countGroupByStatus();
+
+    @Query("SELECT r.currentStatus, COUNT(r) FROM ReductionForm r WHERE r.isActive = true AND r.year = :year GROUP BY r.currentStatus")
+    List<Object[]> countGroupByStatusAndYear(@Param("year") Integer year);
+
+    @Query("SELECT r.currentStatus, COUNT(r) FROM ReductionForm r WHERE r.isActive = true AND r.assignedDeputyWarden = :deputy GROUP BY r.currentStatus")
+    List<Object[]> countGroupByStatusAndDeputy(@Param("deputy") String deputy);
+
+    // Eager bulk fetch for form processing (Zero N+1)
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"studentDetails"})
+    List<ReductionForm> findByFormIdIn(List<Long> formIds);
+
+    // Database-level conditional BULK UPDATE / REJECT methods
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.assignedDeputyWarden = :deputyWarden AND r.isActive = true")
+    int bulkUpdateDeputyWardenStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("deputyWarden") String deputyWarden);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.assignedDeputyWarden = :deputyWarden AND r.isActive = true")
+    int bulkRejectDeputyWardenStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason, @Param("deputyWarden") String deputyWarden);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.year = :year AND r.isActive = true")
+    int bulkUpdateWardenStatusWithYear(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("year") Integer year);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.year = :year AND r.isActive = true")
+    int bulkRejectWardenStatusWithYear(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason, @Param("year") Integer year);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    int bulkUpdateWardenStatusAllYears(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    int bulkRejectWardenStatusAllYears(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    int bulkUpdateOfficeStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    int bulkRejectOfficeStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ReductionForm r WHERE r.studentDetails.id IN :studentIds")
+    int deleteFormsByStudentIdsIn(@Param("studentIds") List<Long> studentIds);
 }

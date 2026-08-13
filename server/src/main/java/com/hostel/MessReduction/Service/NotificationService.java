@@ -3,6 +3,8 @@ package com.hostel.MessReduction.Service;
 import com.hostel.MessReduction.Entity.AppNotification;
 import com.hostel.MessReduction.Entity.Role;
 import com.hostel.MessReduction.Entity.StaffUsers;
+import com.hostel.MessReduction.Entity.ReductionForm;
+import com.hostel.MessReduction.Entity.FormStatus;
 import com.hostel.MessReduction.Repo.AppNotificationRepository;
 import com.hostel.MessReduction.Repo.StaffUsersRepo;
 import org.springframework.stereotype.Service;
@@ -11,9 +13,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,16 +34,25 @@ public class NotificationService {
     private final StaffUsersRepo staffUsersRepo;
     private final PushNotificationService pushNotificationService;
     private final BatchNotificationService batchNotificationService;
+    private final FirebaseNotificationService firebaseNotificationService;
+    private final Executor pushNotificationExecutor;
+    private final com.hostel.MessReduction.Repo.ReductionFormRepo reductionFormRepo;
     private final ConcurrentHashMap<String, Long> notificationLocks = new ConcurrentHashMap<>();
 
-    public NotificationService(AppNotificationRepository notificationRepo, 
-                               StaffUsersRepo staffUsersRepo, 
+    public NotificationService(AppNotificationRepository notificationRepo,
+                               StaffUsersRepo staffUsersRepo,
                                PushNotificationService pushNotificationService,
-                               BatchNotificationService batchNotificationService) {
+                               BatchNotificationService batchNotificationService,
+                               FirebaseNotificationService firebaseNotificationService,
+                               @org.springframework.beans.factory.annotation.Qualifier("pushNotificationExecutor") Executor pushNotificationExecutor,
+                               com.hostel.MessReduction.Repo.ReductionFormRepo reductionFormRepo) {
         this.notificationRepo = notificationRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.pushNotificationService = pushNotificationService;
         this.batchNotificationService = batchNotificationService;
+        this.firebaseNotificationService = firebaseNotificationService;
+        this.pushNotificationExecutor = pushNotificationExecutor;
+        this.reductionFormRepo = reductionFormRepo;
     }
 
     @jakarta.annotation.PostConstruct
@@ -79,10 +93,11 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             
-            // Trigger browser push notification after main DB transaction commits safely
+            // Trigger browser push notification & FCM push after main DB transaction commits safely
             String title = getPushTitle(recipientUsername, type, message);
+            String body = getPushBody(recipientUsername, type, message, relatedFormId);
             String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
-            triggerPushNotificationSafely(recipientUsername, title, message, redirectUrl, type, relatedFormId);
+            triggerPushNotificationSafely(recipientUsername, title, body, redirectUrl, type, relatedFormId);
         } catch (Exception e) {
             logger.error("Failed to create notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
         }
@@ -121,20 +136,34 @@ public class NotificationService {
 
             if (item.recipientRole() != null) {
                 notification.setRecipientRole(item.recipientRole());
-            } else {
+            } else if (recipientUsername.startsWith("deputy") || recipientUsername.startsWith("warden") || "office".equalsIgnoreCase(recipientUsername)) {
                 staffUsersRepo.findByUserName(recipientUsername).ifPresent(staff -> {
                     notification.setRecipientRole(staff.getRole().name());
                 });
+            } else {
+                notification.setRecipientRole("STUDENT");
             }
             toSave.add(notification);
 
             String title = getPushTitle(recipientUsername, type, message);
+            String body = getPushBody(recipientUsername, type, message, relatedFormId);
             String redirectUrl = getPushRedirectUrl(recipientUsername, type, relatedFormId);
             pushTasks.add(() -> {
                 try {
-                    batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, message, redirectUrl, type, relatedFormId);
+                    batchNotificationService.enqueueOrSendPushNotification(recipientUsername, title, body, redirectUrl, type, relatedFormId);
                 } catch (Exception e) {
                     logger.error("Failed to send push notification for user: {}", recipientUsername, e);
+                }
+                try {
+                    Map<String, String> fcmData = new HashMap<>();
+                    fcmData.put("type", type != null ? type : "MESS_REDUCTION");
+                    fcmData.put("formId", relatedFormId != null ? String.valueOf(relatedFormId) : "-1");
+                    fcmData.put("url", redirectUrl != null ? redirectUrl : "/");
+                    fcmData.put("title", title != null ? title : "Mess Reduction Update");
+                    fcmData.put("message", body != null ? body : "");
+                    firebaseNotificationService.sendNotificationToUser(recipientUsername, title, body, fcmData);
+                } catch (Exception e) {
+                    logger.error("Failed to send batch FCM notification for user: {}", recipientUsername, e);
                 }
             });
         }
@@ -143,15 +172,30 @@ public class NotificationService {
             notificationRepo.saveAll(toSave);
         }
 
-        CompletableFuture.runAsync(() -> {
-            for (Runnable task : pushTasks) {
-                try {
-                    task.run();
-                } catch (Exception e) {
-                    logger.error("Error executing background push task", e);
-                }
+        if (!pushTasks.isEmpty()) {
+            Runnable asyncPushRunner = () -> {
+                CompletableFuture.runAsync(() -> {
+                    for (Runnable task : pushTasks) {
+                        try {
+                            task.run();
+                        } catch (Exception e) {
+                            logger.error("Error executing background push task", e);
+                        }
+                    }
+                }, pushNotificationExecutor);
+            };
+
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        asyncPushRunner.run();
+                    }
+                });
+            } else {
+                asyncPushRunner.run();
             }
-        });
+        }
     }
 
     public void createAggregatedNotification(String recipientUsername, String message, String type) {
@@ -178,7 +222,7 @@ public class NotificationService {
             notificationRepo.save(notification);
             logger.info("[Notification Created] Aggregated notification successfully created for user: {} | Type: {} | Message: '{}'", recipientUsername, type, message);
             
-            // Trigger browser push notification after main DB transaction commits safely
+            // Trigger browser push notification & FCM push after main DB transaction commits safely
             String title = getPushTitle(recipientUsername, type, message);
             String redirectUrl = getPushRedirectUrl(recipientUsername, type, -1L);
             triggerPushNotificationSafely(recipientUsername, title, message, redirectUrl, type, -1L);
@@ -194,23 +238,38 @@ public class NotificationService {
             } catch (Exception e) {
                 logger.error("Failed to send push notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
             }
+
+            try {
+                Map<String, String> fcmData = new HashMap<>();
+                fcmData.put("type", type != null ? type : "MESS_REDUCTION");
+                fcmData.put("formId", relatedFormId != null ? String.valueOf(relatedFormId) : "-1");
+                fcmData.put("url", redirectUrl != null ? redirectUrl : "/");
+                fcmData.put("title", title != null ? title : "Mess Reduction Update");
+                fcmData.put("message", message != null ? message : "");
+                firebaseNotificationService.sendNotificationToUser(recipientUsername, title, message, fcmData);
+            } catch (Exception e) {
+                logger.error("Failed to send FCM notification for user: {} | Exception: {}", recipientUsername, e.getMessage(), e);
+            }
         };
 
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    sendPushTask.run();
+                    CompletableFuture.runAsync(sendPushTask, pushNotificationExecutor);
                 }
             });
         } else {
-            sendPushTask.run();
+            CompletableFuture.runAsync(sendPushTask, pushNotificationExecutor);
         }
     }
 
     private String getPushTitle(String recipientUsername, String type, String message) {
+        if (message != null && message.toLowerCase().contains("resubmitted")) {
+            return "Mess Reduction Request Resubmitted";
+        }
         if ("REJECTED".equals(type) || (message != null && message.toLowerCase().contains("rejected"))) {
-            return "Request Rejected";
+            return "Mess Reduction Request Rejected";
         }
         if ("APPROVED".equals(type) || (message != null && message.toLowerCase().contains("approved"))) {
             return "Request Approved";
@@ -219,14 +278,55 @@ public class NotificationService {
             if (recipientUsername.startsWith("deputy")) {
                 return "New Mess Reduction Request";
             }
-            if ("warden".equalsIgnoreCase(recipientUsername) || recipientUsername.startsWith("warden")) {
-                return "New Mess Reduction Request Pending";
-            }
-            if ("office".equalsIgnoreCase(recipientUsername)) {
-                return "New Mess Reduction Request";
+            if ("warden".equalsIgnoreCase(recipientUsername) || recipientUsername.startsWith("warden") || "office".equalsIgnoreCase(recipientUsername)) {
+                return "Mess Reduction Request Pending";
             }
         }
         return "Mess Reduction Update";
+    }
+
+    private String getPushBody(String recipientUsername, String type, String message, Long relatedFormId) {
+        ReductionForm form = null;
+        if (relatedFormId != null && relatedFormId > 0) {
+            try {
+                form = reductionFormRepo.findById(relatedFormId).orElse(null);
+            } catch (Exception e) {
+                logger.error("Error fetching form for push body customization", e);
+            }
+        }
+
+        boolean isResubmitted = form != null && form.getResubmissionCount() > 0 && 
+            (message != null && (message.toLowerCase().contains("resubmitted") || message.toLowerCase().contains("rejection")));
+
+        if (isResubmitted) {
+            return "A previously rejected mess reduction request has been edited and resubmitted for your review.";
+        }
+
+        if ("REJECTED".equals(type) || (message != null && message.toLowerCase().contains("rejected"))) {
+            String baseMsg = "Your mess reduction request has been rejected. Please check the rejection reason.";
+            if (form != null && form.getRejectReason() != null && !form.getRejectReason().trim().isEmpty()) {
+                return baseMsg + " Reason: " + form.getRejectReason().trim();
+            }
+            return baseMsg;
+        }
+
+        if (recipientUsername != null) {
+            if (recipientUsername.startsWith("deputy")) {
+                String studentName = (form != null && form.getStudentDetails() != null) ? form.getStudentDetails().getName() : null;
+                if (studentName != null && !studentName.trim().isEmpty()) {
+                    return "New mess reduction request from " + studentName + ".";
+                }
+                return "A new mess reduction request requires your approval.";
+            }
+            if ("warden".equalsIgnoreCase(recipientUsername) || recipientUsername.startsWith("warden")) {
+                return "A mess reduction request is waiting for your approval.";
+            }
+            if ("office".equalsIgnoreCase(recipientUsername)) {
+                return "A mess reduction request is waiting for Office approval.";
+            }
+        }
+
+        return message != null ? message : "You have a new update in the Mess Reduction portal.";
     }
 
     private String getPushRedirectUrl(String recipientUsername, String type, Long formId) {

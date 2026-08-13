@@ -57,7 +57,7 @@ messaging.onBackgroundMessage((payload) => {
       type: payload.data ? payload.data.type : null,
       status: payload.data ? payload.data.status : null
     },
-    tag: payload.data && payload.data.formId ? 'form-' + payload.data.formId : 'general-alert',
+    tag: (payload.data && payload.data.formId && Number(payload.data.formId) > 0) ? 'form-' + payload.data.formId : (payload.data && payload.data.type ? payload.data.type.toLowerCase() + '-alert' : 'general-alert'),
     renotify: true
   };
 

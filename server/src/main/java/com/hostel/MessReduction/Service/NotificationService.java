@@ -265,6 +265,9 @@ public class NotificationService {
     }
 
     private String getPushTitle(String recipientUsername, String type, String message) {
+        if ("REMINDER".equals(type) || "BATCH_REMINDER".equals(type) || (message != null && message.toLowerCase().contains("reminder"))) {
+            return "Mess Reduction Reminder";
+        }
         if (message != null && message.toLowerCase().contains("resubmitted")) {
             return "Mess Reduction Request Resubmitted";
         }

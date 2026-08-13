@@ -53,10 +53,12 @@ const NotificationBell = () => {
     const getIcon = (type) => {
         switch (type) {
             case 'EMERGENCY_REQUEST': return <FiAlertCircle className="text-rose-500" />;
-            case 'NORMAL_REQUEST': return <FiInfo className="text-teal-400" />;
+            case 'NORMAL_REQUEST':
+            case 'BATCH_REQUEST': return <FiInfo className="text-teal-400" />;
             case 'APPROVED': return <FiCheckCircle className="text-emerald-400" />;
             case 'REJECTED': return <FiXCircle className="text-rose-500" />;
-            case 'REMINDER': return <FiClock className="text-amber-400" />;
+            case 'REMINDER':
+            case 'BATCH_REMINDER': return <FiClock className="text-amber-400" />;
             default: return <FiBell className="text-white/50" />;
         }
     };

@@ -124,7 +124,7 @@ public class BatchNotificationServiceTest {
     }
 
     @Test
-    void testProcessBatch_MultipleNotifications() {
+    void testProcessBatch_MultipleRecipients_GroupedIndependently() {
         // Arrange
         QueuedNotification q1 = new QueuedNotification();
         q1.setId(1L);
@@ -135,7 +135,7 @@ public class BatchNotificationServiceTest {
 
         QueuedNotification q2 = new QueuedNotification();
         q2.setId(2L);
-        q2.setRecipientUsername("deputyWarden1");
+        q2.setRecipientUsername("warden2");
         q2.setNotificationType("NORMAL_REQUEST");
         q2.setReferenceId(102L);
         q2.setProcessed(false);
@@ -147,19 +147,58 @@ public class BatchNotificationServiceTest {
 
         // Assert
         verify(pushNotificationService, times(1)).sendPushNotification(
-            eq("deputyWarden1"),
-            eq("New Mess Reduction Requests"),
-            eq("You have 2 new requests waiting for approval."),
-            eq("/deputy"),
-            eq(-1L)
+            eq("deputyWarden1"), anyString(), anyString(), eq("/deputy/request/101"), eq(-1L)
+        );
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("warden2"), anyString(), anyString(), eq("/warden"), eq(-1L)
+        );
+        verify(queuedRepo, times(2)).saveAll(anyList());
+    }
+
+    @Test
+    void testProcessBatch_FailureIsolation_OneRecipientFailsDoesNotHaltOther() {
+        // Arrange
+        QueuedNotification q1 = new QueuedNotification();
+        q1.setId(1L);
+        q1.setRecipientUsername("deputyWarden1");
+        q1.setNotificationType("NORMAL_REQUEST");
+        q1.setReferenceId(101L);
+        q1.setProcessed(false);
+
+        QueuedNotification q2 = new QueuedNotification();
+        q2.setId(2L);
+        q2.setRecipientUsername("warden2");
+        q2.setNotificationType("NORMAL_REQUEST");
+        q2.setReferenceId(102L);
+        q2.setProcessed(false);
+
+        when(queuedRepo.findUnprocessedForUpdate()).thenReturn(Arrays.asList(q1, q2));
+        doThrow(new RuntimeException("Push network failure")).when(pushNotificationService)
+            .sendPushNotification(eq("deputyWarden1"), anyString(), anyString(), anyString(), anyLong());
+
+        // Act
+        batchNotificationService.processBatch();
+
+        // Assert: warden2 was still processed despite deputyWarden1 failure
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("warden2"), anyString(), anyString(), eq("/warden"), eq(-1L)
+        );
+    }
+
+    @Test
+    void testEnqueueOrSendPushNotification_BatchDisabled_ImmediateDelivery() {
+        // Arrange
+        ReflectionTestUtils.setField(batchNotificationService, "batchEnabled", false);
+
+        // Act
+        batchNotificationService.enqueueOrSendPushNotification(
+            "deputyWarden1", "Title", "Message", "/url", "NORMAL_REQUEST", 123L
         );
 
-        ArgumentCaptor<List<QueuedNotification>> captor = ArgumentCaptor.forClass(List.class);
-        verify(queuedRepo, times(1)).saveAll(captor.capture());
-        
-        List<QueuedNotification> saved = captor.getValue();
-        assertEquals(2, saved.size());
-        assertTrue(saved.get(0).isProcessed());
-        assertTrue(saved.get(1).isProcessed());
+        // Assert: Sent immediately, not saved to queue
+        verify(queuedRepo, never()).save(any(QueuedNotification.class));
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            "deputyWarden1", "Title", "Message", "/url", 123L
+        );
     }
 }

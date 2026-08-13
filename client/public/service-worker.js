@@ -129,7 +129,7 @@ self.addEventListener("push", (event) => {
       type: type,
       status: status
     },
-    tag: formId ? 'form-' + formId : 'general-alert',
+    tag: (formId && Number(formId) > 0) ? 'form-' + formId : (type ? type.toLowerCase() + '-alert' : 'general-alert'),
     renotify: true
   };
 

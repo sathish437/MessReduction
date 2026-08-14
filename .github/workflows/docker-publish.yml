@@ -21,9 +21,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Client Environment (if secret provided)
-        if: "${{ secrets.CLIENT_ENV != '' }}"
+        env:
+          CLIENT_ENV: ${{ secrets.CLIENT_ENV }}
         run: |
-          echo "${{ secrets.CLIENT_ENV }}" > client/.env
+          if [ -n "$CLIENT_ENV" ]; then
+            echo "$CLIENT_ENV" > client/.env
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

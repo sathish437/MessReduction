@@ -1282,6 +1282,7 @@ const Warden = () => {
                 actionType={logActionType} 
                 actionTitle={logActionTitle} 
                 themeColor={selectedYear ? YEAR_THEME[selectedYear]?.color || "emerald" : "emerald"} 
+                role="Warden"
             />
 
             {/* Reason Modal */}

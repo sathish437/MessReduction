@@ -47,11 +47,19 @@ public class ActivityLogController {
     @PreAuthorize("hasAnyRole('Warden','DeputyWarden','Office')")
     public ResponseEntity<org.springframework.data.domain.Page<ActivityLogResponse>> getLogsByRoleAndAction(
             @RequestParam String action,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fromDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate toDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Role authenticatedRole = resolveAuthenticatedRole(authentication);
-        return ResponseEntity.ok(activityLogService.getLogsByRoleAndAction(authenticatedRole, action, page, size, authentication.getName()));
+        // Note: For DeputyWarden, year filter is strictly ignored
+        Integer effectiveYear = (authenticatedRole == Role.DeputyWarden) ? null : year;
+        return ResponseEntity.ok(activityLogService.getLogsByRoleAndAction(
+                authenticatedRole, action, search, department, effectiveYear, fromDate, toDate, page, size, authentication.getName()));
     }
 
     private Role resolveAuthenticatedRole(Authentication authentication) {

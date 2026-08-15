@@ -81,6 +81,22 @@ public class ReminderNotificationService {
             return;
         }
 
+        // Group all active pending forms by recipient
+        Map<String, List<ReductionForm>> allPendingByRecipient = new HashMap<>();
+        for (ReductionForm form : activePendingForms) {
+            List<String> recipients = resolveRecipients(form);
+            for (String recipient : recipients) {
+                if (recipient != null && !recipient.trim().isEmpty()) {
+                    allPendingByRecipient.computeIfAbsent(recipient, k -> new ArrayList<>()).add(form);
+                }
+            }
+        }
+
+        if (allPendingByRecipient.isEmpty()) {
+            logger.info("No recipients resolved for active pending requests.");
+            return;
+        }
+
         List<Long> formIds = activePendingForms.stream().map(ReductionForm::getFormId).toList();
 
         // Batch fetch existing reminder logs to prevent N+1 queries
@@ -92,69 +108,59 @@ public class ReminderNotificationService {
                         (a, b) -> a
                 ));
 
-        Map<String, List<ReductionForm>> recipientReminders = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
-        int skippedRecentCount = 0;
-        int skippedGracePeriodCount = 0;
+        int recipientsToNotifyCount = 0;
 
-        for (ReductionForm form : activePendingForms) {
-            List<String> recipients = resolveRecipients(form);
-            for (String recipient : recipients) {
-                if (recipient == null || recipient.trim().isEmpty()) {
-                    continue;
-                }
+        for (Map.Entry<String, List<ReductionForm>> entry : allPendingByRecipient.entrySet()) {
+            String recipient = entry.getKey();
+            List<ReductionForm> pendingFormsForRecipient = entry.getValue();
+
+            if (pendingFormsForRecipient == null || pendingFormsForRecipient.isEmpty()) {
+                continue;
+            }
+
+            // Check if at least one pending form for this recipient is due for a reminder
+            boolean reminderDue = false;
+            for (ReductionForm form : pendingFormsForRecipient) {
                 String key = recipient + ":" + form.getFormId();
                 NotificationReminderLog log = logMap.get(key);
-                boolean isEligible = false;
 
                 if (log != null && log.getLastReminderSentAt() != null) {
                     if (now.isAfter(log.getLastReminderSentAt().plusMinutes(intervalMinutes))) {
-                        isEligible = true;
-                    } else {
-                        skippedRecentCount++;
+                        reminderDue = true;
+                        break;
                     }
                 } else {
                     LocalDateTime baseTime = form.getSubmittedAt() != null ? form.getSubmittedAt() : now.minusMinutes(delayMinutes);
                     if (now.isAfter(baseTime.plusMinutes(delayMinutes))) {
-                        isEligible = true;
-                    } else {
-                        skippedGracePeriodCount++;
+                        reminderDue = true;
+                        break;
                     }
                 }
-
-                if (isEligible) {
-                    recipientReminders.computeIfAbsent(recipient, k -> new ArrayList<>()).add(form);
-                }
             }
-        }
 
-        logger.info("Reminder evaluation complete: {} total pending forms, {} skipped (recent), {} skipped (grace period), {} recipients to notify.",
-                activePendingForms.size(), skippedRecentCount, skippedGracePeriodCount, recipientReminders.size());
+            if (!reminderDue) {
+                continue;
+            }
 
-        for (Map.Entry<String, List<ReductionForm>> entry : recipientReminders.entrySet()) {
-            String recipient = entry.getKey();
-            List<ReductionForm> forms = entry.getValue();
-            int count = forms.size();
-
-            if (count == 0) continue;
-
-            logger.info("Processing {} reminder requests for recipient: {}", count, recipient);
+            recipientsToNotifyCount++;
+            int count = pendingFormsForRecipient.size();
+            logger.info("Processing reminder for recipient: {} (actual current pending count: {})", recipient, count);
 
             try {
-                String title;
+                String title = "Mess Reduction Reminder";
                 String body;
-                String redirectUrl = getRedirectUrl(recipient, forms);
+                String redirectUrl = getRedirectUrl(recipient, pendingFormsForRecipient);
                 String notifType = count == 1 ? "REMINDER" : "BATCH_REMINDER";
+                Long referenceFormId = count == 1 ? pendingFormsForRecipient.get(0).getFormId() : -1L;
 
                 if (count == 1) {
-                    ReductionForm singleForm = forms.get(0);
+                    ReductionForm singleForm = pendingFormsForRecipient.get(0);
                     String studentName = (singleForm.getStudentDetails() != null && singleForm.getStudentDetails().getName() != null)
                             ? singleForm.getStudentDetails().getName()
                             : ("#" + singleForm.getFormId());
-                    title = "Mess Reduction Reminder";
                     body = "Request from " + studentName + " is waiting for your action.";
                 } else {
-                    title = "Mess Reduction Reminder";
                     body = count + " mess reduction requests are pending your action.";
                 }
 
@@ -163,7 +169,7 @@ public class ReminderNotificationService {
                 appNotif.setRecipientUsername(recipient);
                 appNotif.setMessage(body);
                 appNotif.setType(notifType);
-                appNotif.setRelatedFormId(count == 1 ? forms.get(0).getFormId() : -1L);
+                appNotif.setRelatedFormId(referenceFormId);
                 staffUsersRepo.findByUserName(recipient).ifPresent(staff -> {
                     if (staff.getRole() != null) {
                         appNotif.setRecipientRole(staff.getRole().name());
@@ -172,7 +178,6 @@ public class ReminderNotificationService {
                 appNotificationRepository.save(appNotif);
 
                 // 2. Dispatch Web Push Notification
-                Long referenceFormId = count == 1 ? forms.get(0).getFormId() : -1L;
                 pushNotificationService.sendPushNotification(recipient, title, body, redirectUrl, referenceFormId);
 
                 // 3. Dispatch FCM Push Notification
@@ -185,9 +190,9 @@ public class ReminderNotificationService {
                 fcmData.put("message", body);
                 firebaseNotificationService.sendNotificationToUser(recipient, title, body, fcmData);
 
-                // 4. Update reminder log history in batch
+                // 4. Update reminder log history for all pending forms for this recipient in batch
                 List<NotificationReminderLog> logsToSave = new ArrayList<>();
-                for (ReductionForm form : forms) {
+                for (ReductionForm form : pendingFormsForRecipient) {
                     String key = recipient + ":" + form.getFormId();
                     NotificationReminderLog log = logMap.get(key);
                     if (log == null) {
@@ -199,14 +204,18 @@ public class ReminderNotificationService {
                     log.setLastReminderSentAt(now);
                     log.setReminderCount(log.getReminderCount() + 1);
                     logsToSave.add(log);
+                    logMap.put(key, log);
                 }
                 reminderLogRepo.saveAll(logsToSave);
 
-                logger.info("Successfully dispatched reminder to recipient: {} (count: {})", recipient, count);
+                logger.info("Successfully dispatched reminder to recipient: {} (current pending count: {})", recipient, count);
             } catch (Exception e) {
                 logger.error("Failed to dispatch reminder notification for recipient {}: {}", recipient, e.getMessage(), e);
             }
         }
+
+        logger.info("Reminder evaluation complete: {} total pending forms across {} recipients to notify.",
+                activePendingForms.size(), recipientsToNotifyCount);
     }
 
     private double parseConfigHours(String rawValue, double defaultVal, String propName) {

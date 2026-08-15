@@ -646,6 +646,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Approved");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
 
             for (StaffUsers office : officeUsers) {
@@ -743,6 +744,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Approved");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
 
             for (StaffUsers warden : wardens) {
@@ -835,6 +837,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Approved");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
         }
 
@@ -927,6 +930,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Rejected");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
 
             rejected++;
@@ -1021,6 +1025,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Rejected");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
 
             rejected++;
@@ -1109,6 +1114,7 @@ public class ReductionFormService {
             activityLogRequest.setStaffName(userName);
             activityLogRequest.setAction("Rejected");
             activityLogRequest.setArrivalDate(form.getArrivalDate());
+            activityLogRequest.setYear(form.getYear());
             activityLogs.add(activityLogRequest);
 
             rejected++;
@@ -1159,6 +1165,7 @@ public class ReductionFormService {
         activityLogRequest.setStaffName(staffName);
         activityLogRequest.setAction(action);
         activityLogRequest.setArrivalDate(form.getArrivalDate());
+        activityLogRequest.setYear(form.getYear());
         activityLogService.createLog(activityLogRequest);
     }
 

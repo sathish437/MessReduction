@@ -1175,6 +1175,7 @@ function Deputy_warden_side() {
                 actionType={logActionType} 
                 actionTitle={logActionTitle} 
                 themeColor="blue" 
+                role="DeputyWarden"
             />
 
             {/* Reason Modal */}

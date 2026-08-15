@@ -30,6 +30,7 @@ public class ActivityLog {
     private Long studentId;
     private String studentName;
     private String department;
+    private Integer year;
 
     @Enumerated(EnumType.STRING)
     private Role staffRole;

@@ -308,5 +308,345 @@ public class ReminderNotificationServiceTest {
         verify(pushNotificationService, never()).sendPushNotification(anyString(), anyString(), anyString(), anyString(), anyLong());
         verify(reminderLogRepo, never()).findByFormIdIn(anyList());
     }
+
+    @Test
+    void testProcessReminders_Scenario1_CurrentPending7_PreviousReminderCount10() {
+        // Arrange: 7 current pending forms for deputyWarden1, with previous reminder logs having reminderCount=10
+        List<ReductionForm> forms = new ArrayList<>();
+        List<NotificationReminderLog> logs = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 7; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(100L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(50));
+            forms.add(f);
+
+            NotificationReminderLog log = new NotificationReminderLog();
+            log.setRecipientUsername("deputyWarden1");
+            log.setFormId(100L + i);
+            log.setReminderCount(10); // Stale previous reminder count
+            log.setLastReminderSentAt(now.minusHours(30)); // Over 24h ago -> due for reminder
+            logs.add(log);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(logs);
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Notification must state current actual count (7), NOT stale 10
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("7 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+
+        ArgumentCaptor<AppNotification> appNotifCaptor = ArgumentCaptor.forClass(AppNotification.class);
+        verify(appNotificationRepository, times(1)).save(appNotifCaptor.capture());
+        assertEquals("7 mess reduction requests are pending your action.", appNotifCaptor.getValue().getMessage());
+    }
+
+    @Test
+    void testProcessReminders_Scenario3_CurrentPending3_PreviousReminderCount20() {
+        // Arrange: 3 current pending forms for deputyWarden1, with previous reminder logs having reminderCount=20
+        List<ReductionForm> forms = new ArrayList<>();
+        List<NotificationReminderLog> logs = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 3; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(200L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(50));
+            forms.add(f);
+
+            NotificationReminderLog log = new NotificationReminderLog();
+            log.setRecipientUsername("deputyWarden1");
+            log.setFormId(200L + i);
+            log.setReminderCount(20); // Stale high count
+            log.setLastReminderSentAt(now.minusHours(26));
+            logs.add(log);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(logs);
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Notification must state current actual count (3)
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("3 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_Scenario4_RecipientA5_RecipientB8() {
+        // Arrange: Recipient A (deputyA) has 5 pending forms, Recipient B (deputyB) has 8 pending forms
+        List<ReductionForm> forms = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 5; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(300L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyA");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        for (long i = 1; i <= 8; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(400L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyB");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: deputyA receives 5, deputyB receives 8
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyA"),
+            eq("Mess Reduction Reminder"),
+            eq("5 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyB"),
+            eq("Mess Reduction Reminder"),
+            eq("8 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_PartialEligibleOverdue_ShowsTotalCurrentPendingCount() {
+        // Arrange: 7 total pending forms for deputyWarden1: 2 overdue (>24h), 5 recent (<24h)
+        List<ReductionForm> forms = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 2 overdue forms (>24h)
+        for (long i = 1; i <= 2; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(500L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        // 5 fresh forms (<24h)
+        for (long i = 3; i <= 7; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(500L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(2));
+            forms.add(f);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Reminder triggered by the 2 overdue forms, but message must report the total current pending count (7)!
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("7 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_ExactScenario_CurrentPending8_Shows8() {
+        // Arrange: 8 current pending forms for deputyWarden1
+        List<ReductionForm> forms = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 8; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(800L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Exactly 8 reported
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("8 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_ExactScenario_PreviousReminder10_CurrentPending5_Shows5() {
+        // Arrange: 5 current pending forms for deputyWarden1 with stale log count = 10
+        List<ReductionForm> forms = new ArrayList<>();
+        List<NotificationReminderLog> logs = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 5; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(850L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(50));
+            forms.add(f);
+
+            NotificationReminderLog log = new NotificationReminderLog();
+            log.setRecipientUsername("deputyWarden1");
+            log.setFormId(850L + i);
+            log.setReminderCount(10); // Previous reminder count
+            log.setLastReminderSentAt(now.minusHours(26));
+            logs.add(log);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(logs);
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Exactly 5 reported, NOT 10
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("5 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_ExactScenario_PreviousReminder20_CurrentPending2_Shows2() {
+        // Arrange: 2 current pending forms for deputyWarden1 with stale log count = 20
+        List<ReductionForm> forms = new ArrayList<>();
+        List<NotificationReminderLog> logs = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 2; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(870L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyWarden1");
+            f.setSubmittedAt(now.minusHours(60));
+            forms.add(f);
+
+            NotificationReminderLog log = new NotificationReminderLog();
+            log.setRecipientUsername("deputyWarden1");
+            log.setFormId(870L + i);
+            log.setReminderCount(20); // Stale high count
+            log.setLastReminderSentAt(now.minusHours(30));
+            logs.add(log);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(logs);
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: Exactly 2 reported, NOT 20
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyWarden1"),
+            eq("Mess Reduction Reminder"),
+            eq("2 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
+
+    @Test
+    void testProcessReminders_ExactScenario_RecipientA7_RecipientB3() {
+        // Arrange: Recipient A = 7 pending, Recipient B = 3 pending
+        List<ReductionForm> forms = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (long i = 1; i <= 7; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(900L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyA");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        for (long i = 1; i <= 3; i++) {
+            ReductionForm f = new ReductionForm();
+            f.setFormId(950L + i);
+            f.setActive(true);
+            f.setCurrentStatus(FormStatus.PendingDeputyWarden);
+            f.setAssignedDeputyWarden("deputyB");
+            f.setSubmittedAt(now.minusHours(30));
+            forms.add(f);
+        }
+
+        when(reductionFormRepo.findPendingFormsForUpdate(anyList())).thenReturn(forms);
+        when(reminderLogRepo.findByFormIdIn(anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        reminderNotificationService.processReminders();
+
+        // Assert: A receives 7, B receives 3
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyA"),
+            eq("Mess Reduction Reminder"),
+            eq("7 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+
+        verify(pushNotificationService, times(1)).sendPushNotification(
+            eq("deputyB"),
+            eq("Mess Reduction Reminder"),
+            eq("3 mess reduction requests are pending your action."),
+            eq("/deputy"),
+            eq(-1L)
+        );
+    }
 }
 

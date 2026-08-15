@@ -21,11 +21,16 @@ public class ActivityLogResponse {
     private LocalDateTime timestamp;
     private LocalDate arrivalDate;
     private boolean isActive;
+    private Integer year;
 
     public ActivityLogResponse() {
     }
 
     public ActivityLogResponse(Long id, Long formId, Long studentId, String studentName, String department, Role staffRole, String staffName, String action, LocalDateTime timestamp, LocalDate arrivalDate, boolean isActive) {
+        this(id, formId, studentId, studentName, department, staffRole, staffName, action, timestamp, arrivalDate, isActive, null);
+    }
+
+    public ActivityLogResponse(Long id, Long formId, Long studentId, String studentName, String department, Role staffRole, String staffName, String action, LocalDateTime timestamp, LocalDate arrivalDate, boolean isActive, Integer year) {
         this.id = id;
         this.formId = formId;
         this.studentId = studentId;
@@ -37,6 +42,7 @@ public class ActivityLogResponse {
         this.timestamp = timestamp;
         this.arrivalDate = arrivalDate;
         this.isActive = isActive;
+        this.year = year;
     }
 
     public Long getId() {
@@ -125,5 +131,13 @@ public class ActivityLogResponse {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
     }
 }

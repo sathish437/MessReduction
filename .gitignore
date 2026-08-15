@@ -7,3 +7,4 @@ docs/
 *firebase-service-account*.json
 *serviceAccount*.json
 *service-account*.json
+.agents/

@@ -1235,6 +1235,7 @@ function HostelOffice() {
                 actionType={logActionType}
                 actionTitle={logActionTitle}
                 themeColor="violet"
+                role="Office"
             />
 
             {/* Reason Modal */}

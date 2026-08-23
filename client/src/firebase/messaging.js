@@ -58,7 +58,7 @@ export const requestFcmToken = async () => {
     const messaging = await getMessagingInstance();
     if (!messaging) return null;
 
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || 'BHJRdwy4kFyjYEXI_uk6VndnCi-KpuJbH19iloyU27X9nOTb7XM8cEpDAU9IO6l9be2PXq2rpAmyJLmB6do8opk';
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
     const registration = await navigator.serviceWorker.ready;
 
     const tokenOptions = {

@@ -112,7 +112,21 @@ public class ReductionFormService {
         return student;
     }
 
-    @Transactional(readOnly = true)
+    public StudentDetails getStudentDetailsForUpdate(Long id) {
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid student ID");
+        }
+        autoDeactivateAllExpiredForms();
+        StudentDetails student = studentDetailsRepo.findByIdForUpdate(id)
+                .orElseGet(() -> studentDetailsRepo.findById(id)
+                        .orElseThrow(() -> new StudentNotFoundException("Student not found")));
+        if (student.resetSubmissionCountIfNewDay()) {
+            studentDetailsRepo.save(student);
+        }
+        return student;
+    }
+
+    @Transactional
     public java.util.Map<String, Object> getStudentProfileWithForms(Long id) {
         log.info("Student ID received: {}", id);
         if (id == null || id <= 0) {
@@ -163,8 +177,8 @@ public class ReductionFormService {
     }
 
     public ReductionFormResDTO formSubmit(ReductionFormReqDTO dto, Long studentId) {
-        StudentDetails studentDetails = getStudentDetails(studentId);
-        validateNewSubmission(studentId, dto);
+        StudentDetails studentDetails = getStudentDetailsForUpdate(studentId);
+        validateNewSubmission(studentId, dto, studentDetails);
 
         String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
         ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
@@ -229,10 +243,7 @@ public class ReductionFormService {
             throw new InvalidStatusException("Only rejected requests can be edited and resubmitted");
         }
 
-        StudentDetails studentDetails = form.getStudentDetails();
-        if (studentDetails == null) {
-            throw new StudentNotFoundException("Student details not associated with this form");
-        }
+        StudentDetails studentDetails = getStudentDetailsForUpdate(studentId);
         validateResubmitPayload(dto);
 
         // Enforce daily submission limit on resubmission (increments lifetime count)
@@ -1207,7 +1218,7 @@ public class ReductionFormService {
         studentDetailsRepo.save(student);
     }
 
-    private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto) {
+    private void validateNewSubmission(Long studentId, ReductionFormReqDTO dto, StudentDetails student) {
 
         autoDeactivateAllExpiredForms();
 
@@ -1223,8 +1234,7 @@ public class ReductionFormService {
             throw new StatusAlreadyPendingException("You already have an active mess reduction request. New requests can be submitted after your arrival date and time.");
         }
 
-        // 3. Check and increment submission limit
-        StudentDetails student = getStudentDetails(studentId);
+        // 3. Check and increment submission limit on locked student row
         checkSubmissionLimit(student);
     }
 

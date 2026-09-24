@@ -12,6 +12,11 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 @Repository
 public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long>, JpaSpecificationExecutor<StudentDetails> {
     Boolean existsByEmailId(String email);
@@ -23,6 +28,10 @@ public interface StudentDetailsRepo extends JpaRepository<StudentDetails,Long>, 
     Optional<StudentDetails> findByRegisterNo(String registerNo);
     Optional<StudentDetails> findByRegisterNoAndDob(String registerNo, LocalDate dob);
     Optional<StudentDetails> findByRollNo(String rollNo);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM StudentDetails s WHERE s.studentId = :id")
+    Optional<StudentDetails> findByIdForUpdate(@Param("id") Long id);
 
     Long countByCreatedAtBetween(java.time.LocalDateTime startOfDay, java.time.LocalDateTime endOfDay);
 

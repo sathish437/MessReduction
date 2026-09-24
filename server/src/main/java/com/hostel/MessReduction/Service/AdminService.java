@@ -7,6 +7,7 @@ import com.hostel.MessReduction.Entity.Department;
 import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -53,6 +54,7 @@ public class AdminService {
     private final DepartmentService departmentService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final com.hostel.MessReduction.security.StaffJwtUtil staffJwtUtil;
+    private final EntityManager entityManager;
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public PaginatedResponseDTO<StudentResponseDTO> getStudents(
@@ -404,6 +406,68 @@ public class AdminService {
                 staff.getYear(),
                 staff.getGmail(),
                 staff.getPhoneNo()
+        );
+    }
+
+    /**
+     * Truncates all data except default/config tables.
+     *
+     * Preserved (default data):
+     *   staff_users, department, system_settings, auto_accept_settings
+     *
+     * Truncated:
+     *   reduction_form_history, reduction_form, extra_submission_request,
+     *   student_details, activity_log, app_notification, audit_log,
+     *   queued_notifications, notification_reminder_logs, fcm_tokens,
+     *   push_subscriptions
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Map<String, Object> truncateTransactionalData() {
+        log.warn("TRUNCATE ALL DATA (except defaults) requested by: {}",
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                        ? org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName()
+                        : "UNKNOWN");
+
+        String sql = "TRUNCATE TABLE "
+                + "reduction_form_history, "
+                + "reduction_form, "
+                + "extra_submission_request, "
+                + "student_details, "
+                + "activity_log, "
+                + "app_notification, "
+                + "audit_log, "
+                + "queued_notifications, "
+                + "notification_reminder_logs, "
+                + "fcm_tokens, "
+                + "push_subscriptions "
+                + "RESTART IDENTITY CASCADE";
+
+        entityManager.createNativeQuery(sql).executeUpdate();
+
+        log.info("All data truncated successfully (defaults preserved).");
+
+        return Map.of(
+                "success", true,
+                "message", "All data has been truncated. Default data (staff, departments, settings) preserved.",
+                "tablesCleared", List.of(
+                        "reduction_form_history",
+                        "reduction_form",
+                        "extra_submission_request",
+                        "student_details",
+                        "activity_log",
+                        "app_notification",
+                        "audit_log",
+                        "queued_notifications",
+                        "notification_reminder_logs",
+                        "fcm_tokens",
+                        "push_subscriptions"
+                ),
+                "tablesPreserved", List.of(
+                        "staff_users",
+                        "department",
+                        "system_settings",
+                        "auto_accept_settings"
+                )
         );
     }
 }

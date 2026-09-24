@@ -126,4 +126,9 @@ public class AdminController {
             @Valid @RequestBody com.hostel.MessReduction.DTO.ReqDTO.UpdateStaffCredentialReqDTO dto) {
         return ResponseEntity.ok(adminService.updateStaffCredential(id, dto));
     }
+
+    @PostMapping("/truncate-transactional-data")
+    public ResponseEntity<java.util.Map<String, Object>> truncateTransactionalData() {
+        return ResponseEntity.ok(adminService.truncateTransactionalData());
+    }
 }

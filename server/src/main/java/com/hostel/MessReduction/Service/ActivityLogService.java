@@ -31,10 +31,14 @@ public class ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
     private final ReductionFormRepo reductionFormRepo;
+    private final com.hostel.MessReduction.Repo.StudentDetailsRepo studentDetailsRepo;
 
-    public ActivityLogService(ActivityLogRepository activityLogRepository, ReductionFormRepo reductionFormRepo) {
+    public ActivityLogService(ActivityLogRepository activityLogRepository,
+                              ReductionFormRepo reductionFormRepo,
+                              com.hostel.MessReduction.Repo.StudentDetailsRepo studentDetailsRepo) {
         this.activityLogRepository = activityLogRepository;
         this.reductionFormRepo = reductionFormRepo;
+        this.studentDetailsRepo = studentDetailsRepo;
     }
 
     @PostConstruct
@@ -127,9 +131,14 @@ public class ActivityLogService {
                 .toList();
 
         Map<Long, Integer> resolvedYears = resolveMissingYears(logs);
+        Map<Long, String> resolvedRegisterNos = resolveRegisterNos(logs);
 
         return logs.stream()
-                .map(log -> mapToResponse(log, log.getYear() != null ? log.getYear() : (log.getFormId() != null ? resolvedYears.get(log.getFormId()) : null)))
+                .map(log -> {
+                    Integer year = log.getYear() != null ? log.getYear() : (log.getFormId() != null ? resolvedYears.get(log.getFormId()) : null);
+                    String registerNo = log.getStudentId() != null ? resolvedRegisterNos.get(log.getStudentId()) : null;
+                    return mapToResponse(log, year, registerNo);
+                })
                 .toList();
     }
 
@@ -180,13 +189,20 @@ public class ActivityLogService {
                 predicates.add(cb.equal(root.get("staffRole"), role));
             }
 
-            // 4. Search by student name or student ID or form ID
+            // 4. Search by student name, student ID, form ID, or register number
             if (search != null && !search.trim().isEmpty()) {
                 String term = "%" + search.trim().toLowerCase() + "%";
                 Predicate nameLike = cb.like(cb.lower(root.get("studentName")), term);
                 Predicate idLike = cb.like(cb.lower(root.get("studentId").as(String.class)), term);
                 Predicate formIdLike = cb.like(cb.lower(root.get("formId").as(String.class)), term);
-                predicates.add(cb.or(nameLike, idLike, formIdLike));
+
+                Subquery<Long> regSubquery = query.subquery(Long.class);
+                Root<com.hostel.MessReduction.Entity.StudentDetails> studentRoot = regSubquery.from(com.hostel.MessReduction.Entity.StudentDetails.class);
+                regSubquery.select(studentRoot.get("studentId"))
+                        .where(cb.like(cb.lower(studentRoot.get("registerNo")), term));
+                Predicate regNoSubquery = root.get("studentId").in(regSubquery);
+
+                predicates.add(cb.or(nameLike, idLike, formIdLike, regNoSubquery));
             }
 
             // 5. Department filter
@@ -222,13 +238,15 @@ public class ActivityLogService {
 
         Page<ActivityLog> logPage = activityLogRepository.findAll(spec, pageable);
         Map<Long, Integer> resolvedYears = resolveMissingYears(logPage.getContent());
+        Map<Long, String> resolvedRegisterNos = resolveRegisterNos(logPage.getContent());
 
         return logPage.map(log -> {
             Integer resolvedYear = log.getYear();
             if (resolvedYear == null && log.getFormId() != null) {
                 resolvedYear = resolvedYears.get(log.getFormId());
             }
-            return mapToResponse(log, resolvedYear);
+            String resolvedRegisterNo = log.getStudentId() != null ? resolvedRegisterNos.get(log.getStudentId()) : null;
+            return mapToResponse(log, resolvedYear, resolvedRegisterNo);
         });
     }
 
@@ -247,6 +265,28 @@ public class ActivityLogService {
             reductionFormRepo.findAllById(missingFormIds).forEach(form -> {
                 if (form != null && form.getFormId() != null && form.getYear() != null) {
                     map.put(form.getFormId(), form.getYear());
+                }
+            });
+        } catch (Exception ignored) {
+        }
+        return map;
+    }
+
+    private Map<Long, String> resolveRegisterNos(List<ActivityLog> logs) {
+        if (logs == null || logs.isEmpty()) return Collections.emptyMap();
+        List<Long> studentIds = logs.stream()
+                .map(ActivityLog::getStudentId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (studentIds.isEmpty()) return Collections.emptyMap();
+
+        Map<Long, String> map = new HashMap<>();
+        try {
+            studentDetailsRepo.findAllById(studentIds).forEach(student -> {
+                if (student != null && student.getStudentId() != null && student.getRegisterNo() != null) {
+                    map.put(student.getStudentId(), student.getRegisterNo());
                 }
             });
         } catch (Exception ignored) {
@@ -274,10 +314,14 @@ public class ActivityLogService {
     }
 
     private ActivityLogResponse mapToResponse(ActivityLog log) {
-        return mapToResponse(log, log.getYear());
+        return mapToResponse(log, log.getYear(), null);
     }
 
     private ActivityLogResponse mapToResponse(ActivityLog log, Integer year) {
+        return mapToResponse(log, year, null);
+    }
+
+    private ActivityLogResponse mapToResponse(ActivityLog log, Integer year, String registerNo) {
         return new ActivityLogResponse(
                 log.getId(),
                 log.getFormId(),
@@ -290,7 +334,8 @@ public class ActivityLogService {
                 log.getTimestamp(),
                 log.getArrivalDate(),
                 log.isActive(),
-                year
+                year,
+                registerNo
         );
     }
 }

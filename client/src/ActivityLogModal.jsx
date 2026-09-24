@@ -420,7 +420,7 @@ export default function ActivityLogModal({
                                                     <tr key={log.id} className="hover:bg-white/[0.03] transition-colors">
                                                         <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 font-semibold text-white/60 whitespace-nowrap">#{log.formId}</td>
                                                         <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 font-medium text-white whitespace-nowrap">{log.studentName || '—'}</td>
-                                                        <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 text-white/70 font-mono text-[11px] whitespace-nowrap">{log.studentId || '—'}</td>
+                                                        <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 text-white/70 font-mono text-[11px] whitespace-nowrap">{log.registerNo || log.studentId || '—'}</td>
                                                         <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 text-white/60 uppercase whitespace-nowrap">{log.department || '—'}</td>
                                                         {isWardenOrOffice && (
                                                             <td className="py-2 sm:py-2.5 px-2.5 sm:px-3.5 text-white/80 whitespace-nowrap font-medium">

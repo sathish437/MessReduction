@@ -22,15 +22,20 @@ public class ActivityLogResponse {
     private LocalDate arrivalDate;
     private boolean isActive;
     private Integer year;
+    private String registerNo;
 
     public ActivityLogResponse() {
     }
 
     public ActivityLogResponse(Long id, Long formId, Long studentId, String studentName, String department, Role staffRole, String staffName, String action, LocalDateTime timestamp, LocalDate arrivalDate, boolean isActive) {
-        this(id, formId, studentId, studentName, department, staffRole, staffName, action, timestamp, arrivalDate, isActive, null);
+        this(id, formId, studentId, studentName, department, staffRole, staffName, action, timestamp, arrivalDate, isActive, null, null);
     }
 
     public ActivityLogResponse(Long id, Long formId, Long studentId, String studentName, String department, Role staffRole, String staffName, String action, LocalDateTime timestamp, LocalDate arrivalDate, boolean isActive, Integer year) {
+        this(id, formId, studentId, studentName, department, staffRole, staffName, action, timestamp, arrivalDate, isActive, year, null);
+    }
+
+    public ActivityLogResponse(Long id, Long formId, Long studentId, String studentName, String department, Role staffRole, String staffName, String action, LocalDateTime timestamp, LocalDate arrivalDate, boolean isActive, Integer year, String registerNo) {
         this.id = id;
         this.formId = formId;
         this.studentId = studentId;
@@ -43,6 +48,7 @@ public class ActivityLogResponse {
         this.arrivalDate = arrivalDate;
         this.isActive = isActive;
         this.year = year;
+        this.registerNo = registerNo;
     }
 
     public Long getId() {
@@ -139,5 +145,13 @@ public class ActivityLogResponse {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public String getRegisterNo() {
+        return registerNo;
+    }
+
+    public void setRegisterNo(String registerNo) {
+        this.registerNo = registerNo;
     }
 }

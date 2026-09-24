@@ -37,6 +37,9 @@ public class ActivityLogServiceTest {
     @Mock
     private ReductionFormRepo reductionFormRepo;
 
+    @Mock
+    private com.hostel.MessReduction.Repo.StudentDetailsRepo studentDetailsRepo;
+
     @InjectMocks
     private ActivityLogService activityLogService;
 
@@ -239,5 +242,81 @@ public class ActivityLogServiceTest {
         ActivityLogResponse item = result.getContent().get(0);
         assertEquals("Ananya Reddy", item.getStudentName());
         assertEquals(2, item.getYear()); // Resolved to 2
+    }
+
+    @Test
+    void testGetLogsByRoleAndAction_ResolvesRegisterNoFromStudentDetails() {
+        ActivityLog log = new ActivityLog();
+        log.setId(6L);
+        log.setFormId(205L);
+        log.setStudentId(888L);
+        log.setStudentName("Ravi Kumar");
+        log.setDepartment("EEE");
+        log.setYear(3);
+        log.setStaffRole(Role.DeputyWarden);
+        log.setStaffName("deputy1");
+        log.setAction("Approved");
+        log.setTimestamp(LocalDateTime.now());
+        log.setArrivalDate(LocalDate.now().plusDays(3));
+        log.setActive(true);
+
+        com.hostel.MessReduction.Entity.StudentDetails student = new com.hostel.MessReduction.Entity.StudentDetails();
+        student.setStudentId(888L);
+        student.setRegisterNo("23EE105");
+
+        Page<ActivityLog> pageResult = new PageImpl<>(List.of(log));
+        when(activityLogRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(pageResult);
+        when(studentDetailsRepo.findAllById(List.of(888L))).thenReturn(List.of(student));
+
+        Page<ActivityLogResponse> result = activityLogService.getLogsByRoleAndAction(
+                Role.DeputyWarden,
+                "Approved",
+                null,
+                null,
+                null,
+                null,
+                null,
+                0,
+                10,
+                "deputy1"
+        );
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        ActivityLogResponse item = result.getContent().get(0);
+        assertEquals("Ravi Kumar", item.getStudentName());
+        assertEquals("23EE105", item.getRegisterNo());
+        assertEquals(888L, item.getStudentId());
+    }
+
+    @Test
+    void testFindActiveLogsByStaffName_ResolvesRegisterNo() {
+        ActivityLog log = new ActivityLog();
+        log.setId(7L);
+        log.setFormId(206L);
+        log.setStudentId(999L);
+        log.setStudentName("Sita Ram");
+        log.setDepartment("IT");
+        log.setYear(4);
+        log.setStaffRole(Role.Warden);
+        log.setStaffName("wardenMain");
+        log.setAction("Approved");
+        log.setTimestamp(LocalDateTime.now());
+        log.setArrivalDate(LocalDate.now().plusDays(4));
+        log.setActive(true);
+
+        com.hostel.MessReduction.Entity.StudentDetails student = new com.hostel.MessReduction.Entity.StudentDetails();
+        student.setStudentId(999L);
+        student.setRegisterNo("21IT055");
+
+        when(activityLogRepository.findByStaffNameAndIsActiveTrue("wardenMain")).thenReturn(List.of(log));
+        when(studentDetailsRepo.findAllById(List.of(999L))).thenReturn(List.of(student));
+
+        List<ActivityLogResponse> result = activityLogService.findActiveLogsByStaffName("wardenMain");
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("21IT055", result.get(0).getRegisterNo());
+        assertEquals("Sita Ram", result.get(0).getStudentName());
     }
 }

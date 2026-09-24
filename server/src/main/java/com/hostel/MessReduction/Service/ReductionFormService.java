@@ -1531,11 +1531,6 @@ public class ReductionFormService {
         
         log.info("Deputy Warden auto approval enabled");
         
-        // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
-        if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
-            return false;
-        }
-        
         // Prevent duplicate auto-accept action for the same transition
         boolean alreadyTransitioned = reductionFormHistoryRepo.findByReductionFormFormIdOrderByEventTimestampAsc(form.getFormId())
                 .stream()
@@ -1596,11 +1591,6 @@ public class ReductionFormService {
         }
         
         log.info("Warden auto approval enabled");
-        
-        // Conflict resolution: Ensure form was submitted after this auto-accept setting was created
-        if (form.getSubmittedAt() != null && form.getSubmittedAt().isBefore(settings.getCreatedAt())) {
-            return false;
-        }
         
         // Prevent duplicate auto-accept action for the same transition
         boolean alreadyTransitioned = reductionFormHistoryRepo.findByReductionFormFormIdOrderByEventTimestampAsc(form.getFormId())

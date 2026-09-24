@@ -12,13 +12,13 @@ public class ReductionFormExpiryScheduler {
         this.reductionFormService = reductionFormService;
     }
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Kolkata")
     public void expireReductionForms() {
         reductionFormService.expireReductionForms();
         reductionFormService.cleanUpExpiredRequests();
     }
 
-    @Scheduled(cron = "0 */10 * * * *")
+    @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Kolkata")
     public void runAutoAcceptTasks() {
         reductionFormService.autoDisableExpiredSettings();
         reductionFormService.autoApplyActiveSettings();

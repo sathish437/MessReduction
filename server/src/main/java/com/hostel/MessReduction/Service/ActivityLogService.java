@@ -255,7 +255,7 @@ public class ActivityLogService {
     }
 
     public void expireLogs() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate();
         List<ActivityLog> expiredLogs = activityLogRepository.findByIsActiveTrueAndArrivalDateBefore(today);
         if (expiredLogs.isEmpty()) {
             return;

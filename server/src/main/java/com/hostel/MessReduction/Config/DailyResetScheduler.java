@@ -24,7 +24,7 @@ public class DailyResetScheduler {
         List<ExtraSubmissionRequest> pendingRequests = extraSubmissionRequestRepo.findByStatus(RequestStatus.PENDING);
         for (ExtraSubmissionRequest req : pendingRequests) {
             // Expire pending requests that were not processed today
-            if (req.getCreatedAt().toLocalDate().isBefore(LocalDate.now())) {
+            if (req.getCreatedAt().toLocalDate().isBefore(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate())) {
                 req.setStatus(RequestStatus.REJECTED);
                 req.setApprovedBy("System");
                 req.setReason(req.getReason() + " [Expired at midnight]");

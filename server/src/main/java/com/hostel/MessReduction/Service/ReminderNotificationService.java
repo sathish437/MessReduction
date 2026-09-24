@@ -108,7 +108,7 @@ public class ReminderNotificationService {
                         (a, b) -> a
                 ));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         int recipientsToNotifyCount = 0;
 
         for (Map.Entry<String, List<ReductionForm>> entry : allPendingByRecipient.entrySet()) {

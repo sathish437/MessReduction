@@ -169,7 +169,7 @@ public class TestDataInitializer implements CommandLineRunner {
         logger.info("Seeding {} pending reduction forms assigned to 'deputyWarden4'...", toCreate);
 
         List<ReductionForm> forms = new ArrayList<>();
-        LocalDate baseLeave = LocalDate.now().plusDays(2);
+        LocalDate baseLeave = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate().plusDays(2);
 
         for (int i = 0; i < toCreate; i++) {
             StudentDetails student = students.get(i % students.size());

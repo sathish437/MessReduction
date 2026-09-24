@@ -181,7 +181,7 @@ public class ReductionFormService {
         validateNewSubmission(studentId, dto, studentDetails);
 
         String assignedDeputyWarden = resolveAssignedDeputyWarden(studentDetails.getGender(), dto.getYear());
-        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, LocalDate.now(), calculateTotalLeaves(dto), assignedDeputyWarden);
+        ReductionForm reductionForm = ReductionFormMapper.mapToReductionForm(dto, studentDetails, com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate(), calculateTotalLeaves(dto), assignedDeputyWarden);
         reductionForm.setCurrentStatus(FormStatus.PendingDeputyWarden);
         reductionFormRepo.save(reductionForm);
         log.info("Student request created");
@@ -259,7 +259,7 @@ public class ReductionFormService {
         form.setArrivalTime(dto.getArrivalTime());
         form.setReason(dto.getReason());
         form.setAdditionalRemarks(dto.getAdditionalRemarks());
-        form.setPresentDate(LocalDate.now());
+        form.setPresentDate(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate());
         form.setTotalHolidays(calculateTotalLeaves(dto));
         
         FormStatus newStatus = FormStatus.PendingDeputyWarden;
@@ -308,7 +308,7 @@ public class ReductionFormService {
 
         form.setActive(false);
         form.setDeletedByStudent(true);
-        form.setDeletedAt(LocalDateTime.now());
+        form.setDeletedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         reductionFormRepo.save(form);
         
         StudentDetails student = form.getStudentDetails();
@@ -620,7 +620,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         List<StaffUsers> officeUsers = staffUsersRepo.findByRole(Role.Office);
 
         for (ReductionForm form : forms) {
@@ -718,7 +718,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         List<StaffUsers> wardens = staffUsersRepo.findByRole(Role.Warden);
 
         for (ReductionForm form : forms) {
@@ -815,7 +815,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
 
         for (ReductionForm form : forms) {
             if (!form.isActive() || form.getCurrentStatus() != FormStatus.PendingOffice) {
@@ -894,7 +894,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
@@ -989,7 +989,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
@@ -1082,7 +1082,7 @@ public class ReductionFormService {
         List<ReductionFormHistory> histories = new ArrayList<>();
         List<ActivityLogRequest> activityLogs = new ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         String trimmedReason = rejectReason.trim();
 
         for (Long formId : formIds) {
@@ -1159,7 +1159,7 @@ public class ReductionFormService {
         history.setEventType(eventType);
         history.setPerformedBy(performedBy);
         history.setComment(comment);
-        history.setEventTimestamp(LocalDateTime.now());
+        history.setEventTimestamp(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         reductionFormHistoryRepo.save(history);
     }
 
@@ -1194,7 +1194,7 @@ public class ReductionFormService {
     }
 
     public void autoDeactivateAllExpiredForms() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
         reductionFormRepo.deactivateExpiredForms(now.toLocalDate(), now.toLocalTime());
         reductionFormRepo.deactivateExpiredFormHistories();
     }
@@ -1214,7 +1214,7 @@ public class ReductionFormService {
         }
 
         student.setDailySubmissionCount(totalCount + 1);
-        student.setLastSubmissionDate(LocalDate.now());
+        student.setLastSubmissionDate(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate());
         studentDetailsRepo.save(student);
     }
 
@@ -1248,7 +1248,7 @@ public class ReductionFormService {
     }
 
     public void cleanUpExpiredRequests() {
-        LocalDate thresholdDate = LocalDate.now().minusMonths(4);
+        LocalDate thresholdDate = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate().minusMonths(4);
         List<ReductionForm> toDelete = reductionFormRepo.findByArrivalDateBefore(thresholdDate);
         if (!toDelete.isEmpty()) {
             reductionFormRepo.deleteAll(toDelete);
@@ -1256,7 +1256,7 @@ public class ReductionFormService {
     }
 
     public List<ReductionFormResDTO> getOfficeReportData() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate();
         LocalDate fourMonthsAgo = today.minusMonths(4);
         LocalDate futureBound = today.plusYears(5);
         List<ReductionForm> reports = reductionFormRepo.findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(
@@ -1275,12 +1275,12 @@ public class ReductionFormService {
 
         // If form is approved, check if current date > arrival date
         // If current date > arrival date, form cannot be accessed
-        LocalDate currentDate = LocalDate.now();
+        LocalDate currentDate = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate();
         return !currentDate.isAfter(form.getArrivalDate());
     }
 
     private void validateResubmitPayload(ReductionFormReqDTO dto) {
-        if (dto.getLeaveDate().isBefore(LocalDate.now())) {
+        if (dto.getLeaveDate().isBefore(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate())) {
             throw new DateNotValidException("From Date cannot be before today");
         }
         if (dto.getToDate() != null && dto.getToDate().isBefore(dto.getLeaveDate())) {
@@ -1430,8 +1430,8 @@ public class ReductionFormService {
                     defaultSettings.setUsername(username);
                     defaultSettings.setRole(username.startsWith("deputy") ? "DEPUTY_WARDEN" : "WARDEN");
                     defaultSettings.setEnabled(false);
-                    defaultSettings.setFromDate(LocalDate.now());
-                    defaultSettings.setToDate(LocalDate.now());
+                    defaultSettings.setFromDate(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate());
+                    defaultSettings.setToDate(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate());
                     defaultSettings.setReason("");
                     return defaultSettings;
                 });

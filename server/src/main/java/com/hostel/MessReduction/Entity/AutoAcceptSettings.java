@@ -48,5 +48,5 @@ public class AutoAcceptSettings {
     private String reason;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
 }

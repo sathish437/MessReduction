@@ -89,7 +89,7 @@ public class StudentDetails {
         if (this.extraSubmissionGranted == null) { this.extraSubmissionGranted = 0; updated = true; }
         if (this.extraSubmissionUsed == null) { this.extraSubmissionUsed = 0; updated = true; }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate();
         if (this.lastSubmissionDate == null || !this.lastSubmissionDate.equals(today)) {
             this.dailySubmissionCount = 0;
             this.extraSubmissionGranted = 0;

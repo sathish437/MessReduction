@@ -53,6 +53,6 @@ public class ExtraSubmissionRequest {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
     }
 }

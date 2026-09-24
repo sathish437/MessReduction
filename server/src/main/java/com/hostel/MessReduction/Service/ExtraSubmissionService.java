@@ -57,7 +57,7 @@ public class ExtraSubmissionService {
 
         request.setStatus(RequestStatus.APPROVED);
         request.setApprovedBy(adminUsername);
-        request.setApprovedAt(LocalDateTime.now());
+        request.setApprovedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         extraSubmissionRequestRepo.save(request);
 
         StudentDetails student = request.getStudentDetails();
@@ -79,7 +79,7 @@ public class ExtraSubmissionService {
 
         request.setStatus(RequestStatus.REJECTED);
         request.setApprovedBy(adminUsername);
-        request.setApprovedAt(LocalDateTime.now());
+        request.setApprovedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         extraSubmissionRequestRepo.save(request);
 
         notificationService.createNotification(request.getStudentDetails().getEmailId(), "Your extra submission request was rejected.", "EXTRA_REJECTED", requestId);
@@ -94,7 +94,7 @@ public class ExtraSubmissionService {
         List<ExtraSubmissionRequest> toUpdate = new java.util.ArrayList<>();
         List<StudentDetails> studentsToUpdate = new java.util.ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new java.util.ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
 
         for (ExtraSubmissionRequest req : requests) {
             if (req.getStatus() != RequestStatus.PENDING) continue;
@@ -131,7 +131,7 @@ public class ExtraSubmissionService {
         List<ExtraSubmissionRequest> requests = extraSubmissionRequestRepo.findAllById(distinctIds);
         List<ExtraSubmissionRequest> toUpdate = new java.util.ArrayList<>();
         List<NotificationService.BatchNotificationItem> notificationItems = new java.util.ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
 
         for (ExtraSubmissionRequest req : requests) {
             if (req.getStatus() != RequestStatus.PENDING) continue;

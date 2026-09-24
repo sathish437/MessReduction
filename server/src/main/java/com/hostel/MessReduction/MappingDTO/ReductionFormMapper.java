@@ -24,7 +24,7 @@ public class ReductionFormMapper {
         reductionForm.setReason(reductionFormReqDTO.getReason());
         reductionForm.setToDate(reductionFormReqDTO.getToDate());
         reductionForm.setAdditionalRemarks(reductionFormReqDTO.getAdditionalRemarks());
-        reductionForm.setSubmittedAt(java.time.LocalDateTime.now());
+        reductionForm.setSubmittedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
 
         return reductionForm;
     }

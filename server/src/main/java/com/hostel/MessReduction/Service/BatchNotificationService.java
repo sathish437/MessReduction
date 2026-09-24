@@ -140,7 +140,7 @@ public class BatchNotificationService {
                     logger.info("Skipping push notification for {} as all {} queued requests were already handled/deleted.", recipient, notifications.size());
                 }
 
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
                 for (QueuedNotification qn : notifications) {
                     qn.setProcessed(true);
                     qn.setProcessedAt(now);

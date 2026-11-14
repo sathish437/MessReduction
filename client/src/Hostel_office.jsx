@@ -166,6 +166,7 @@ function HostelOffice() {
                   <th>Leave Date</th>
                   <th>Arrival Date</th>
                   <th>Total Holidays</th>
+                  <th>Month-wise Holidays</th>
                   <th>Assigned Deputy Warden</th>
                   <th>Final Status</th>
                 </tr>
@@ -184,6 +185,7 @@ function HostelOffice() {
                 <td>${item.leaveDate || ''}</td>
                 <td>${item.arrivalDate || ''}</td>
                 <td>${item.totalHolidays || 0}</td>
+                <td>${item.monthWiseHolidays || ''}</td>
                 <td>${item.assignedDeputyWarden || ''}</td>
                 <td>${item.currentStatus || ''}</td>
               </tr>
@@ -1085,6 +1087,7 @@ function HostelOffice() {
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center print:text-black">Leave Date</th>
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center print:text-black">Arrival Date</th>
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center print:text-black">Holidays</th>
+                                                <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center print:text-black">Month-wise Holidays</th>
                                                 <th className="px-4 py-4 text-[var(--theme-text-secondary)] text-center print:text-black">Deputy Warden</th>
                                                 <th className="px-6 py-4 text-[var(--theme-text-secondary)] text-right print:text-black">Refund Status</th>
                                             </tr>
@@ -1092,7 +1095,7 @@ function HostelOffice() {
                                         <tbody className="divide-y divide-white/[0.03] print:divide-y print:divide-black">
                                             {reportData.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="10" className="px-6 py-16 text-center print:text-black">
+                                                    <td colSpan="11" className="px-6 py-16 text-center print:text-black">
                                                         <div className="flex flex-col items-center gap-3 no-print">
                                                             <div className="w-12 h-12 bg-[var(--theme-border)] rounded-full flex items-center justify-center text-[var(--theme-text-secondary)]">
                                                                 <FiPieChart size={24} />
@@ -1118,12 +1121,7 @@ function HostelOffice() {
                                                     className="group hover:bg-[var(--theme-btn-primary)]/5 transition-colors print:text-black"
                                                 >
                                                     <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-[var(--theme-btn-primary)]/10 border border-[var(--theme-btn-primary)]/20 flex items-center justify-center text-teal-400 font-semibold text-sm print:hidden">
-                                                                {req.name?.charAt(0) ?? "?"}
-                                                            </div>
-                                                            <p className="text-sm font-semibold text-[var(--theme-text-primary)] group-hover:text-[var(--theme-btn-primary)] transition-colors print:text-black">{req.name}</p>
-                                                        </div>
+                                                        <p className="text-sm font-semibold text-[var(--theme-text-primary)] group-hover:text-[var(--theme-btn-primary)] transition-colors print:text-black">{req.name}</p>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="text-sm font-medium text-[var(--theme-text-secondary)] print:text-black">{req.registerNo}</span>
@@ -1145,6 +1143,9 @@ function HostelOffice() {
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="text-sm font-semibold text-[var(--theme-text-primary)] print:text-black">{req.totalHolidays}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="text-xs font-medium text-[var(--theme-text-secondary)] whitespace-nowrap print:text-black">{req.monthWiseHolidays || "-"}</span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="text-sm font-medium text-[var(--theme-text-secondary)] print:text-black">{req.assignedDeputyWarden}</span>

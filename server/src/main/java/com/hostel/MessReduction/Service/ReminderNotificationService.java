@@ -24,6 +24,7 @@ public class ReminderNotificationService {
     private final PushNotificationService pushNotificationService;
     private final FirebaseNotificationService firebaseNotificationService;
     private final AppNotificationRepository appNotificationRepository;
+    private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     @Value("${notification.reminder.enabled:true}")
     private boolean reminderEnabled;
@@ -39,13 +40,30 @@ public class ReminderNotificationService {
                                        NotificationReminderLogRepository reminderLogRepo,
                                        PushNotificationService pushNotificationService,
                                        FirebaseNotificationService firebaseNotificationService,
-                                       AppNotificationRepository appNotificationRepository) {
+                                       AppNotificationRepository appNotificationRepository,
+                                       com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
         this.reductionFormRepo = reductionFormRepo;
         this.staffUsersRepo = staffUsersRepo;
         this.reminderLogRepo = reminderLogRepo;
         this.pushNotificationService = pushNotificationService;
         this.firebaseNotificationService = firebaseNotificationService;
         this.appNotificationRepository = appNotificationRepository;
+        this.systemSettingsRepo = systemSettingsRepo;
+    }
+
+    private int getReminderOffsetDays() {
+        if (systemSettingsRepo == null) {
+            return 3;
+        }
+        return systemSettingsRepo.findById("REMINDER_BEFORE_ARRIVAL_DAYS")
+                .map(setting -> {
+                    try {
+                        return Math.max(1, Integer.parseInt(setting.getSettingValue()));
+                    } catch (Exception e) {
+                        return 3;
+                    }
+                })
+                .orElse(3);
     }
 
     public void processReminders() {
@@ -109,6 +127,8 @@ public class ReminderNotificationService {
                 ));
 
         LocalDateTime now = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime();
+        java.time.LocalDate today = com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDate();
+        int reminderOffsetDays = getReminderOffsetDays();
         int recipientsToNotifyCount = 0;
 
         for (Map.Entry<String, List<ReductionForm>> entry : allPendingByRecipient.entrySet()) {
@@ -131,8 +151,14 @@ public class ReminderNotificationService {
                         break;
                     }
                 } else {
+                    boolean withinArrivalWindow = false;
+                    if (form.getArrivalDate() != null) {
+                        withinArrivalWindow = !form.getArrivalDate().isAfter(today.plusDays(reminderOffsetDays));
+                    }
                     LocalDateTime baseTime = form.getSubmittedAt() != null ? form.getSubmittedAt() : now.minusMinutes(delayMinutes);
-                    if (now.isAfter(baseTime.plusMinutes(delayMinutes))) {
+                    boolean delayPassed = now.isAfter(baseTime.plusMinutes(delayMinutes));
+
+                    if (withinArrivalWindow || delayPassed) {
                         reminderDue = true;
                         break;
                     }

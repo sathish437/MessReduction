@@ -61,6 +61,7 @@ public class ReductionFormResDTO {
     private LocalDate presentDate;
     @NotNull
     private Long totalHolidays;
+    private String monthWiseHolidays;
     @NotBlank
     private String reason;
     private String additionalRemarks;

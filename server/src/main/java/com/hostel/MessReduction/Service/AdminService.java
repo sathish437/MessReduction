@@ -265,6 +265,30 @@ public class AdminService {
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public int getHolidayDeductionDays() {
+        return systemSettingsRepo.findById("HOLIDAY_DEDUCTION_DAYS")
+                .map(setting -> {
+                    try {
+                        return Math.max(0, Integer.parseInt(setting.getSettingValue()));
+                    } catch (Exception e) {
+                        return 3;
+                    }
+                })
+                .orElse(3);
+    }
+
+    public int updateHolidayDeductionDays(int days) {
+        if (days < 0) {
+            throw new com.hostel.MessReduction.CustomException.BadRequestException("Holiday deduction days cannot be negative");
+        }
+        com.hostel.MessReduction.Entity.SystemSettings setting = systemSettingsRepo.findById("HOLIDAY_DEDUCTION_DAYS")
+                .orElseGet(() -> new com.hostel.MessReduction.Entity.SystemSettings("HOLIDAY_DEDUCTION_DAYS", "3"));
+        setting.setSettingValue(String.valueOf(days));
+        systemSettingsRepo.save(setting);
+        return days;
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<StaffCredentialResponseDTO> getStaffCredentials() {
         return staffUsersRepo.findAll().stream()
                 .sorted((a, b) -> {

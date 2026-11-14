@@ -109,4 +109,33 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reminderDays").value(2));
     }
+
+    @Test
+    @DisplayName("WF-HAPPY-17: GET /api/admin/settings returns all settings")
+    void testGetSystemSettings() throws Exception {
+        when(adminService.getReminderOffsetDays()).thenReturn(3);
+        when(adminService.getHolidayDeductionDays()).thenReturn(3);
+
+        mockMvc.perform(get("/api/admin/settings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reminderDays").value(3))
+                .andExpect(jsonPath("$.deductionDays").value(3));
+    }
+
+    @Test
+    @DisplayName("WF-HAPPY-19: GET and PUT /api/admin/settings/holiday-deduction")
+    void testHolidayDeductionSettings() throws Exception {
+        when(adminService.getHolidayDeductionDays()).thenReturn(3);
+        when(adminService.updateHolidayDeductionDays(5)).thenReturn(5);
+
+        mockMvc.perform(get("/api/admin/settings/holiday-deduction"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deductionDays").value(3));
+
+        mockMvc.perform(put("/api/admin/settings/holiday-deduction")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("deductionDays", 5))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deductionDays").value(5));
+    }
 }

@@ -186,7 +186,7 @@ public class DateValidationBoundaryTest {
 
         var response = reductionFormService.formSubmit(dto, 101L);
         assertNotNull(response);
-        // Mess reduction leaves = 5 - 3 = 2 days
-        assertEquals(2, response.getTotalHolidays());
+        // Mess reduction leaves = inclusive days (6) - 3 = 3 days
+        assertEquals(3, response.getTotalHolidays());
     }
 }

@@ -19,10 +19,21 @@ public class StaffDataInitializer implements CommandLineRunner {
 
     private final StaffUsersRepo staffUsersRepo;
     private final PasswordEncoder passwordEncoder;
+    private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
 
     @Override
     public void run(String... args) {
-        log.info("Checking and initializing default accounts...");
+        log.info("Checking and initializing default accounts and system settings...");
+
+        // Ensure default system settings exist without overwriting saved values
+        if (systemSettingsRepo.findById("REMINDER_BEFORE_ARRIVAL_DAYS").isEmpty()) {
+            systemSettingsRepo.save(new com.hostel.MessReduction.Entity.SystemSettings("REMINDER_BEFORE_ARRIVAL_DAYS", "3"));
+            log.info("Initialized default REMINDER_BEFORE_ARRIVAL_DAYS = 3");
+        }
+        if (systemSettingsRepo.findById("HOLIDAY_DEDUCTION_DAYS").isEmpty()) {
+            systemSettingsRepo.save(new com.hostel.MessReduction.Entity.SystemSettings("HOLIDAY_DEDUCTION_DAYS", "3"));
+            log.info("Initialized default HOLIDAY_DEDUCTION_DAYS = 3");
+        }
 
         // Ensure MasterAdmin exists if no ADMIN account is present
         List<StaffUsers> admins = staffUsersRepo.findByRole(Role.ADMIN);

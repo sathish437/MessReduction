@@ -23,7 +23,7 @@ public class ExcelReportHelper {
             // Columns
             String[] columns = {
                 "Student Name", "Register Number", "Gender", "Year", "Department",
-                "Leave Date", "Arrival Date", "Total Holidays", "Assigned Deputy Warden", "Final Status"
+                "Leave Date", "Arrival Date", "Total Holidays", "Month-wise Holidays", "Assigned Deputy Warden", "Final Status"
             };
 
             // Header Row
@@ -47,8 +47,9 @@ public class ExcelReportHelper {
                 row.createCell(5).setCellValue(report.getLeaveDate() != null ? report.getLeaveDate().toString() : "");
                 row.createCell(6).setCellValue(report.getArrivalDate() != null ? report.getArrivalDate().toString() : "");
                 row.createCell(7).setCellValue(report.getTotalHolidays() != null ? report.getTotalHolidays() : 0L);
-                row.createCell(8).setCellValue(report.getAssignedDeputyWarden() != null ? report.getAssignedDeputyWarden() : "");
-                row.createCell(9).setCellValue(report.getCurrentStatus() != null ? report.getCurrentStatus().name() : "");
+                row.createCell(8).setCellValue(report.getMonthWiseHolidays() != null ? report.getMonthWiseHolidays() : "");
+                row.createCell(9).setCellValue(report.getAssignedDeputyWarden() != null ? report.getAssignedDeputyWarden() : "");
+                row.createCell(10).setCellValue(report.getCurrentStatus() != null ? report.getCurrentStatus().name() : "");
             }
 
             // Auto-fit columns

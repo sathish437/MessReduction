@@ -57,6 +57,13 @@ public class ReductionFormMapper {
         reductionFormResDTO.setArrivalTime(reductionForm.getArrivalTime());
         reductionFormResDTO.setPresentDate(reductionForm.getPresentDate());
         reductionFormResDTO.setTotalHolidays(reductionForm.getTotalHolidays());
+        reductionFormResDTO.setMonthWiseHolidays(
+                com.hostel.MessReduction.utils.HolidayReportHelper.calculateMonthWiseHolidays(
+                        reductionForm.getLeaveDate(),
+                        reductionForm.getArrivalDate() != null ? reductionForm.getArrivalDate() : reductionForm.getToDate(),
+                        reductionForm.getTotalHolidays()
+                )
+        );
         reductionFormResDTO.setReason(reductionForm.getReason());
         reductionFormResDTO.setCurrentStatus(reductionForm.getCurrentStatus());
         reductionFormResDTO.setRejectReason(reductionForm.getRejectReason());
@@ -69,5 +76,29 @@ public class ReductionFormMapper {
         reductionFormResDTO.setRejectedStage(reductionForm.getRejectedStage() != null ? reductionForm.getRejectedStage().name() : null);
         reductionFormResDTO.setResumeStage(reductionForm.getResumeStage() != null ? reductionForm.getResumeStage().name() : null);
         return reductionFormResDTO;
+    }
+
+    public static ReductionFormResDTO mapToOfficeReportDTO(ReductionForm reductionForm, int adminN) {
+        if (reductionForm == null) {
+            return null;
+        }
+        ReductionFormResDTO dto = mapToReductionFormResDTO(reductionForm);
+
+        java.time.LocalDate leaveDate = reductionForm.getLeaveDate();
+        java.time.LocalDate arrivalDate = reductionForm.getArrivalDate() != null ? reductionForm.getArrivalDate() : reductionForm.getToDate();
+
+        if (leaveDate != null && arrivalDate != null && !leaveDate.isAfter(arrivalDate)) {
+            long inclusiveDays = java.time.temporal.ChronoUnit.DAYS.between(leaveDate, arrivalDate) + 1;
+            long displayedHolidays = Math.max(0L, inclusiveDays - adminN);
+            dto.setTotalHolidays(displayedHolidays);
+            dto.setMonthWiseHolidays(
+                    com.hostel.MessReduction.utils.HolidayReportHelper.calculateMonthWiseHolidays(
+                            leaveDate,
+                            arrivalDate,
+                            displayedHolidays
+                    )
+            );
+        }
+        return dto;
     }
 }

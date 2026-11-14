@@ -100,6 +100,14 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/settings")
+    public ResponseEntity<java.util.Map<String, Object>> getSystemSettings() {
+        return ResponseEntity.ok(java.util.Map.of(
+                "reminderDays", adminService.getReminderOffsetDays(),
+                "deductionDays", adminService.getHolidayDeductionDays()
+        ));
+    }
+
     @GetMapping("/settings/reminder-offset")
     public ResponseEntity<java.util.Map<String, Object>> getReminderOffset() {
         return ResponseEntity.ok(java.util.Map.of("reminderDays", adminService.getReminderOffsetDays()));
@@ -113,6 +121,21 @@ public class AdminController {
         }
         int updated = adminService.updateReminderOffsetDays(days);
         return ResponseEntity.ok(java.util.Map.of("reminderDays", updated));
+    }
+
+    @GetMapping("/settings/holiday-deduction")
+    public ResponseEntity<java.util.Map<String, Object>> getHolidayDeduction() {
+        return ResponseEntity.ok(java.util.Map.of("deductionDays", adminService.getHolidayDeductionDays()));
+    }
+
+    @PutMapping("/settings/holiday-deduction")
+    public ResponseEntity<java.util.Map<String, Object>> updateHolidayDeduction(@RequestBody java.util.Map<String, Integer> payload) {
+        Integer days = payload.get("deductionDays");
+        if (days == null || days < 0) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Deduction days cannot be negative"));
+        }
+        int updated = adminService.updateHolidayDeductionDays(days);
+        return ResponseEntity.ok(java.util.Map.of("deductionDays", updated));
     }
 
     @GetMapping("/staff-credentials")

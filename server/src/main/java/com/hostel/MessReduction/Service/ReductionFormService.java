@@ -1262,8 +1262,9 @@ public class ReductionFormService {
         List<ReductionForm> reports = reductionFormRepo.findByCurrentStatusAndLeaveDateBetweenOrderByLeaveDateAsc(
                 FormStatus.Approved, fourMonthsAgo, futureBound
         );
+        int adminN = getHolidayDeductionDays();
         return reports.stream()
-                .map(ReductionFormMapper::mapToReductionFormResDTO)
+                .map(form -> ReductionFormMapper.mapToOfficeReportDTO(form, adminN))
                 .toList();
     }
 
@@ -1292,13 +1293,29 @@ public class ReductionFormService {
         calculateTotalLeaves(dto);
     }
 
+    private int getHolidayDeductionDays() {
+        if (systemSettingsRepo == null) {
+            return 3;
+        }
+        return systemSettingsRepo.findById("HOLIDAY_DEDUCTION_DAYS")
+                .map(setting -> {
+                    try {
+                        return Math.max(0, Integer.parseInt(setting.getSettingValue()));
+                    } catch (Exception e) {
+                        return 3;
+                    }
+                })
+                .orElse(3);
+    }
+
     private long calculateTotalLeaves(ReductionFormReqDTO dto) {
         LocalDate endDate = dto.getToDate() != null ? dto.getToDate() : dto.getArrivalDate();
-        long totalDays = ChronoUnit.DAYS.between(dto.getLeaveDate(), endDate);
-        if (totalDays > 3) {
-            return totalDays - 3;
+        long inclusiveDays = ChronoUnit.DAYS.between(dto.getLeaveDate(), endDate) + 1;
+        int n = getHolidayDeductionDays();
+        if (inclusiveDays > n) {
+            return inclusiveDays - n;
         }
-        throw new TotalLeaveDateCountException("Leave duration must be more than 3 days to apply for mess reduction");
+        throw new TotalLeaveDateCountException("Leave duration must be more than " + n + " days to apply for mess reduction");
     }
 
     private void validateBulkRequest(List<Long> formIds) {

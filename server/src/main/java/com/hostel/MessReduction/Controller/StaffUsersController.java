@@ -36,9 +36,7 @@ public class StaffUsersController {
             @RequestParam(required = false) String gender,
             @RequestParam(required = false) Integer year,
             Authentication authentication) {
-        String effectiveUserName = (userName != null && !userName.isEmpty())
-                ? userName
-                : authentication.getName();
+        String effectiveUserName = authentication.getName();
         return ResponseEntity.ok(reductionFormService.wardenPendingStatus(effectiveUserName, gender, year));
     }
 
@@ -46,6 +44,14 @@ public class StaffUsersController {
     public ResponseEntity<List<ReductionFormResDTO>> deputyWarden(Authentication authentication) {
         String userName = authentication.getName();
         return ResponseEntity.ok(reductionFormService.deputyWardenPendingStatus(userName));
+    }
+
+    @GetMapping("/staff/deputyWarden/form/{formId}")
+    public ResponseEntity<ReductionFormResDTO> getDeputyWardenFormById(
+            @PathVariable Long formId,
+            Authentication authentication) {
+        String userName = authentication.getName();
+        return ResponseEntity.ok(reductionFormService.getFormByIdForDeputyWarden(formId, userName));
     }
 
     @GetMapping("/staff/office")
@@ -126,9 +132,7 @@ public class StaffUsersController {
     public ResponseEntity<StaffDashboardCountDTO> getWardenDashboardCount(
             @RequestParam(required = false) String userName,
             Authentication authentication) {
-        String effectiveUserName = (userName != null && !userName.isEmpty())
-                ? userName
-                : authentication.getName();
+        String effectiveUserName = authentication.getName();
         return ResponseEntity.ok(reductionFormService.getDashboardCountForWarden(effectiveUserName));
     }
 

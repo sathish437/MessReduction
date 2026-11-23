@@ -1,11 +1,12 @@
+import AppLayout from "./components/AppLayout";
 import { useTheme } from './context/ThemeContext';
 import { FiSun, FiMoon } from 'react-icons/fi';
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FiUser, FiHome, FiCreditCard, FiBookOpen, FiCalendar, FiHash,
-    FiClock, FiPhone, FiInfo, FiArrowRight, FiFileText, FiEdit3, FiAlertTriangle,
-    FiCheckCircle, FiXCircle, FiActivity, FiMapPin, FiLogOut
+    FiClock, FiPhone, FiInfo, FiArrowRight, FiArrowLeft, FiFileText, FiEdit3, FiAlertTriangle,
+    FiCheckCircle, FiXCircle, FiActivity, FiMapPin, FiLogOut, FiPlus, FiRotateCcw
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { logout } from "./services/authService";
@@ -13,6 +14,7 @@ import Toast from "./components/Toast";
 import ConfirmModal from "./components/ConfirmModal";
 import MobileBottomNav from "./components/MobileBottomNav";
 import CustomSelect from "./CustomSelect";
+import { useStudentTrackSse } from "./hooks/useStudentTrackSse";
 
 import image from "./assets/1000088399.png";
 
@@ -23,7 +25,7 @@ const getMinArrivalDate = (leaveDate, todayServerStr) => {
     if (!baseDateStr) {
         const today = new Date();
         today.setDate(today.getDate() + 3);
-        return today.toISOString().split('T')[0];
+        return today.toLocaleDateString('en-CA');
     }
     const parts = baseDateStr.split('T')[0].split('-');
     if (parts.length === 3) {
@@ -36,44 +38,42 @@ const getMinArrivalDate = (leaveDate, todayServerStr) => {
     }
     const leave = new Date(baseDateStr);
     leave.setDate(leave.getDate() + 3);
-    return leave.toISOString().split('T')[0];
+    return leave.toLocaleDateString('en-CA');
 };
 
 function Field({ label, icon, as: Component = "input", readOnly = false, children, error, ...props }) {
     const id = props.id || props.name;
     const isSelect = Component === "select";
     return (
-        <div className="flex flex-col gap-2 w-full text-left">
+        <div className="flex flex-col gap-1.5 w-full text-left">
             {label && (
-                <label htmlFor={id} className="text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
+                <label htmlFor={id} className="field-label">
                     {label} {props.required && <span className="text-[var(--color-danger)]">*</span>}
                 </label>
             )}
-            <div className={`flex items-center gap-3 rounded-[12px] border px-4 py-3.5 transition-all duration-200 relative group bg-[var(--color-surface)]
-                ${readOnly ? 'opacity-80 cursor-not-allowed border-[var(--color-border)]' : ''} 
-                ${error ? 'border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5 focus-within:border-[var(--color-danger)]' : 'border-[var(--color-border)] focus-within:border-[var(--color-btn-primary)]'}`}>
-                {icon && <span className={`shrink-0 text-lg transition-colors ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)]'}`}>{icon}</span>}
+            <div className={`field-shell ${readOnly ? 'opacity-80 cursor-not-allowed bg-[var(--theme-card-muted)]' : ''} ${error ? 'border-[var(--color-danger-border)]' : ''}`}>
+                {icon && <span className={`shrink-0 text-base ${error ? 'text-[var(--color-danger)]' : 'text-[var(--theme-text-faint)]'}`}>{icon}</span>}
                 <Component
                     id={id}
-                    className={`flex-1 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-8' : 'appearance-none'}`}
+                    className={`flex-1 bg-transparent focus:outline-none text-[13.5px] text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-faint)] font-medium w-full ${isSelect ? 'appearance-none cursor-pointer pr-6' : 'appearance-none'}`}
                     readOnly={readOnly}
                     {...props}
                 >
                     {children}
                 </Component>
                 {isSelect && (
-                    <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                        <svg className="w-4 h-4 text-[var(--color-text-secondary)] group-focus-within:text-[var(--color-btn-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--theme-text-faint)]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                 )}
             </div>
             {error && (
-                <span className="text-xs font-medium text-[var(--color-danger)] mt-1">
+                <span className="text-xs font-semibold text-[var(--color-danger)] mt-0.5">
                     {error}
                 </span>
             )}
         </div>
-    )
+    );
 }
 
 function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
@@ -232,13 +232,26 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                         return (
                             <React.Fragment key={stage.id}>
                                 <div className="step">
-                                    <div className={`circle ${state}`}>
+                                    <motion.div 
+                                        key={`circle-${stage.id}-${state}`}
+                                        initial={{ scale: 0.85, opacity: 0.8 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                        className={`circle ${state}`}
+                                    >
                                         {circleContent}
-                                    </div>
+                                    </motion.div>
                                     <div className={`mt-2 text-[11px] font-bold uppercase tracking-wider ${labelColor}`}>
                                         {stage.label}
                                     </div>
-                                    {getStageDetails(stage.id)}
+                                    <motion.div
+                                        key={`details-${stage.id}-${state}`}
+                                        initial={{ opacity: 0, y: 3 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                    >
+                                        {getStageDetails(stage.id)}
+                                    </motion.div>
                                 </div>
                                 {index < stages.length - 1 && (
                                     <div className={`line ${nextState}`}></div>
@@ -322,11 +335,23 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                                 />
                             )}
                             
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors z-10 flex-shrink-0 ${dotColorClass}`}>
+                            <motion.div 
+                                key={`mob-circle-${stage.id}-${state}`}
+                                initial={{ scale: 0.85, opacity: 0.8 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors z-10 flex-shrink-0 ${dotColorClass}`}
+                            >
                                 {checkIcon}
-                            </div>
+                            </motion.div>
 
-                            <div className="flex-1 min-w-0 pt-1.5 text-left">
+                            <motion.div 
+                                key={`mob-details-${stage.id}-${state}`}
+                                initial={{ opacity: 0, x: -4 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="flex-1 min-w-0 pt-1.5 text-left"
+                            >
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center flex-wrap gap-2">
                                         <span className={`text-sm font-semibold tracking-wide ${labelColor}`}>
@@ -365,7 +390,7 @@ function RequestTimeline({ tracking, activeRequest, onEditRequest }) {
                                         )}
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         </div>
                     );
                 })}
@@ -422,6 +447,7 @@ function MessReductionPage() {
     const [trackingDetails, setTrackingDetails] = useState(null)
     const [formErrors, setFormErrors] = useState({});
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [isApplying, setIsApplying] = useState(false);
     const [limits, setLimits] = useState({ dailyCount: 0, extraRemaining: 0, limitReached: false });
     const [showExtraDialog, setShowExtraDialog] = useState(false);
     const [extraReason, setExtraReason] = useState("");
@@ -452,8 +478,9 @@ function MessReductionPage() {
         if (!studentId) return;
         fetchExtraSubmissionStatus();
         const interval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
             fetchExtraSubmissionStatus();
-        }, 4000);
+        }, 15000);
         return () => clearInterval(interval);
     }, [studentId, fetchExtraSubmissionStatus]);
 
@@ -501,11 +528,49 @@ function MessReductionPage() {
         ? studentForm.filter(form => !isRequestExpiredByArrivalDate(form?.arrivalDate))
         : [];
 
-    const latestForm = unexpiredForms.length > 0 ? unexpiredForms[0] : null;
+    const latestForm = unexpiredForms.length > 0 ? unexpiredForms[0] : (Array.isArray(studentForm) && studentForm.length > 0 ? studentForm[0] : null);
     const activeRequest = latestForm;
 
     const isInProgressRequest = latestForm && latestForm.currentStatus && latestForm.currentStatus.startsWith('Pending');
     const isCompletedRequest = latestForm && latestForm.currentStatus === 'Approved';
+    const isRejectedRequest = Boolean(
+        activeRequest && activeRequest.currentStatus && activeRequest.currentStatus.startsWith('Rejected')
+    );
+    const hasActiveAppliedRequest = Boolean(
+        activeRequest &&
+        (activeRequest.currentStatus?.startsWith('Pending') || activeRequest.currentStatus === 'Approved')
+    );
+
+    const studentCounts = {
+        total: Array.isArray(studentForm) ? studentForm.length : 0,
+        pending: Array.isArray(studentForm) ? studentForm.filter(f => f?.currentStatus?.startsWith('Pending')).length : 0,
+        approved: Array.isArray(studentForm) ? studentForm.filter(f => f?.currentStatus === 'Approved').length : 0,
+        rejected: Array.isArray(studentForm) ? studentForm.filter(f => f?.currentStatus?.startsWith('Rejected')).length : 0
+    };
+
+    const getRejectedStageDisplay = (form) => {
+        if (!form) return "Staff";
+        const stage = form.rejectedStage || "";
+        if (stage === 'DEPUTY_WARDEN' || stage === 'DeputyWarden' || stage === 'RejectedDeputyWarden') return 'Deputy Warden';
+        if (stage === 'WARDEN' || stage === 'Warden' || stage === 'RejectedWarden') return 'Warden';
+        if (stage === 'OFFICE' || stage === 'Office' || stage === 'RejectedOffice') return 'Hostel Office';
+        if (form.currentStatus === 'RejectedDeputyWarden') return 'Deputy Warden';
+        if (form.currentStatus === 'RejectedWarden') return 'Warden';
+        if (form.currentStatus === 'RejectedOffice') return 'Hostel Office';
+        return stage || 'Staff';
+    };
+
+    const getRejectedTimeDisplay = (form) => {
+        const dt = form?.rejectedAt || trackingDetails?.rejectedTime;
+        if (!dt) return null;
+        try {
+            const d = new Date(dt);
+            if (isNaN(d.getTime())) return String(dt);
+            return `${d.toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })} at ${d.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        } catch (e) {
+            return String(dt);
+        }
+    };
 
     const formatNextRequestDate = (arrivalDateStr) => {
         if (!arrivalDateStr) return "";
@@ -572,6 +637,18 @@ function MessReductionPage() {
         fetchStudentData(studentId);
     }, [studentId]);
 
+    // Refresh student data when receiving app-notification-refresh event (SSE)
+    useEffect(() => {
+        if (!studentId) return;
+        const handleNotificationRefresh = () => {
+            fetchStudentData(studentId);
+        };
+        window.addEventListener('app-notification-refresh', handleNotificationRefresh);
+        return () => {
+            window.removeEventListener('app-notification-refresh', handleNotificationRefresh);
+        };
+    }, [studentId]);
+
     const fetchLimits = async (id) => {
         try {
             const res = await apiClient.get(`/api/student-form/limits/${id}`);
@@ -608,7 +685,8 @@ function MessReductionPage() {
                     const isPending = req.currentStatus?.startsWith('Pending') || req.currentStatus === 'Approved';
                     const isExpired = isRequestExpiredByArrivalDate(req.arrivalDate);
                     if (isPending && req.isActive && !isExpired) {
-                        setActiveTab('track');
+                        // Keep student on dashboard to display Applied status card
+                        // setActiveTab('track');
                     }
                 }
             } else {
@@ -653,6 +731,45 @@ function MessReductionPage() {
         }
     }, [activeRequest?.formId, studentId]);
 
+    // Real-time SSE Application Tracking for Student
+    const handleTrackUpdate = useCallback((eventData) => {
+        if (!eventData) return;
+
+        // 1. Immediately update trackingDetails
+        if (eventData.tracking) {
+            setTrackingDetails(eventData.tracking);
+        }
+
+        // 2. Immediately update in-memory studentForm
+        if (eventData.formId && eventData.currentStatus) {
+            setStudentForm(prevForms => {
+                if (!Array.isArray(prevForms)) return prevForms;
+                return prevForms.map(f => {
+                    if (f.formId === eventData.formId) {
+                        return {
+                            ...f,
+                            currentStatus: eventData.currentStatus,
+                            rejectReason: eventData.tracking?.rejectionReason || f.rejectReason,
+                            rejectedAt: eventData.tracking?.rejectedTime || f.rejectedAt,
+                            rejectedStage: eventData.tracking?.rejectedBy || f.rejectedStage
+                        };
+                    }
+                    return f;
+                });
+            });
+        }
+
+        // 3. Re-fetch student data in background to ensure all records match committed DB
+        if (studentId) {
+            fetchStudentData(studentId);
+        }
+    }, [studentId]);
+
+    const { connectionStatus: sseConnectionStatus } = useStudentTrackSse({
+        studentId,
+        onTrackUpdate: handleTrackUpdate
+    });
+
     const getStatusDisplay = (status) => {
         const statusMap = {
             'PendingWarden': 'Pending Warden',
@@ -667,10 +784,10 @@ function MessReductionPage() {
     };
 
     const getStatusColor = (status) => {
-        if (status === 'Approved') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-        if (status?.startsWith('Rejected')) return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-        if (status?.startsWith('Pending')) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-        return 'bg-white/5 text-white/60 border-[var(--color-border)]';
+        if (status === 'Approved') return 'badge badge-success';
+        if (status?.startsWith('Rejected')) return 'badge badge-danger';
+        if (status?.startsWith('Pending')) return 'badge badge-warning';
+        return 'badge badge-neutral';
     };
 
 
@@ -693,6 +810,7 @@ function MessReductionPage() {
         setEditingFormId(req.formId);
         setFormErrors({});
         setActiveTab('dashboard');
+        setIsApplying(true);
 
         const yearStrMap = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" };
         const isStandardReason = ["Study Holidays", "Medical Leave"].includes(req.reason);
@@ -781,6 +899,7 @@ function MessReductionPage() {
             if (response.status === 200 || response.status === 201) {
                 showToast(editingFormId ? "✅ Form resubmitted successfully! Awaiting warden approval." : "✅ Form submitted successfully! Awaiting warden approval.", 'success');
                 setEditingFormId(null);
+                setIsApplying(false);
                 // Clear editable fields only
                 setFormData(prev => ({
                     ...prev,
@@ -858,198 +977,395 @@ function MessReductionPage() {
 
     if (loading) {
         return (
-            <div className="min-h-[100dvh] w-full flex items-center justify-center bg-[var(--color-primary-bg)] text-[var(--color-text-primary)]">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-2 border-[var(--color-accent)]/30 border-t-[var(--color-accent)] rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-[var(--color-text-secondary)] text-sm font-semibold">Loading Portal...</p>
+            <div className="min-h-[100dvh] w-full bg-[var(--color-primary-bg)]">
+                <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
+                    <div className="skeleton h-7 w-56" />
+                    <div className="panel p-5">
+                        <div className="skeleton mb-4 h-4 w-40" />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            {[0, 1, 2, 3, 4, 5].map(i => (
+                                <div key={i} className="skeleton h-14 w-full" />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="panel p-5">
+                        <div className="skeleton mb-4 h-4 w-48" />
+                        {[0, 1, 2].map(i => (
+                            <div key={i} className="skeleton mb-3 h-12 w-full" />
+                        ))}
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] font-sans selection:bg-[var(--color-btn-primary)]/30">
+        <AppLayout
+            roleTag="STUDENT PORTAL"
+            pageTitle={activeTab === 'dashboard' ? 'Student Mess Reduction' : 'Track Request Status'}
+            breadcrumbs={["GCES", "Student", activeTab === 'dashboard' ? 'Dashboard & Apply' : 'Track Request']}
+            navItems={[
+                { key: 'dashboard', label: 'Dashboard & Apply', icon: FiHome },
+                { key: 'track', label: 'Track Request', icon: FiActivity, badge: activeRequest ? '1' : undefined }
+            ]}
+            activeNav={activeTab}
+            onNavChange={setActiveTab}
+            userInfo={{
+                name: studentDetails?.name || formData.name || "Student",
+                role: `Reg: ${studentDetails?.registerNo || formData.id || ""} · Room: ${studentDetails?.roomNo || formData.roomNo || ""}`,
+                userName: studentDetails?.registerNo || formData.id
+            }}
+            onLogout={() => logout()}
+        >
             {/* Toast Notification Panel */}
             <Toast toast={toast} onClose={() => setToast(null)} />
 
-            {/* Desktop Top Navbar */}
-            <header className="hidden md:flex items-center justify-between px-6 py-3.5 bg-[var(--color-header)] text-white shadow-md z-20 shrink-0">
-                <div className="flex items-center gap-3">
-                    <img src={image} alt="GCES Logo" className="w-12 h-12 object-contain drop-shadow-md" />
-                    <div className="flex flex-col">
-                        <span className="text-[11px] font-bold tracking-widest text-white/80 uppercase mb-0.5">GCES Srirangam</span>
-                        <span className="text-xl font-bold tracking-tight">Mess Reduction Request Form</span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-8">
-                    <nav className="flex items-center gap-2 bg-black/20 p-1.5 rounded-[14px] border border-white/10">
-                        <button 
-                            onClick={() => setActiveTab('dashboard')}
-                            disabled={isAnyProcessing}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'dashboard' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
-                        >
-                            <FiHome size={18} /> Dashboard
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('track')}
-                            disabled={isAnyProcessing}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${activeTab === 'track' ? 'bg-white text-[var(--color-header)] shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
-                        >
-                            <FiActivity size={18} /> Track Request
-                        </button>
-                    </nav>
-
-                    <div className="flex items-center gap-4 pl-6 border-l border-white/20">
-                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-2.5 bg-white/10 hover:bg-white/20 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
-                            {isDark ? <FiSun size={20} /> : <FiMoon size={20} />}
-                        </button>
-                        <button onClick={() => logout()} className="text-white/90 hover:text-white flex items-center gap-2 px-4 py-2.5 bg-[var(--color-danger)]/80 hover:bg-[var(--color-danger)] rounded-[10px] border border-[var(--color-danger)]/50 shadow-sm transition-all cursor-pointer font-semibold text-sm">
-                            <FiLogOut size={18} /> Logout
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Mobile Layout Container */}
-            <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
-                
-                {/* Mobile Header */}
-                <header className="md:hidden flex items-center justify-between px-3 py-3 border-b border-[var(--color-border)] bg-[var(--color-header)] text-white z-20 shrink-0 shadow-md">
-                    <div className="flex items-center gap-2.5">
-                        <img src={image} alt="GCES Logo" className="w-7 h-7 object-contain" />
-                        <span className="text-sm font-bold tracking-tight">Mess Reduction Request Form</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={toggleTheme} className="text-white/80 hover:text-white p-1.5 bg-white/10 rounded-[10px] border border-white/10 shadow-sm transition-all cursor-pointer">
-                            {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
-                        </button>
-                        <button onClick={() => logout()} className="text-white/80 hover:text-white p-1.5 bg-white/10 rounded-[10px] cursor-pointer transition-all">
-                            <FiLogOut size={16} />
-                        </button>
-                    </div>
-                </header>
-
-
-                {/* Main Scrollable Area */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-6 pb-28 md:pb-6">
-                    <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-5">
+            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6">
 
                         {activeTab === 'dashboard' && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5">
                                 {/* Extra Submission Request Status Banner Card */}
                                 {latestExtraRequest && (
-                                    <div className={`p-4 sm:p-5 rounded-[12px] border transition-all shadow-md flex items-start gap-4 ${
-                                        latestExtraRequest.status === 'PENDING'
-                                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
-                                            : latestExtraRequest.status === 'APPROVED'
-                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                                            : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
-                                    }`}>
-                                        <div className={`p-2.5 rounded-xl shrink-0 ${
-                                            latestExtraRequest.status === 'PENDING'
-                                                ? 'bg-amber-500/20 text-amber-400'
+                                    <div
+                                        className="flex items-start gap-4 rounded-[var(--radius-md)] p-4 sm:p-5"
+                                        style={{
+                                            background: latestExtraRequest.status === 'PENDING'
+                                                ? 'var(--color-warning-soft)'
                                                 : latestExtraRequest.status === 'APPROVED'
-                                                ? 'bg-emerald-500/20 text-emerald-400'
-                                                : 'bg-rose-500/20 text-rose-400'
-                                        }`}>
-                                            {latestExtraRequest.status === 'PENDING' && <FiClock size={24} />}
-                                            {latestExtraRequest.status === 'APPROVED' && <FiCheckCircle size={24} />}
-                                            {latestExtraRequest.status === 'REJECTED' && <FiXCircle size={24} />}
+                                                    ? 'var(--color-success-soft)'
+                                                    : 'var(--color-danger-soft)',
+                                            border: '1px solid ' + (latestExtraRequest.status === 'PENDING'
+                                                ? 'var(--color-warning-border)'
+                                                : latestExtraRequest.status === 'APPROVED'
+                                                    ? 'var(--color-success-border)'
+                                                    : 'var(--color-danger-border)')
+                                        }}
+                                    >
+                                        <div
+                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)]"
+                                            style={{
+                                                background: 'var(--theme-card)',
+                                                color: latestExtraRequest.status === 'PENDING'
+                                                    ? 'var(--color-warning)'
+                                                    : latestExtraRequest.status === 'APPROVED'
+                                                        ? 'var(--color-success)'
+                                                        : 'var(--color-danger)'
+                                            }}
+                                        >
+                                            {latestExtraRequest.status === 'PENDING' && <FiClock size={18} />}
+                                            {latestExtraRequest.status === 'APPROVED' && <FiCheckCircle size={18} />}
+                                            {latestExtraRequest.status === 'REJECTED' && <FiXCircle size={18} />}
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="text-sm sm:text-base font-extrabold tracking-wide">
-                                                {latestExtraRequest.status === 'PENDING' && 'Extra Submission Request Pending'}
-                                                {latestExtraRequest.status === 'APPROVED' && 'Extra Submission Request Approved'}
-                                                {latestExtraRequest.status === 'REJECTED' && 'Extra Submission Request Rejected'}
+                                            <h4
+                                                className="text-[13.5px] font-semibold"
+                                                style={{
+                                                    color: latestExtraRequest.status === 'PENDING'
+                                                        ? 'var(--color-warning)'
+                                                        : latestExtraRequest.status === 'APPROVED'
+                                                            ? 'var(--color-success)'
+                                                            : 'var(--color-danger)'
+                                                }}
+                                            >
+                                                {latestExtraRequest.status === 'PENDING' && 'Extra submission request pending'}
+                                                {latestExtraRequest.status === 'APPROVED' && 'Extra submission request approved'}
+                                                {latestExtraRequest.status === 'REJECTED' && 'Extra submission request rejected'}
                                             </h4>
-                                            <p className="text-xs sm:text-sm mt-1 opacity-90 leading-relaxed font-medium">
-                                                {latestExtraRequest.status === 'PENDING' && 'Your request has been sent to the Administrator and is awaiting review.'}
-                                                {latestExtraRequest.status === 'APPROVED' && 'The Administrator has granted you one additional submission.'}
-                                                {latestExtraRequest.status === 'REJECTED' && 'Your request for an additional submission has been rejected by the Administrator.'}
+                                            <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
+                                                {latestExtraRequest.status === 'PENDING' && 'Your request has been sent to the administrator and is awaiting review.'}
+                                                {latestExtraRequest.status === 'APPROVED' && 'The administrator has granted you one additional submission.'}
+                                                {latestExtraRequest.status === 'REJECTED' && 'Your request for an additional submission has been rejected by the administrator.'}
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Student Profile Information Card */}
-                                <div className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft p-4 sm:p-5">
-                                    <div className="flex items-center gap-3 pb-2.5 mb-3 border-b border-[var(--color-border)]">
-                                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--color-btn-primary)]/10 text-[var(--color-btn-primary)] flex items-center justify-center font-bold text-lg border border-[var(--color-btn-primary)]/20">
-                                            <FiUser size={20} />
+                                <div className="panel p-5 sm:p-6">
+                                    <div className="flex items-center gap-3 pb-3 mb-4 border-b border-[var(--theme-border)]">
+                                        <div
+                                            className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)]"
+                                            style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                                        >
+                                            <FiUser size={18} />
                                         </div>
                                         <div>
-                                            <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
-                                                Student Information
+                                            <h3 className="panel-title">
+                                                Student profile
                                             </h3>
-                                            <p className="text-xs text-[var(--color-text-secondary)] font-normal">
-                                                Verified student profile details
+                                            <p className="panel-subtitle">
+                                                Verified institutional enrollment details
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Name</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)] truncate">{studentDetails?.name || formData.name || "N/A"}</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Name</span>
+                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)] truncate">{studentDetails?.name || formData.name || "N/A"}</span>
                                         </div>
 
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Register Number</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.registerNo || formData.id || "N/A"}</span>
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Register Number</span>
+                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.registerNo || formData.id || "N/A"}</span>
                                         </div>
 
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Roll Number</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.rollNo || formData.rollNo || "N/A"}</span>
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Roll Number</span>
+                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.rollNo || formData.rollNo || "N/A"}</span>
                                         </div>
 
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Department</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)]">{studentDetails?.department || formData.dept || "N/A"}</span>
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Department</span>
+                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)]">{studentDetails?.department || formData.dept || "N/A"}</span>
                                         </div>
 
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Gender</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)] capitalize">{studentDetails?.gender ? (studentDetails.gender.toLowerCase() === 'male' ? 'Male' : studentDetails.gender.toLowerCase() === 'female' ? 'Female' : studentDetails.gender) : "N/A"}</span>
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Gender</span>
+                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)] capitalize">{studentDetails?.gender ? (studentDetails.gender.toLowerCase() === 'male' ? 'Male' : studentDetails.gender.toLowerCase() === 'female' ? 'Female' : studentDetails.gender) : "N/A"}</span>
                                         </div>
 
-                                        <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl p-3 sm:p-3.5 flex flex-col">
-                                            <span className="text-[10px] sm:text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Phone Number</span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)] font-mono">{studentDetails?.phoneNo || studentDetails?.phone || formData.mobile || "N/A"}</span>
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
+                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Phone Number</span>
+                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.phoneNo || studentDetails?.phone || formData.mobile || "N/A"}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div id="form-section" className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft overflow-visible">
-                                    <div className="px-4 py-3.5 sm:px-6 sm:py-5 border-b border-[var(--color-border)] flex justify-between items-center flex-wrap gap-3 sm:gap-4">
-                                        <div>
-                                            <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
-                                                {editingFormId ? "Edit Request" : "New Reduction Request"}
-                                            </h3>
-                                            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-0.5 sm:mt-1">
-                                                {editingFormId ? "Update your details and resubmit." : "Fill in your leave details below."}
+                                {/* ── 1. Applied Status State ── */}
+                                {hasActiveAppliedRequest && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="panel p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-emerald-500/25 bg-emerald-500/5"
+                                    >
+                                        <div className="flex items-center gap-3.5">
+                                            <span
+                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                                                style={{
+                                                    backgroundColor: "var(--color-success-soft)",
+                                                    color: "var(--color-success)",
+                                                    border: "1px solid var(--color-success-border)"
+                                                }}
+                                            >
+                                                <FiCheckCircle size={22} className="text-emerald-600 dark:text-emerald-400" />
+                                            </span>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[17px] font-semibold text-[var(--theme-text-primary)]">
+                                                        Applied
+                                                    </span>
+                                                    <span className="badge badge-success text-[11px]">
+                                                        {getStatusDisplay(activeRequest?.currentStatus || "Submitted")}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">
+                                                    Your mess reduction request has been submitted and is currently in review.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('track')}
+                                            className="btn btn-secondary text-xs h-9 px-4 shrink-0"
+                                        >
+                                            <FiActivity size={14} /> Track Status
+                                        </button>
+                                    </motion.div>
+                                )}
+
+                                {/* ── 2. Rejected Status State ── */}
+                                {!hasActiveAppliedRequest && isRejectedRequest && !isApplying && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="panel p-6 flex flex-col gap-5 border-[var(--color-danger-border)] bg-[var(--color-danger-soft)]"
+                                    >
+                                        {/* Header with Rejected Badge & Stage */}
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-[var(--color-danger-border)]/40">
+                                            <div className="flex items-center gap-3.5">
+                                                <span
+                                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                                                    style={{
+                                                        backgroundColor: "var(--theme-card)",
+                                                        color: "var(--color-danger)",
+                                                        border: "1px solid var(--color-danger-border)"
+                                                    }}
+                                                >
+                                                    <FiXCircle size={22} className="text-rose-600 dark:text-rose-400" />
+                                                </span>
+                                                <div>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-[17px] font-semibold text-[var(--theme-text-primary)]">
+                                                            Application Rejected
+                                                        </span>
+                                                        <span className="badge badge-danger text-[11px] font-bold uppercase tracking-wider">
+                                                            REJECTED
+                                                        </span>
+                                                        <span className="text-xs font-semibold text-[var(--color-danger)]">
+                                                            by {getRejectedStageDisplay(activeRequest)}
+                                                        </span>
+                                                    </div>
+                                                    {getRejectedTimeDisplay(activeRequest) && (
+                                                        <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">
+                                                            Decision recorded on {getRejectedTimeDisplay(activeRequest)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditRequest(activeRequest)}
+                                                    className="btn btn-primary h-9 px-4 text-xs font-semibold flex-1 sm:flex-initial"
+                                                >
+                                                    <FiEdit3 size={14} /> Edit & Resubmit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('track')}
+                                                    className="btn btn-secondary h-9 px-3 text-xs flex-1 sm:flex-initial"
+                                                >
+                                                    <FiActivity size={14} /> Track Status
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Rejection Reason Callout */}
+                                        <div className="p-4 rounded-[var(--radius-md)] border border-[var(--color-danger-border)] bg-[var(--theme-card)]">
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <FiAlertTriangle size={15} className="text-[var(--color-danger)] shrink-0" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-danger)]">
+                                                    Rejection Reason
+                                                </span>
+                                            </div>
+                                            <p className="text-[13.5px] font-medium leading-relaxed text-[var(--theme-text-primary)]">
+                                                {activeRequest.rejectReason || trackingDetails?.rejectionReason || "No specific reason provided by reviewer."}
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-4 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-[12px] p-3 shadow-sm">
+
+                                        {/* Preserved Application Details */}
+                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card)] p-4">
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--theme-text-secondary)] mb-3">
+                                                Original Application Details
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Leave Schedule</span>
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                        {activeRequest.leaveDate} {activeRequest.leaveTime ? activeRequest.leaveTime.substring(0, 5) : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Arrival Schedule</span>
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                        {activeRequest.arrivalDate} {activeRequest.arrivalTime ? activeRequest.arrivalTime.substring(0, 5) : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Reason for Leave</span>
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)] truncate" title={activeRequest.reason}>
+                                                        {activeRequest.reason || "N/A"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Room / Year</span>
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                        Room {activeRequest.roomNo || "N/A"} · {activeRequest.year ? `${activeRequest.year} Year` : "N/A"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Helper Note & Fresh Application option */}
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 text-xs text-[var(--theme-text-secondary)]">
+                                            <p>
+                                                You can correct your dates or reason and resubmit, or apply for an entirely new date window.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    handleReset();
+                                                    setIsApplying(true);
+                                                }}
+                                                className="text-xs font-semibold text-[var(--color-accent)] hover:underline whitespace-nowrap self-end sm:self-auto cursor-pointer"
+                                            >
+                                                Submit fresh application instead →
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* ── 3. Initial Dashboard State: Prominent Apply Button ── */}
+                                {!hasActiveAppliedRequest && !isRejectedRequest && !isApplying && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                        className="panel p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4"
+                                    >
+                                        <div>
+                                            <h3 className="panel-title">Mess Reduction Application</h3>
+                                            <p className="panel-subtitle">
+                                                Submit a request for hostel mess bill reduction during eligible leave days.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsApplying(true)}
+                                            disabled={isLimitReached}
+                                            className="btn btn-primary h-11 px-7 text-sm font-semibold shadow-sm w-full sm:w-auto"
+                                        >
+                                            <FiEdit3 size={16} />
+                                            Apply Mess Reduction
+                                        </button>
+                                    </motion.div>
+                                )}
+
+                                {/* ── 3. When Apply Mess Reduction Is Clicked: Complete Form ── */}
+                                {!hasActiveAppliedRequest && isApplying && (
+                                    <motion.div
+                                        id="form-section"
+                                        initial={{ opacity: 0, y: 14 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -14 }}
+                                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                        className="panel overflow-visible"
+                                    >
+                                    <div className="panel-header flex-wrap">
+                                        <div>
+                                            <h3 className="panel-title">
+                                                {editingFormId ? "Edit reduction request" : "New mess reduction request"}
+                                            </h3>
+                                            <p className="panel-subtitle">
+                                                {editingFormId ? "Update your dates or reason and resubmit." : "Fill in your hostel leave schedule below."}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-2.5 shadow-xs">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-0.5">Daily Submission Limit</span>
+                                                <span className="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Daily submission limit</span>
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex gap-1">
                                                         {[...Array(totalAllowed)].map((_, i) => (
-                                                            <div key={i} className={`w-3 h-3 rounded-full ${i < limits.dailyCount ? 'bg-[var(--color-btn-primary)]' : 'bg-[var(--color-border)]'}`}></div>
+                                                            <div key={i} className={`w-2.5 h-2.5 rounded-full ${i < limits.dailyCount ? 'bg-[var(--theme-btn-primary)]' : 'bg-[var(--theme-border-strong)]'}`}></div>
                                                         ))}
                                                     </div>
-                                                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">{limits.dailyCount}/{totalAllowed} used</span>
+                                                    <span className="text-xs font-semibold text-[var(--theme-text-primary)]">{limits.dailyCount}/{totalAllowed} used</span>
                                                 </div>
                                             </div>
                                             {isLimitReached && (
                                                 <button
+                                                    type="button"
                                                     onClick={() => setShowExtraDialog(true)}
                                                     disabled={isAnyProcessing}
-                                                    className={`px-3 py-1.5 bg-[var(--color-warning)] text-white text-xs font-bold rounded-lg shadow-sm transition-all ${isAnyProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-warning)]/90 cursor-pointer'}`}
+                                                    className="btn btn-secondary h-8 px-2.5 text-[11px]"
                                                 >
-                                                    Request Extra
+                                                    Request extra
                                                 </button>
                                             )}
                                         </div>
@@ -1091,12 +1407,12 @@ function MessReductionPage() {
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                <Field label="Leave Date" icon={<FiCalendar size={18} />} type="date" name="leaveDate" value={formData.leaveDate} onChange={handleChange} min={new Date().toISOString().split('T')[0]} required id="leave-date-input" />
+                                                <Field label="Leave Date" icon={<FiCalendar size={18} />} type="date" name="leaveDate" value={formData.leaveDate} onChange={handleChange} min={new Date().toLocaleDateString('en-CA')} required id="leave-date-input" />
                                                 <Field label="Leave Time" icon={<FiClock size={18} />} type="time" name="leaveTime" value={formData.leaveTime} onChange={handleChange} required id="leave-time-input" />
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                <Field label="Arrival Date" icon={<FiCalendar size={18} />} type="date" name="arrivalDate" value={formData.arrivalDate} onChange={handleChange} min={formData.leaveDate || new Date().toISOString().split('T')[0]} required id="arrival-date-input" />
+                                                <Field label="Arrival Date" icon={<FiCalendar size={18} />} type="date" name="arrivalDate" value={formData.arrivalDate} onChange={handleChange} min={formData.leaveDate || new Date().toLocaleDateString('en-CA')} required id="arrival-date-input" />
                                                 <Field label="Arrival Time" icon={<FiClock size={18} />} type="time" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required id="arrival-time-input" />
                                             </div>
 
@@ -1152,14 +1468,18 @@ function MessReductionPage() {
                                             )}
 
                                             {isCompletedRequest && (
-                                                <div className="rounded-[12px] border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-start gap-3 text-emerald-400">
-                                                    <FiCheckCircle size={18} className="shrink-0 mt-0.5 text-emerald-400" />
-                                                    <div className="text-sm font-medium leading-relaxed space-y-1">
-                                                        <p className="font-semibold text-emerald-300">
+                                                <div
+                                                    className="flex items-start gap-3 rounded-[var(--radius-md)] p-4"
+                                                    style={{ background: 'var(--color-success-soft)', border: '1px solid var(--color-success-border)' }}
+                                                >
+                                                    <FiCheckCircle size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--color-success)' }} />
+                                                    <div className="space-y-1 text-[13px] font-medium leading-relaxed text-[var(--theme-text-secondary)]">
+                                                        <p className="font-semibold" style={{ color: 'var(--color-success)' }}>
                                                             Your previous mess reduction request has been completed.
                                                         </p>
-                                                        <p className="text-emerald-400/90">
-                                                            You can submit your next reduction request from: <span className="font-bold underline">{formatNextRequestDate(latestForm.arrivalDate)}</span>
+                                                        <p>
+                                                            You can submit your next reduction request from:{' '}
+                                                            <span className="font-semibold text-[var(--theme-text-primary)]">{formatNextRequestDate(latestForm.arrivalDate)}</span>
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1179,43 +1499,89 @@ function MessReductionPage() {
                                                 </div>
                                             )}
 
-                                            <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                                            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
                                                 <button
-                                                    className={`flex-1 flex items-center justify-center gap-2 rounded-[12px] py-3.5 text-[15px] font-semibold transition-all ${isSubmitting || isSubmitBlocked || isAnyProcessing ? "bg-[var(--color-card)] text-[var(--color-text-secondary)] cursor-not-allowed border border-[var(--color-border)]" : "bg-[var(--color-btn-primary)] text-white hover:bg-[var(--color-btn-primary)]/90  hover:shadow-md cursor-pointer"}`}
+                                                    className="btn btn-primary h-11 flex-1 text-[14px]"
                                                     type="submit"
                                                     disabled={isSubmitting || isSubmitBlocked || isAnyProcessing}
                                                 >
-                                                    {isSubmitting ? "Processing..." : (editingFormId ? "Resubmit Request" : "Submit Request")}
+                                                    {isSubmitting ? (
+                                                        <>
+                                                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                                            Processing…
+                                                        </>
+                                                    ) : (
+                                                        editingFormId ? "Resubmit request" : "Submit request"
+                                                    )}
                                                 </button>
 
                                                 <button
                                                     type="button"
                                                     onClick={handleReset}
                                                     disabled={isAnyProcessing}
-                                                    className={`px-8 py-3.5 rounded-[12px] text-[15px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-card)] border border-[var(--color-border)] transition-all ${isAnyProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-white/10 cursor-pointer"}`}
+                                                    className="btn btn-secondary h-11 px-8 text-[14px]"
                                                 >
                                                     Reset
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsApplying(false);
+                                                        setEditingFormId(null);
+                                                        setFormErrors({});
+                                                    }}
+                                                    disabled={isAnyProcessing}
+                                                    className="btn btn-ghost h-11 px-6 text-[14px]"
+                                                >
+                                                    Cancel
                                                 </button>
                                             </div>
                                         </form>
                                     </div>
-                                </div>
+                                    </motion.div>
+                                )}
                             </motion.div>
                         )}
 
 
                         {activeTab === 'track' && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto">
-                                <div className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-border)] shadow-soft p-6 sm:p-8">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                <div className="panel p-5 sm:p-7">
+                                    <div className="mb-6 flex flex-col justify-between gap-3 border-b border-[var(--theme-border)] pb-5 sm:flex-row sm:items-center">
                                         <div>
-                                            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">Track Request</h2>
-                                            <p className="text-sm text-[var(--color-text-secondary)]">Monitor the real-time status of your active application.</p>
+                                            <div className="flex items-center gap-2.5">
+                                                <h2 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">Track request</h2>
+                                                {sseConnectionStatus === 'connected' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+                                                    </span>
+                                                )}
+                                                {sseConnectionStatus === 'reconnecting' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Reconnecting
+                                                    </span>
+                                                )}
+                                                {sseConnectionStatus === 'disconnected' && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-gray-400" /> Disconnected
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                                                Monitor the real-time status of your active application.
+                                            </p>
                                         </div>
                                         {activeRequest && (
-                                            <span className={`px-4 py-2 rounded-full text-xs font-bold border shrink-0 inline-flex items-center justify-center ${getStatusColor(activeRequest.currentStatus)}`}>
+                                            <motion.span 
+                                                key={activeRequest.currentStatus}
+                                                initial={{ scale: 0.9, opacity: 0.8 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                transition={{ duration: 0.2 }}
+                                                className={`${getStatusColor(activeRequest.currentStatus)} shrink-0`}
+                                            >
                                                 {getStatusDisplay(activeRequest.currentStatus)}
-                                            </span>
+                                            </motion.span>
                                         )}
                                     </div>
 
@@ -1224,55 +1590,52 @@ function MessReductionPage() {
                                             <RequestTimeline tracking={trackingDetails} activeRequest={activeRequest} onEditRequest={handleEditRequest} />
 
                                             {activeRequest.currentStatus === 'PendingOffice' && (
-                                                <div className="mt-8 bg-amber-500/10 border border-amber-500/20 rounded-[12px] p-6 text-amber-400">
-                                                    <h3 className="text-base font-bold mb-2 flex items-center gap-2 text-amber-300">
-                                                        <FiCheckCircle size={20} className="text-amber-400" />
-                                                        Important Information
+                                                <div
+                                                    className="mt-8 rounded-[var(--radius-md)] p-5"
+                                                    style={{ background: 'var(--color-info-soft)', border: '1px solid var(--color-info-border)' }}
+                                                >
+                                                    <h3 className="mb-2 flex items-center gap-2 text-[13.5px] font-semibold" style={{ color: 'var(--color-info)' }}>
+                                                        <FiCheckCircle size={17} />
+                                                        Important information
                                                     </h3>
-                                                    <p className="text-sm font-medium leading-relaxed">
-                                                        Your mess reduction request has been successfully processed.
+                                                    <p className="text-[13px] leading-relaxed text-[var(--theme-text-secondary)]">
+                                                        Your mess reduction request has been successfully processed and is now pending final completion at the hostel office.
                                                     </p>
-                                                    <p className="text-sm font-medium leading-relaxed mt-1">
-                                                        Your request is now pending final completion at the Hostel Office.
-                                                    </p>
-                                                    <p className="text-sm font-medium leading-relaxed mt-1">
-                                                        Please visit the Hostel Office to complete the final verification and collect your mess reduction confirmation.
+                                                    <p className="mt-1 text-[13px] leading-relaxed text-[var(--theme-text-secondary)]">
+                                                        Please visit the hostel office to complete the final verification and collect your mess reduction confirmation.
                                                     </p>
                                                 </div>
                                             )}
 
                                             {activeRequest.currentStatus !== 'Approved' && (
-                                                <div className="mt-6 pt-6 border-t border-[var(--color-border)] flex justify-end">
+                                                <div className="mt-6 pt-5 border-t border-[var(--theme-border)] flex justify-end">
                                                     <button
                                                         type="button"
                                                         disabled={isAnyProcessing}
                                                         onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                                        className={`px-6 py-2.5 rounded-[12px] text-sm font-semibold transition-all w-full sm:w-auto
-                                                            ${isAnyProcessing
-                                                                ? 'bg-[var(--color-danger)]/5 text-[var(--color-danger)]/50 cursor-not-allowed opacity-70'
-                                                                : 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20 text-[var(--color-danger)] cursor-pointer'
-                                                            }`}
+                                                        className="btn btn-secondary text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                                                        style={{ borderColor: 'var(--color-danger-border)' }}
                                                     >
-                                                        {isDeleting ? 'Deleting...' : 'Delete Request'}
+                                                        {isDeleting ? 'Deleting…' : 'Delete request'}
                                                     </button>
                                                 </div>
                                             )}
                                         </>
                                     ) : (
-                                        <div className="py-16 text-center">
-                                            <div className="w-16 h-16 bg-[var(--color-card)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
-                                                <FiCheckCircle size={24} className="text-[var(--color-text-secondary)]" />
+                                        <div className="empty-state">
+                                            <div className="empty-state-icon">
+                                                <FiCheckCircle size={20} />
                                             </div>
-                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">No Active Requests</h3>
-                                            <p className="text-[var(--color-text-secondary)] text-sm max-w-sm mx-auto">You don't have any pending or active mess reduction requests to track.</p>
+                                            <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No active requests</h3>
+                                            <p className="max-w-sm text-xs text-[var(--theme-text-secondary)]">
+                                                You don't have any pending or active mess reduction requests to track.
+                                            </p>
                                         </div>
                                     )}
                                 </div>
                             </motion.div>
                         )}
                     </div>
-                </main>
-            </div>
 
             {/* Mobile Bottom Navigation - Viewport Pinned */}
             <MobileBottomNav
@@ -1291,31 +1654,45 @@ function MessReductionPage() {
                         className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-primary-bg)]/80 backdrop-blur-sm p-4"
                     >
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            initial={{ scale: 0.97, opacity: 0, y: 10 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[20px] shadow-soft overflow-hidden p-8"
+                            exit={{ scale: 0.98, opacity: 0, y: 8 }}
+                            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                            role="dialog"
+                            aria-modal="true"
+                            className="w-full max-w-md overflow-hidden rounded-[var(--radius-lg)]"
+                            style={{
+                                background: 'var(--theme-card)',
+                                border: '1px solid var(--theme-border)',
+                                boxShadow: 'var(--shadow-modal)'
+                            }}
                         >
-                            <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Request Extra Limit</h3>
-                            <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
-                                Please provide a valid reason for why you need an extra submission limit today. 
-                                The administration will review your request.
-                            </p>
-                            
-                            <textarea
-                                value={extraReason}
-                                onChange={(e) => setExtraReason(e.target.value)}
-                                placeholder="Enter detailed reason here..."
-                                className="w-full h-32 bg-[var(--color-card)] border border-[var(--color-border)] rounded-[12px] p-4 text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)] resize-none mb-6 text-sm"
-                            />
-                            
-                            <div className="flex gap-4">
+                            <div className="px-6 pt-5 pb-4">
+                                <h3 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">Request extra limit</h3>
+                                <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
+                                    Explain why you need an additional submission today. The administration will review your request.
+                                </p>
+
+                                <label htmlFor="extra-reason" className="field-label mt-4">Reason</label>
+                                <textarea
+                                    id="extra-reason"
+                                    value={extraReason}
+                                    onChange={(e) => setExtraReason(e.target.value)}
+                                    placeholder="Enter a detailed reason"
+                                    className="h-32 w-full resize-none text-[13px]"
+                                />
+                            </div>
+
+                            <div
+                                className="flex items-center justify-end gap-2 px-6 py-3.5"
+                                style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
+                            >
                                 <button
                                     onClick={() => {
                                         setShowExtraDialog(false);
                                         setExtraReason("");
                                     }}
-                                    className="flex-1 py-3 rounded-[12px] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-white/5 transition-all text-sm font-semibold cursor-pointer"
+                                    className="btn btn-secondary"
                                     disabled={isRequestingExtra}
                                 >
                                     Cancel
@@ -1323,9 +1700,16 @@ function MessReductionPage() {
                                 <button
                                     onClick={handleRequestExtraSubmission}
                                     disabled={isRequestingExtra || !extraReason.trim()}
-                                    className="flex-1 py-3 rounded-[12px] bg-[var(--color-warning)] text-white hover:bg-[var(--color-warning)]/90 transition-all text-sm font-semibold disabled:opacity-50 flex justify-center items-center gap-2 shadow-soft cursor-pointer"
+                                    className="btn btn-primary"
                                 >
-                                    {isRequestingExtra ? "Submitting..." : "Submit Request"}
+                                    {isRequestingExtra ? (
+                                        <>
+                                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                            Submitting…
+                                        </>
+                                    ) : (
+                                        'Submit request'
+                                    )}
                                 </button>
                             </div>
                         </motion.div>
@@ -1344,7 +1728,7 @@ function MessReductionPage() {
                 onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
                 loading={isDeleting}
             />
-        </div>
+        </AppLayout>
     );
 }
 

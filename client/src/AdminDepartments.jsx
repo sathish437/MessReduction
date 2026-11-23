@@ -125,119 +125,120 @@ const AdminDepartments = () => {
   return (
     <div className="flex flex-col h-full space-y-4 min-w-0 w-full text-[var(--color-text-primary)]">
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-3 w-full">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2 text-[var(--color-text-primary)]">
-            <MdSchool className="text-purple-500" />
-            Academic Departments
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-1">Manage master departments used across student registration, profiles, and reports.</p>
+          <h1 className="page-title">Departments</h1>
+          <p className="page-subtitle">Master department list used across registration, profiles and reports.</p>
         </div>
-        <button 
-          onClick={handleOpenAddModal}
-          className="h-10 sm:h-11 px-3.5 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-95"
-        >
-          <MdAdd size={20} />
-          <span className="hidden sm:inline">Add Department</span>
-          <span className="sm:hidden">Add</span>
+        <button onClick={handleOpenAddModal} className="btn btn-primary self-start sm:self-auto">
+          <MdAdd size={16} /> Add department
         </button>
       </div>
 
-      {/* Admin Filters Card */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-3 sm:p-4 shadow-soft flex items-center gap-3 w-full">
-        <div className="relative flex-1">
-          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
-          <input 
-            type="text"
-            placeholder="Search code, name..."
-            className="w-full h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      {/* Filters */}
+      <div className="panel p-4">
+        <div className="flex items-center gap-2">
+          <div className="field-shell flex-1">
+            <MdSearch size={16} style={{ color: 'var(--theme-text-faint)' }} />
+            <input
+              type="text"
+              placeholder="Search by code, name or short name"
+              className="w-full flex-1 bg-transparent text-[13px] font-medium focus:outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-        <button
-          onClick={fetchDepartments}
-          className="w-10 sm:w-11 h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl hover:bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer shadow-sm flex items-center justify-center shrink-0"
-          title="Refresh list"
-        >
-          <MdRefresh size={20} />
-        </button>
+          <button onClick={fetchDepartments} className="btn btn-secondary h-9 px-3" title="Refresh list">
+            <MdRefresh size={16} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Toast Notifications */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Departments Table Card Container */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-soft overflow-hidden flex flex-col min-w-0 w-full">
-        <div className="overflow-x-auto select-none w-full">
-          <table className="w-full text-left text-xs sm:text-sm min-w-[650px] border-collapse">
-            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+      <div className="panel overflow-hidden">
+        <div className="select-none overflow-x-auto">
+          <table className="data-table min-w-[680px]">
+            <thead>
               <tr>
-                <th className="px-4 py-3.5 w-16">Order</th>
-                <th className="px-4 py-3.5">Code</th>
-                <th className="px-4 py-3.5">Department Name</th>
-                <th className="px-4 py-3.5">Short Name</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5 text-center">Actions</th>
+                <th className="w-16">Order</th>
+                <th>Code</th>
+                <th>Department name</th>
+                <th>Short name</th>
+                <th>Status</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="6" className="text-center py-12 text-[var(--color-text-secondary)] font-medium">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading departments...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan="6">
+                      <div className="skeleton my-1.5 h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
               ) : filteredDepts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-12 text-[var(--color-text-secondary)] font-medium">
-                    No departments found matching your search.
+                  <td colSpan="6">
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <MdSchool size={20} style={{ color: 'var(--color-accent)' }} />
+                      </div>
+                      <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No departments found</h3>
+                      <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+                        No department matches your search. Add a department or clear the search term.
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredDepts.map((dept) => (
-                  <tr key={dept.id} className="hover:bg-[var(--color-card)]/50 transition-colors">
-                    <td className="px-4 py-3.5 font-mono font-bold text-[var(--color-text-secondary)]">
+                  <tr key={dept.id}>
+                    <td className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">
                       {dept.displayOrder ?? 0}
                     </td>
-                    <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">
-                      {dept.departmentCode}
-                    </td>
-                    <td className="px-4 py-3.5 font-bold text-[var(--color-text-primary)]">
-                      {dept.departmentName}
-                    </td>
-                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-semibold">
-                      {dept.shortName}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold ${dept.isActive ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
-                        }`}>
-                        <span className={`w-2 h-2 rounded-full ${dept.isActive ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                        {dept.isActive ? 'Active' : 'Inactive'}
+                    <td className="whitespace-nowrap">
+                      <span className="font-mono text-[12px] font-semibold text-[var(--theme-text-primary)]">
+                        {dept.departmentCode}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="text-[13px] font-medium text-[var(--theme-text-primary)]">
+                      {dept.departmentName}
+                    </td>
+                    <td className="text-[12px] font-medium text-[var(--theme-text-secondary)]">
+                      {dept.shortName}
+                    </td>
+                    <td>
+                      {dept.isActive ? (
+                        <span className="badge badge-success">Active</span>
+                      ) : (
+                        <span className="badge badge-danger">Inactive</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => handleToggleStatus(dept)}
-                          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${dept.isActive
-                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
-                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
-                            }`}
-                          title={dept.isActive ? "Deactivate Department" : "Activate Department"}
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={dept.isActive
+                            ? { background: 'var(--color-warning-soft)', borderColor: 'var(--color-warning-border)', color: 'var(--color-warning)' }
+                            : { background: 'var(--color-success-soft)', borderColor: 'var(--color-success-border)', color: 'var(--color-success)' }}
+                          title={dept.isActive ? 'Deactivate department' : 'Activate department'}
                         >
-                          {dept.isActive ? <MdToggleOn size={22} /> : <MdToggleOff size={22} />}
+                          {dept.isActive ? <MdToggleOn size={17} /> : <MdToggleOff size={17} />}
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(dept)}
-                          className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                          title="Edit Department"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={{ background: 'var(--color-info-soft)', borderColor: 'var(--color-info-border)', color: 'var(--color-info)' }}
+                          title="Edit department"
                         >
-                          <MdEdit size={16} />
+                          <MdEdit size={14} />
                         </button>
                       </div>
                     </td>
@@ -252,109 +253,133 @@ const AdminDepartments = () => {
       {/* Add / Edit Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-5 md:p-6 w-full max-w-lg shadow-2xl space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setShowModal(false)}
+              className="absolute inset-0 backdrop-blur-[2px]"
+              style={{ background: 'rgba(11, 23, 40, 0.55)' }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              role="dialog"
+              aria-modal="true"
+              className="relative w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]"
+              style={{
+                background: 'var(--theme-card)',
+                border: '1px solid var(--theme-border)',
+                boxShadow: 'var(--shadow-modal)'
+              }}
             >
-              <div className="flex justify-between items-center pb-3 border-b border-[var(--color-border)]">
-                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
-                  {editingDept ? 'Edit Department' : 'Add New Department'}
-                </h3>
+              <div className="flex items-start justify-between gap-3 border-b border-[var(--theme-border)] px-6 py-4">
+                <div>
+                  <h3 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">
+                    {editingDept ? 'Edit department' : 'Add department'}
+                  </h3>
+                  <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                    Departments appear in student registration and reports.
+                  </p>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1"
+                  aria-label="Close"
+                  className="rounded-[var(--radius-sm)] p-1.5 text-[var(--theme-text-faint)] transition-colors hover:bg-[var(--theme-bg-soft)] hover:text-[var(--theme-text-primary)]"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1 text-left">
-                    <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Department Code *</label>
+              <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="dept-code" className="field-label">Department code <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                     <input
+                      id="dept-code"
                       type="text"
                       placeholder="e.g. CSE, AIDS"
                       required
                       value={formData.departmentCode}
                       onChange={(e) => setFormData({ ...formData, departmentCode: e.target.value.toUpperCase() })}
-                      className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs md:text-sm font-bold uppercase focus:outline-none focus:border-purple-500"
+                      className="w-full font-mono text-[13px] uppercase"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1 text-left">
-                    <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Short Name *</label>
+                  <div>
+                    <label htmlFor="dept-short" className="field-label">Short name <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                     <input
+                      id="dept-short"
                       type="text"
                       placeholder="e.g. CSE"
                       required
                       value={formData.shortName}
                       onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
-                      className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full text-[13px]"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1 text-left">
-                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Department Name *</label>
+                <div>
+                  <label htmlFor="dept-name" className="field-label">Department name <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                   <input
+                    id="dept-name"
                     type="text"
                     placeholder="e.g. Computer Science and Engineering"
                     required
                     value={formData.departmentName}
                     onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
-                    className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-purple-500"
+                    className="w-full text-[13px]"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1 text-left">
-                    <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Display Order</label>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="dept-order" className="field-label">Display order</label>
                     <input
+                      id="dept-order"
                       type="number"
                       min="0"
                       value={formData.displayOrder}
                       onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                      className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full text-[13px]"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1 text-left">
-                    <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Active Status</label>
+                  <div>
+                    <label htmlFor="dept-active" className="field-label">Status</label>
                     <select
+                      id="dept-active"
                       value={formData.isActive ? 'true' : 'false'}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                      className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full text-[13px]"
                     >
-                      <option value="true">Active (Visible)</option>
-                      <option value="false">Inactive (Hidden)</option>
+                      <option value="true">Active (visible)</option>
+                      <option value="false">Inactive (hidden)</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded-xl text-xs md:text-sm font-semibold hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                  >
+                <div
+                  className="flex items-center justify-end gap-2 pt-3.5"
+                  style={{ borderTop: '1px solid var(--theme-border)' }}
+                >
+                  <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-xl text-xs md:text-sm font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-2"
-                  >
+                  <button type="submit" disabled={submitting} className="btn btn-primary">
                     {submitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Saving...
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        Saving…
                       </>
                     ) : (
-                      'Save Department'
+                      'Save department'
                     )}
                   </button>
                 </div>

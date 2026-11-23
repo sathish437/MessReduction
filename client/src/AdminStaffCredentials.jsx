@@ -145,36 +145,37 @@ const AdminStaffCredentials = () => {
         return {
           title: 'Associate Warden',
           sub: staff.year ? `Year ${staff.year}` : 'All Years',
-          badgeClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-          icon: <MdShield size={16} />
+          badgeClass: 'badge badge-success',
+          icon: <MdShield size={14} />
         };
       case 'DeputyWarden':
         return {
           title: 'Deputy Warden',
           sub: `${staff.gender || ''} • Year ${staff.year || 'N/A'}`.trim(),
-          badgeClass: 'bg-sky-500/10 text-sky-400 border border-sky-500/20',
-          icon: <MdSupervisorAccount size={16} />
+          badgeClass: 'badge badge-info',
+          icon: <MdSupervisorAccount size={14} />
         };
       case 'Office':
         return {
           title: 'Office Staff',
           sub: 'Administrative',
-          badgeClass: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-          icon: <MdBusinessCenter size={16} />
+          badgeClass: 'badge badge-warning',
+          icon: <MdBusinessCenter size={14} />
         };
       case 'ADMIN':
         return {
           title: 'Administrator',
           sub: 'Full Access',
-          badgeClass: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-          icon: <MdShield size={16} />
+          badgeClass: 'badge',
+          badgeStyle: { background: 'var(--color-accent-soft)', borderColor: 'var(--color-accent)', color: 'var(--color-accent)' },
+          icon: <MdShield size={14} />
         };
       default:
         return {
           title: staff.role,
           sub: '',
-          badgeClass: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
-          icon: <MdPerson size={16} />
+          badgeClass: 'badge badge-neutral',
+          icon: <MdPerson size={14} />
         };
     }
   };
@@ -201,69 +202,70 @@ const AdminStaffCredentials = () => {
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg sm:text-2xl font-extrabold tracking-tight flex items-center gap-2 text-[var(--color-text-primary)]">
-            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-600/10 text-purple-500 border border-purple-500/20 shadow-sm">
-              <MdVpnKey className="text-lg sm:text-xl" />
-            </div>
-            <span>Staff Credentials</span>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 ml-1">
-              {staffList.length} Accounts
-            </span>
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-0.5">
-            Manage login credentials and authentication usernames for all hostel staff accounts.
-          </p>
+          <h1 className="page-title">Staff credentials</h1>
+          <p className="page-subtitle">Login usernames and authentication details for hostel staff accounts.</p>
         </div>
+        <span className="badge badge-neutral self-start sm:self-auto">{staffList.length} accounts</span>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl sm:rounded-2xl p-2.5 sm:p-3 shadow-soft flex flex-col sm:flex-row items-center gap-2.5 w-full">
-        <div className="relative flex-1 w-full">
-          <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={18} />
-          <input
-            type="text"
-            placeholder="Search username, role, email..."
-            className="w-full h-9 sm:h-10 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-lg sm:rounded-xl pl-9 pr-3 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-all"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      <div className="panel p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="field-shell flex-1">
+            <MdSearch size={16} style={{ color: 'var(--theme-text-faint)' }} />
+            <input
+              type="text"
+              placeholder="Search username, role or email"
+              className="w-full flex-1 bg-transparent text-[13px] font-medium focus:outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={selectedRoleFilter}
-            onChange={(e) => setSelectedRoleFilter(e.target.value)}
-            className="h-9 sm:h-10 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-lg sm:rounded-xl px-2.5 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 flex-1 sm:flex-none cursor-pointer"
-          >
-            <option value="ALL">All Roles</option>
-            <option value="ADMIN">Administrator</option>
-            <option value="Warden">Associate Warden</option>
-            <option value="DeputyWarden">Deputy Warden</option>
-            <option value="Office">Office Staff</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <label className="sr-only" htmlFor="staff-role-filter">Role</label>
+            <select
+              id="staff-role-filter"
+              value={selectedRoleFilter}
+              onChange={(e) => setSelectedRoleFilter(e.target.value)}
+              className="h-9 min-h-0 flex-1 py-0 text-[12px] font-medium sm:flex-none"
+            >
+              <option value="ALL">All roles</option>
+              <option value="ADMIN">Administrator</option>
+              <option value="Warden">Associate warden</option>
+              <option value="DeputyWarden">Deputy warden</option>
+              <option value="Office">Office staff</option>
+            </select>
 
-          <button
-            onClick={fetchStaff}
-            className="w-9 sm:w-10 h-9 sm:h-10 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-lg sm:rounded-xl hover:bg-[var(--color-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer flex items-center justify-center shrink-0"
-            title="Refresh list"
-          >
-            <MdRefresh size={18} />
-          </button>
+            <button onClick={fetchStaff} className="btn btn-secondary h-9 px-3" title="Refresh list">
+              <MdRefresh size={16} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MOBILE CARD VIEW (Visible only on small screens < md) */}
-      <div className="block md:hidden space-y-2.5">
+      {/* Mobile card view */}
+      <div className="block space-y-2.5 md:hidden">
         {loading ? (
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8 text-center text-[var(--color-text-secondary)]">
-            <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <span className="text-xs font-medium">Loading credentials...</span>
+          <div className="panel p-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="skeleton mb-2 h-20 w-full" />
+            ))}
           </div>
         ) : filteredStaff.length === 0 ? (
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 text-center text-xs text-[var(--color-text-secondary)]">
-            No accounts found matching your criteria.
+          <div className="panel">
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <MdVpnKey size={20} style={{ color: 'var(--color-accent)' }} />
+              </div>
+              <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No accounts found</h3>
+              <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+                No staff account matches the current search or role filter.
+              </p>
+            </div>
           </div>
         ) : (
           filteredStaff.map((staff) => {
@@ -271,58 +273,55 @@ const AdminStaffCredentials = () => {
             return (
               <div
                 key={staff.id}
-                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-3 shadow-soft space-y-2.5 transition-all"
+                className="panel space-y-2.5 p-3"
               >
-                {/* Card Header: Role & Edit Button */}
-                <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)]/60 pb-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold ${roleInfo.badgeClass}`}>
+                <div className="flex items-center justify-between gap-2 border-b border-[var(--theme-border)] pb-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[11px] font-semibold ${roleInfo.badgeClass}`}>
                       {roleInfo.icon}
                       {roleInfo.title}
                     </span>
                     {roleInfo.sub && (
-                      <span className="text-[10px] text-[var(--color-text-secondary)] font-semibold bg-[var(--color-primary-bg)] px-1.5 py-0.5 rounded border border-[var(--color-border)]">
+                      <span className="rounded border border-[var(--theme-border)] bg-[var(--theme-card-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--theme-text-secondary)]">
                         {roleInfo.sub}
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleOpenEdit(staff)}
-                    className="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 active:scale-95 transition-all"
+                    className="flex shrink-0 items-center gap-1 rounded-[6px] border px-2.5 py-1 text-[11.5px] font-semibold transition-colors"
+                    style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-accent-border)', color: 'var(--color-accent)' }}
                   >
-                    <MdEdit size={13} />
-                    <span>Edit</span>
+                    <MdEdit size={13} /> Edit
                   </button>
                 </div>
 
-                {/* Card Body: Username & Password */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-[var(--color-primary-bg)] rounded-lg p-2 border border-[var(--color-border)]">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] block">Username</span>
-                    <span className="font-mono font-bold text-[var(--color-text-primary)] truncate block mt-0.5">
+                  <div className="rounded-[var(--radius-sm)] p-2" style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}>
+                    <span className="section-label">Username</span>
+                    <span className="mt-0.5 block truncate font-mono text-[12px] font-semibold text-[var(--theme-text-primary)]">
                       {staff.username}
                     </span>
                   </div>
-                  <div className="bg-[var(--color-primary-bg)] rounded-lg p-2 border border-[var(--color-border)]">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] block">Password</span>
-                    <span className="font-mono text-purple-400 tracking-widest block mt-0.5">
+                  <div className="rounded-[var(--radius-sm)] p-2" style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}>
+                    <span className="section-label">Password</span>
+                    <span className="mt-0.5 block font-mono text-[12px] tracking-[0.18em] text-[var(--theme-text-secondary)]">
                       ••••••••
                     </span>
                   </div>
                 </div>
 
-                {/* Contact Info (if available) */}
                 {(staff.gmail || staff.phoneNo) && (
-                  <div className="pt-1 flex flex-col gap-1 text-[11px] text-[var(--color-text-secondary)]">
+                  <div className="flex flex-col gap-1 pt-0.5 text-[11px] text-[var(--theme-text-secondary)]">
                     {staff.gmail && (
                       <div className="flex items-center gap-1.5 truncate">
-                        <MdEmail size={12} className="text-purple-400 shrink-0" />
+                        <MdEmail size={12} style={{ color: 'var(--theme-text-faint)' }} className="shrink-0" />
                         <span className="truncate">{staff.gmail}</span>
                       </div>
                     )}
                     {staff.phoneNo && (
-                      <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                        <MdPhone size={12} className="text-emerald-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 font-mono text-[10.5px]">
+                        <MdPhone size={12} style={{ color: 'var(--theme-text-faint)' }} className="shrink-0" />
                         <span>{staff.phoneNo}</span>
                       </div>
                     )}
@@ -334,95 +333,102 @@ const AdminStaffCredentials = () => {
         )}
       </div>
 
-      {/* DESKTOP TABLE VIEW (Visible only on medium & large screens >= md) */}
-      <div className="hidden md:flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-soft overflow-hidden flex-col min-w-0 w-full">
-        <div className="overflow-x-auto select-none w-full">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse">
-            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+      {/* Desktop table view */}
+      <div className="panel hidden overflow-hidden md:flex">
+        <div className="w-full select-none overflow-x-auto">
+          <table className="data-table min-w-[720px]">
+            <thead>
               <tr>
-                <th className="px-4 py-3.5">Staff Role</th>
-                <th className="px-4 py-3.5">Username</th>
-                <th className="px-4 py-3.5">Password</th>
-                <th className="px-4 py-3.5">Contact Details</th>
-                <th className="px-4 py-3.5 text-center">Action</th>
+                <th>Staff role</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Contact details</th>
+                <th className="text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="text-center py-12 text-[var(--color-text-secondary)] font-medium">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading staff credentials...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan="5">
+                      <div className="skeleton my-1.5 h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
               ) : filteredStaff.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-12 text-[var(--color-text-secondary)] font-medium">
-                    No staff accounts found matching your criteria.
+                  <td colSpan="5">
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <MdVpnKey size={20} style={{ color: 'var(--color-accent)' }} />
+                      </div>
+                      <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No accounts found</h3>
+                      <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+                        No staff account matches the current search or role filter.
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredStaff.map((staff) => {
                   const roleInfo = getRoleBadge(staff);
                   return (
-                    <tr key={staff.id} className="hover:bg-[var(--color-card)]/50 transition-colors">
+                    <tr key={staff.id}>
                       {/* Role */}
-                      <td className="px-4 py-3.5">
+                      <td>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold ${roleInfo.badgeClass}`}>
+                          <span className={`inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[11.5px] font-semibold ${roleInfo.badgeClass}`}>
                             {roleInfo.icon}
                             {roleInfo.title}
                           </span>
                           {roleInfo.sub && (
-                            <span className="text-[11px] text-[var(--color-text-secondary)] font-medium">
-                              ({roleInfo.sub})
+                            <span className="text-[11px] font-medium text-[var(--theme-text-secondary)]">
+                              {roleInfo.sub}
                             </span>
                           )}
                         </div>
                       </td>
 
                       {/* Username */}
-                      <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">
-                        <span className="px-2.5 py-1 rounded-lg bg-[var(--color-primary-bg)] border border-[var(--color-border)] inline-block">
+                      <td className="whitespace-nowrap">
+                        <span className="rounded-[6px] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] px-2.5 py-1 font-mono text-[12px] font-medium text-[var(--theme-text-primary)]">
                           {staff.username}
                         </span>
                       </td>
 
                       {/* Masked Password */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)] font-mono text-sm tracking-widest bg-[var(--color-primary-bg)]/60 px-2.5 py-1 rounded-lg border border-[var(--color-border)]/70 w-fit">
-                          <MdLock size={14} className="text-purple-400/80" />
+                      <td>
+                        <div className="flex w-fit items-center gap-1.5 rounded-[6px] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] px-2.5 py-1 font-mono text-[12px] tracking-[0.18em] text-[var(--theme-text-secondary)]">
+                          <MdLock size={13} className="shrink-0" style={{ color: 'var(--theme-text-faint)' }} />
                           <span>••••••••</span>
                         </div>
                       </td>
 
                       {/* Contact Details */}
-                      <td className="px-4 py-3.5 text-xs text-[var(--color-text-secondary)] space-y-0.5">
+                      <td className="space-y-0.5 text-[12px] text-[var(--theme-text-secondary)]">
                         {staff.gmail && (
-                          <div className="flex items-center gap-1.5 font-medium truncate max-w-[220px]" title={staff.gmail}>
-                            <MdEmail size={13} className="text-purple-400 shrink-0" />
+                          <div className="flex max-w-[220px] items-center gap-1.5 truncate font-medium" title={staff.gmail}>
+                            <MdEmail size={13} className="shrink-0" style={{ color: 'var(--theme-text-faint)' }} />
                             <span className="truncate">{staff.gmail}</span>
                           </div>
                         )}
                         {staff.phoneNo && (
                           <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                            <MdPhone size={13} className="text-emerald-400 shrink-0" />
+                            <MdPhone size={13} className="shrink-0" style={{ color: 'var(--theme-text-faint)' }} />
                             <span>{staff.phoneNo}</span>
                           </div>
                         )}
                       </td>
 
                       {/* Action */}
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="text-center">
                         <button
                           onClick={() => handleOpenEdit(staff)}
-                          className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all inline-flex items-center gap-1.5 text-xs font-bold cursor-pointer active:scale-95 shadow-sm"
-                          title="Edit Staff Credentials"
+                          className="inline-flex items-center gap-1.5 rounded-[6px] border px-3 py-1.5 text-[11.5px] font-semibold transition-colors"
+                          style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-accent-border)', color: 'var(--color-accent)' }}
+                          title="Edit staff credentials"
                         >
-                          <MdEdit size={14} />
-                          <span>Edit</span>
+                          <MdEdit size={14} /> Edit
                         </button>
                       </td>
                     </tr>
@@ -445,29 +451,40 @@ const AdminStaffCredentials = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => !saving && setShowEditModal(false)}
-                className="fixed inset-0 bg-black/75 backdrop-blur-xs"
+                className="fixed inset-0 backdrop-blur-[2px]"
+                style={{ background: 'rgba(11, 23, 40, 0.55)' }}
               />
 
               {/* Modal Card */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 15 }}
+                initial={{ opacity: 0, scale: 0.97, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl text-[var(--color-text-primary)] z-10 my-auto flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden"
+                exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                role="dialog"
+                aria-modal="true"
+                className="relative z-10 my-auto flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-lg)] sm:max-h-[90vh]"
+                style={{
+                  background: 'var(--theme-card)',
+                  border: '1px solid var(--theme-border)',
+                  boxShadow: 'var(--shadow-modal)'
+                }}
               >
                 {/* Fixed Modal Header */}
-                <div className="flex justify-between items-center p-4 sm:p-5 border-b border-[var(--color-border)] shrink-0 bg-[var(--color-surface)]">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--theme-border)] px-5 py-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-purple-600/10 text-purple-400 border border-purple-600/20">
-                      <MdLock size={18} />
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)]"
+                      style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                    >
+                      <MdLock size={16} />
                     </div>
                     <div>
-                      <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] leading-tight">
-                        Edit Staff Credentials
+                      <h3 className="text-[15px] font-semibold leading-tight text-[var(--theme-text-primary)]">
+                        Edit staff credentials
                       </h3>
-                      <p className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        Update username, password, or contact details
+                      <p className="mt-0.5 text-[11.5px] text-[var(--theme-text-secondary)]">
+                        Update username, password or contact details
                       </p>
                     </div>
                   </div>
@@ -475,9 +492,10 @@ const AdminStaffCredentials = () => {
                     type="button"
                     onClick={() => setShowEditModal(false)}
                     disabled={saving}
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-lg hover:bg-[var(--color-primary-bg)] cursor-pointer"
+                    aria-label="Close"
+                    className="rounded-[var(--radius-sm)] p-1.5 text-[var(--theme-text-faint)] transition-colors hover:bg-[var(--theme-bg-soft)] hover:text-[var(--theme-text-primary)]"
                   >
-                    <MdClose size={20} />
+                    <MdClose size={18} />
                   </button>
                 </div>
 
@@ -486,34 +504,34 @@ const AdminStaffCredentials = () => {
                   {/* Scrollable Form Content */}
                   <div className="overflow-y-auto p-4 sm:p-5 space-y-3.5 flex-1 min-h-0">
                     {/* Staff Role (Non-editable) */}
-                    <div className="flex flex-col gap-1 text-left">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                        Staff Role
-                      </label>
-                      <div className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 flex items-center justify-between">
+                    <div>
+                      <label className="field-label">Staff role</label>
+                      <div
+                        className="flex items-center justify-between rounded-[var(--radius-sm)] px-3 py-2"
+                        style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}
+                      >
                         <div className="flex items-center gap-2">
                           {getRoleBadge(editingStaff).icon}
-                          <span className="font-bold text-xs sm:text-sm text-[var(--color-text-primary)]">
+                          <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
                             {getRoleBadge(editingStaff).title}
                           </span>
                         </div>
                         {getRoleBadge(editingStaff).sub && (
-                          <span className="text-[10px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-surface)] px-2 py-0.5 rounded-md border border-[var(--color-border)]">
+                          <span className="rounded-[5px] border border-[var(--theme-border)] bg-[var(--theme-card)] px-2 py-0.5 text-[10px] font-medium text-[var(--theme-text-secondary)]">
                             {getRoleBadge(editingStaff).sub}
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-[var(--color-text-secondary)]">
+                      <p className="mt-1 text-[10.5px] text-[var(--theme-text-faint)]">
                         Role permissions are fixed and cannot be changed here.
-                      </span>
+                      </p>
                     </div>
 
                     {/* Username Input */}
-                    <div className="flex flex-col gap-1 text-left">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                        Username *
-                      </label>
+                    <div>
+                      <label className="field-label" htmlFor="staff-username">Username <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                       <input
+                        id="staff-username"
                         type="text"
                         required
                         value={formData.username}
@@ -522,27 +540,22 @@ const AdminStaffCredentials = () => {
                           if (formErrors.username) setFormErrors({ ...formErrors, username: '' });
                         }}
                         placeholder="e.g. warden"
-                        className={`bg-[var(--color-primary-bg)] border rounded-xl px-3 py-2 text-xs sm:text-sm font-mono font-bold text-[var(--color-text-primary)] focus:outline-none transition-all ${
-                          formErrors.username
-                            ? 'border-rose-500 ring-2 ring-rose-500/20'
-                            : 'border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                        }`}
+                        className="w-full font-mono text-[13px]"
+                        style={formErrors.username ? { borderColor: 'var(--color-danger)' } : undefined}
                       />
                       {formErrors.username && (
-                        <span className="text-[11px] font-semibold text-rose-500">
+                        <span className="mt-1 block text-[11px] font-medium" style={{ color: 'var(--color-danger)' }}>
                           {formErrors.username}
                         </span>
                       )}
                     </div>
 
                     {/* Contact Details (Email & Phone) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] flex items-center gap-1">
-                          <MdEmail size={13} className="text-purple-400" />
-                          Email / Gmail
-                        </label>
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      <div>
+                        <label className="field-label" htmlFor="staff-email">Email</label>
                         <input
+                          id="staff-email"
                           type="email"
                           value={formData.gmail}
                           onChange={(e) => {
@@ -550,41 +563,35 @@ const AdminStaffCredentials = () => {
                             if (formErrors.gmail) setFormErrors({ ...formErrors, gmail: '' });
                           }}
                           placeholder="e.g. staff@gmail.com"
-                          className={`bg-[var(--color-primary-bg)] border rounded-xl px-3 py-2 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none transition-all ${
-                            formErrors.gmail
-                              ? 'border-rose-500 ring-2 ring-rose-500/20'
-                              : 'border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                          }`}
+                          className="w-full text-[13px]"
+                          style={formErrors.gmail ? { borderColor: 'var(--color-danger)' } : undefined}
                         />
                         {formErrors.gmail && (
-                          <span className="text-[11px] font-semibold text-rose-500">
+                          <span className="mt-1 block text-[11px] font-medium" style={{ color: 'var(--color-danger)' }}>
                             {formErrors.gmail}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] flex items-center gap-1">
-                          <MdPhone size={13} className="text-emerald-400" />
-                          Phone Number
-                        </label>
+                      <div>
+                        <label className="field-label" htmlFor="staff-phone">Phone number</label>
                         <input
+                          id="staff-phone"
                           type="tel"
                           value={formData.phoneNo}
                           onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
                           placeholder="e.g. +919876543210"
-                          className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 rounded-xl px-3 py-2 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none transition-all"
+                          className="w-full font-mono text-[13px]"
                         />
                       </div>
                     </div>
 
                     {/* New Password Input */}
-                    <div className="flex flex-col gap-1 text-left">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                        New Password
-                      </label>
+                    <div>
+                      <label className="field-label" htmlFor="staff-password">New password</label>
                       <div className="relative">
                         <input
+                          id="staff-password"
                           type={showPassword ? 'text' : 'password'}
                           value={formData.password}
                           onChange={(e) => {
@@ -592,22 +599,20 @@ const AdminStaffCredentials = () => {
                             if (formErrors.password) setFormErrors({ ...formErrors, password: '' });
                           }}
                           placeholder="Leave blank to keep unchanged"
-                          className={`w-full bg-[var(--color-primary-bg)] border rounded-xl pl-3 pr-9 py-2 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none transition-all ${
-                            formErrors.password
-                              ? 'border-rose-500 ring-2 ring-rose-500/20'
-                              : 'border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                          }`}
+                          className="w-full pr-9 text-[13px]"
+                          style={formErrors.password ? { borderColor: 'var(--color-danger)' } : undefined}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-1 cursor-pointer"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--theme-text-faint)] transition-colors hover:text-[var(--theme-text-primary)]"
                         >
                           {showPassword ? <MdVisibilityOff size={16} /> : <MdVisibility size={16} />}
                         </button>
                       </div>
                       {formErrors.password && (
-                        <span className="text-[11px] font-semibold text-rose-500">
+                        <span className="mt-1 block text-[11px] font-medium" style={{ color: 'var(--color-danger)' }}>
                           {formErrors.password}
                         </span>
                       )}
@@ -615,12 +620,11 @@ const AdminStaffCredentials = () => {
 
                     {/* Confirm Password Input */}
                     {formData.password && (
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                          Confirm Password *
-                        </label>
+                      <div>
+                        <label className="field-label" htmlFor="staff-confirm-password">Confirm password <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                         <div className="relative">
                           <input
+                            id="staff-confirm-password"
                             type={showConfirmPassword ? 'text' : 'password'}
                             value={formData.confirmPassword}
                             onChange={(e) => {
@@ -628,22 +632,20 @@ const AdminStaffCredentials = () => {
                               if (formErrors.confirmPassword) setFormErrors({ ...formErrors, confirmPassword: '' });
                             }}
                             placeholder="Re-enter new password"
-                            className={`w-full bg-[var(--color-primary-bg)] border rounded-xl pl-3 pr-9 py-2 text-xs sm:text-sm text-[var(--color-text-primary)] focus:outline-none transition-all ${
-                              formErrors.confirmPassword
-                                ? 'border-rose-500 ring-2 ring-rose-500/20'
-                                : 'border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                            }`}
+                            className="w-full pr-9 text-[13px]"
+                            style={formErrors.confirmPassword ? { borderColor: 'var(--color-danger)' } : undefined}
                           />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-1 cursor-pointer"
+                            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--theme-text-faint)] transition-colors hover:text-[var(--theme-text-primary)]"
                           >
                             {showConfirmPassword ? <MdVisibilityOff size={16} /> : <MdVisibility size={16} />}
                           </button>
                         </div>
                         {formErrors.confirmPassword && (
-                          <span className="text-[11px] font-semibold text-rose-500">
+                          <span className="mt-1 block text-[11px] font-medium" style={{ color: 'var(--color-danger)' }}>
                             {formErrors.confirmPassword}
                           </span>
                         )}
@@ -651,33 +653,31 @@ const AdminStaffCredentials = () => {
                     )}
 
                     {/* Security Note */}
-                    <div className="p-2.5 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
-                      <span className="font-bold text-purple-400">Security Note:</span> All passwords are automatically encrypted via BCrypt. Leave password empty to keep existing password unchanged.
+                    <div
+                      className="rounded-[var(--radius-sm)] px-3 py-2.5 text-[11px] leading-relaxed text-[var(--theme-text-secondary)]"
+                      style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}
+                    >
+                      <span className="font-semibold text-[var(--theme-text-primary)]">Security note: </span>
+                      Passwords are encrypted with BCrypt. Leave the password field empty to keep the existing password.
                     </div>
                   </div>
 
                   {/* Sticky Modal Actions at Bottom */}
-                  <div className="flex justify-end gap-2 p-3 sm:p-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setShowEditModal(false)}
-                      disabled={saving}
-                      className="px-3.5 py-2 bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded-xl text-xs sm:text-sm font-semibold hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                    >
+                  <div
+                    className="flex shrink-0 justify-end gap-2 px-5 py-3.5"
+                    style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
+                  >
+                    <button type="button" onClick={() => setShowEditModal(false)} disabled={saving} className="btn btn-secondary">
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                    >
+                    <button type="submit" disabled={saving} className="btn btn-primary">
                       {saving ? (
                         <>
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                          Saving…
                         </>
                       ) : (
-                        'Save Changes'
+                        'Save changes'
                       )}
                     </button>
                   </div>

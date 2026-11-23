@@ -114,7 +114,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     int bulkUpdateDeputyWardenStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("deputyWarden") String deputyWarden);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.assignedDeputyWarden = :deputyWarden AND r.isActive = true")
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason, r.rejectedStage = :expectedStatus, r.rejectedAt = CURRENT_TIMESTAMP WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.assignedDeputyWarden = :deputyWarden AND r.isActive = true")
     int bulkRejectDeputyWardenStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason, @Param("deputyWarden") String deputyWarden);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -122,7 +122,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     int bulkUpdateWardenStatusWithYear(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("year") Integer year);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.year = :year AND r.isActive = true")
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason, r.rejectedStage = :expectedStatus, r.rejectedAt = CURRENT_TIMESTAMP WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.year = :year AND r.isActive = true")
     int bulkRejectWardenStatusWithYear(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason, @Param("year") Integer year);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -130,7 +130,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     int bulkUpdateWardenStatusAllYears(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason, r.rejectedStage = :expectedStatus, r.rejectedAt = CURRENT_TIMESTAMP WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
     int bulkRejectWardenStatusAllYears(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -138,7 +138,7 @@ public interface ReductionFormRepo extends JpaRepository<ReductionForm,Long>, Jp
     int bulkUpdateOfficeStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
+    @Query("UPDATE ReductionForm r SET r.currentStatus = :newStatus, r.rejectReason = :rejectReason, r.rejectedStage = :expectedStatus, r.rejectedAt = CURRENT_TIMESTAMP WHERE r.formId IN :formIds AND r.currentStatus = :expectedStatus AND r.isActive = true")
     int bulkRejectOfficeStatus(@Param("formIds") List<Long> formIds, @Param("expectedStatus") FormStatus expectedStatus, @Param("newStatus") FormStatus newStatus, @Param("rejectReason") String rejectReason);
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)

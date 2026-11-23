@@ -52,17 +52,7 @@ import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Transactional(noRollbackFor = {
-    BadRequestException.class,
-    DateNotValidException.class,
-    TotalLeaveDateCountException.class,
-    StatusAlreadyPendingException.class,
-    InvalidStatusException.class,
-    InvalidActionException.class,
-    StudentNotFoundException.class,
-    ReductionFormNotFoundException.class,
-    IllegalArgumentException.class
-})
+@Transactional
 @Slf4j
 public class ReductionFormService {
     private static final String ACTION_APPROVE = "Approve";
@@ -77,6 +67,8 @@ public class ReductionFormService {
     private final AutoAcceptSettingsRepo autoAcceptSettingsRepo;
     private final AuditLogRepo auditLogRepo;
     private final com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo;
+    private final SseNotificationService sseNotificationService;
+    private final StudentSseService studentSseService;
 
     public ReductionFormService(ReductionFormRepo reductionFormRepo,
                                 StudentDetailsRepo studentDetailsRepo,
@@ -87,6 +79,38 @@ public class ReductionFormService {
                                 AutoAcceptSettingsRepo autoAcceptSettingsRepo,
                                 AuditLogRepo auditLogRepo,
                                 com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo) {
+        this(reductionFormRepo, studentDetailsRepo, reductionFormHistoryRepo, activityLogService,
+             notificationService, staffUsersRepo, autoAcceptSettingsRepo, auditLogRepo,
+             systemSettingsRepo, null, null);
+    }
+
+    public ReductionFormService(ReductionFormRepo reductionFormRepo,
+                                StudentDetailsRepo studentDetailsRepo,
+                                ReductionFormHistoryRepo reductionFormHistoryRepo,
+                                ActivityLogService activityLogService,
+                                NotificationService notificationService,
+                                StaffUsersRepo staffUsersRepo,
+                                AutoAcceptSettingsRepo autoAcceptSettingsRepo,
+                                AuditLogRepo auditLogRepo,
+                                com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo,
+                                SseNotificationService sseNotificationService) {
+        this(reductionFormRepo, studentDetailsRepo, reductionFormHistoryRepo, activityLogService,
+             notificationService, staffUsersRepo, autoAcceptSettingsRepo, auditLogRepo,
+             systemSettingsRepo, sseNotificationService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ReductionFormService(ReductionFormRepo reductionFormRepo,
+                                StudentDetailsRepo studentDetailsRepo,
+                                ReductionFormHistoryRepo reductionFormHistoryRepo,
+                                ActivityLogService activityLogService,
+                                NotificationService notificationService,
+                                StaffUsersRepo staffUsersRepo,
+                                AutoAcceptSettingsRepo autoAcceptSettingsRepo,
+                                AuditLogRepo auditLogRepo,
+                                com.hostel.MessReduction.Repo.SystemSettingsRepo systemSettingsRepo,
+                                @org.springframework.beans.factory.annotation.Autowired(required = false) SseNotificationService sseNotificationService,
+                                @org.springframework.beans.factory.annotation.Autowired(required = false) StudentSseService studentSseService) {
         this.reductionFormRepo = reductionFormRepo;
         this.studentDetailsRepo = studentDetailsRepo;
         this.reductionFormHistoryRepo = reductionFormHistoryRepo;
@@ -96,6 +120,8 @@ public class ReductionFormService {
         this.autoAcceptSettingsRepo = autoAcceptSettingsRepo;
         this.auditLogRepo = auditLogRepo;
         this.systemSettingsRepo = systemSettingsRepo;
+        this.sseNotificationService = sseNotificationService;
+        this.studentSseService = studentSseService;
     }
 
 
@@ -136,7 +162,7 @@ public class ReductionFormService {
         StudentDetails studentDetails = getStudentDetails(id);
         log.info("Student found: {}", studentDetails.getName());
 
-        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(id);
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentId(id);
         log.info("Repository query executed. Forms retrieved count: {}", forms != null ? forms.size() : 0);
         
         log.info("DTO mapping started");
@@ -190,7 +216,53 @@ public class ReductionFormService {
         processAutoAcceptIfApplicable(reductionForm);
         
         sendWorkflowNotifications(reductionForm);
+
+        // Publish SSE notification to assigned Deputy Warden strictly after database commit
+        if (sseNotificationService != null) {
+            final Long submittedFormId = reductionForm.getFormId();
+            final String studentName = studentDetails.getName();
+            final String registerNo = studentDetails.getRegisterNo();
+            final String dept = studentDetails.getDepartment();
+            final Integer yearOfStudy = reductionForm.getYear();
+            final String deputyWarden = assignedDeputyWarden;
+
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                sseNotificationService.sendNewApplicationNotification(
+                                    submittedFormId,
+                                    studentName,
+                                    registerNo,
+                                    dept,
+                                    yearOfStudy,
+                                    deputyWarden
+                                );
+                            } catch (Exception ex) {
+                                log.error("Failed to dispatch SSE event for application {}: {}", submittedFormId, ex.getMessage());
+                            }
+                        }
+                    }
+                );
+            } else {
+                try {
+                    sseNotificationService.sendNewApplicationNotification(
+                        submittedFormId,
+                        studentName,
+                        registerNo,
+                        dept,
+                        yearOfStudy,
+                        deputyWarden
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to dispatch SSE event for application {}: {}", submittedFormId, ex.getMessage());
+                }
+            }
+        }
         
+        notifyStudentTrackingUpdate(reductionForm, "Application submitted");
         return ReductionFormMapper.mapToReductionFormResDTO(reductionForm);
     }
 
@@ -217,7 +289,8 @@ public class ReductionFormService {
     }
 
     public ReductionFormResDTO getFormForEdit(Long formId, Long studentId) {
-        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
+        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentId(formId, studentId)
+                .or(() -> reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId))
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
         if (form.getCurrentStatus() == FormStatus.Approved) {
@@ -230,7 +303,8 @@ public class ReductionFormService {
     }
 
     public ReductionFormResDTO resubmitForm(Long formId, Long studentId, ReductionFormReqDTO dto) {
-        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId)
+        ReductionForm form = reductionFormRepo.findByFormIdAndStudentDetailsStudentId(formId, studentId)
+                .or(() -> reductionFormRepo.findByFormIdAndStudentDetailsStudentIdAndIsActiveTrue(formId, studentId))
                 .orElseThrow(() -> new ReductionFormNotFoundException("Form not found or not owned by the student"));
 
         if (form.getCurrentStatus() == FormStatus.Approved) {
@@ -280,6 +354,8 @@ public class ReductionFormService {
         form.setResumeStage(newStatus);
         form.setResubmissionCount(form.getResubmissionCount() + 1);
         form.setCurrentStatus(newStatus);
+        form.setActive(true);
+        form.setDeletedByStudent(false);
         
         if (form.getAssignedDeputyWarden() == null) {
             form.setAssignedDeputyWarden(resolveAssignedDeputyWarden(studentDetails.getGender(), form.getYear()));
@@ -292,7 +368,19 @@ public class ReductionFormService {
         processAutoAcceptIfApplicable(form);
         
         sendWorkflowNotifications(form);
+
+        if (sseNotificationService != null) {
+            sseNotificationService.sendNewApplicationNotification(
+                    form.getFormId(),
+                    studentDetails.getName(),
+                    studentDetails.getRegisterNo(),
+                    studentDetails.getDepartment(),
+                    form.getYear(),
+                    form.getAssignedDeputyWarden()
+            );
+        }
         
+        notifyStudentTrackingUpdate(form, "Application resubmitted");
         return ReductionFormMapper.mapToReductionFormResDTO(form);
     }
 
@@ -321,7 +409,7 @@ public class ReductionFormService {
         activityLogService.deleteLogsByFormId(formId);
 
         saveFormHistory(form, "Student Deleted Request", currentStatus, null, "student", "Request deleted by student.");
-        notificationService.createNotification(student.getEmailId(), "Your request was successfully deleted.", "DELETED", form.getFormId());
+        notificationService.createNotification(student.getRegisterNo(), "Your request was successfully deleted.", "DELETED", form.getFormId());
     }
 
     private void restoreSubmissionCountIfSubmittedToday(StudentDetails student, ReductionForm form) {
@@ -340,7 +428,7 @@ public class ReductionFormService {
 
     public List<ReductionFormResDTO> formDetails(Long studentId) {
         autoDeactivateAllExpiredForms();
-        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentIdAndIsActiveTrue(studentId);
+        List<ReductionForm> forms = reductionFormRepo.findByStudentDetailsStudentId(studentId);
         if (forms.isEmpty()) {
             return java.util.Collections.emptyList();
         }
@@ -389,6 +477,14 @@ public class ReductionFormService {
                 .toList();
     }
 
+    public ReductionFormResDTO getFormByIdForDeputyWarden(Long formId, String userName) {
+        autoDeactivateAllExpiredForms();
+        validateDeputyWardenUser(userName);
+        ReductionForm form = getFormOrThrow(formId);
+        validateAssignedDeputyWarden(form, userName);
+        return ReductionFormMapper.mapToReductionFormResDTO(form);
+    }
+
     public List<ReductionFormResDTO> officePendingStatus(String userName, String gender, Integer year) {
         autoDeactivateAllExpiredForms();
         validateOfficeUser(userName);
@@ -431,12 +527,13 @@ public class ReductionFormService {
         
         log.info("Warden manual approval completed");
         
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request has been approved by Warden.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
         
         sendWorkflowNotifications(form);
+        notifyStudentTrackingUpdate(form, "Approved by Warden");
     }
 
 
@@ -456,7 +553,7 @@ public class ReductionFormService {
         
         log.info("Deputy Warden manual approval completed");
         
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
@@ -464,6 +561,7 @@ public class ReductionFormService {
         processAutoAcceptIfApplicable(form);
         
         sendWorkflowNotifications(form);
+        notifyStudentTrackingUpdate(form, "Approved by Deputy Warden");
     }
 
     public void updateOfficePendingStatus(Long formId, String action, String userName) {
@@ -476,10 +574,11 @@ public class ReductionFormService {
         reductionFormRepo.save(form);
         saveFormHistory(form, "Approved by Office", previousStatus, FormStatus.Approved, userName, null);
         createActivityLog(form, Role.Office, userName, "Approved");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request has been approved.", "APPROVED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
+        notifyStudentTrackingUpdate(form, "Approved by Office");
     }
 
     public void rejectWardenForm(Long formId, String rejectReason, String userName) {
@@ -490,15 +589,18 @@ public class ReductionFormService {
         validateWardenYear(form, year);
         FormStatus previousStatus = form.getCurrentStatus();
         form.setCurrentStatus(FormStatus.RejectedWarden);
+        form.setRejectedStage(FormStatus.PendingWarden);
         form.setRejectReason(rejectReason.trim());
+        form.setRejectedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         reductionFormRepo.save(form);
         restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Warden", previousStatus, FormStatus.RejectedWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.Warden, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
+        notifyStudentTrackingUpdate(form, "Rejected by Warden: " + rejectReason.trim());
     }
 
     public void rejectDeputyWardenForm(Long formId, String rejectReason, String userName) {
@@ -509,15 +611,18 @@ public class ReductionFormService {
         validateAssignedDeputyWarden(form, userName);
         FormStatus previousStatus = form.getCurrentStatus();
         form.setCurrentStatus(FormStatus.RejectedDeputyWarden);
+        form.setRejectedStage(FormStatus.PendingDeputyWarden);
         form.setRejectReason(rejectReason.trim());
+        form.setRejectedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         reductionFormRepo.save(form);
         restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Deputy Warden", previousStatus, FormStatus.RejectedDeputyWarden, userName, rejectReason.trim());
         createActivityLog(form, Role.DeputyWarden, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
+        notifyStudentTrackingUpdate(form, "Rejected by Deputy Warden: " + rejectReason.trim());
     }
 
     public void rejectOfficeForm(Long formId, String rejectReason, String userName) {
@@ -527,15 +632,18 @@ public class ReductionFormService {
         validateCurrentStatus(form, FormStatus.PendingOffice, "Form is not in office stage");
         FormStatus previousStatus = form.getCurrentStatus();
         form.setCurrentStatus(FormStatus.RejectedOffice);
+        form.setRejectedStage(FormStatus.PendingOffice);
         form.setRejectReason(rejectReason.trim());
+        form.setRejectedAt(com.hostel.MessReduction.utils.DateTimeUtil.nowLocalDateTime());
         reductionFormRepo.save(form);
         restoreSubmissionCountIfSubmittedToday(form.getStudentDetails(), form);
         saveFormHistory(form, "Rejected by Office", previousStatus, FormStatus.RejectedOffice, userName, rejectReason.trim());
         createActivityLog(form, Role.Office, userName, "Rejected");
-        notificationService.createNotification(form.getStudentDetails().getEmailId(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
+        notificationService.createNotification(form.getStudentDetails().getRegisterNo(), "Your request was rejected.\nReason:\n" + rejectReason.trim(), "REJECTED", form.getFormId());
         if (form.getStudentDetails().getPhoneNo() != null) {
             // WhatsApp message will be sent by batch scheduler
         }
+        notifyStudentTrackingUpdate(form, "Rejected by Office: " + rejectReason.trim());
     }
 
     private StaffDashboardCountDTO buildDashboardCountDTO(List<Object[]> statusCounts) {
@@ -650,7 +758,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved by Warden.", "APPROVED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request has been approved by Warden.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Warden);
@@ -689,6 +797,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Warden Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
+            forms.stream().filter(f -> validFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Approved by Warden"));
         }
     }
 
@@ -748,7 +857,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request has been approved by Deputy Warden.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.DeputyWarden);
@@ -786,6 +895,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Deputy Warden Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
+            forms.stream().filter(f -> validFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Approved by Deputy Warden"));
         }
     }
 
@@ -841,7 +951,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request has been approved.", "APPROVED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request has been approved.", "APPROVED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Office);
@@ -871,6 +981,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Office Bulk Approval Performance [Total: {} ms]: fetch={} ms, bulkUpdate={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications)",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size());
+            forms.stream().filter(f -> validFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Approved by Office"));
         }
     }
 
@@ -934,7 +1045,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Warden);
@@ -964,6 +1075,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Warden Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
+            forms.stream().filter(f -> rejectedFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Rejected by Warden: " + trimmedReason));
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
@@ -1029,7 +1141,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.DeputyWarden);
@@ -1057,6 +1169,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Deputy Warden Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
+            forms.stream().filter(f -> rejectedFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Rejected by Deputy Warden: " + trimmedReason));
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
@@ -1118,7 +1231,7 @@ public class ReductionFormService {
                 activityLogRequest.setStudentName(studentDetails.getName());
                 activityLogRequest.setDepartment(studentDetails.getDepartment());
                 notificationItems.add(new NotificationService.BatchNotificationItem(
-                    studentDetails.getEmailId(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
+                    studentDetails.getRegisterNo(), "Your request was rejected.\nReason:\n" + trimmedReason, "REJECTED", form.getFormId(), "STUDENT"
                 ));
             }
             activityLogRequest.setStaffRole(Role.Office);
@@ -1146,6 +1259,7 @@ public class ReductionFormService {
             long totalDurationMs = (System.nanoTime() - start) / 1_000_000;
             log.info("Office Bulk Reject Performance [Total: {} ms]: fetch={} ms, bulkReject={} ms ({} rows), batchInserts={} ms ({} histories, {} logs, {} notifications), selected={}, rejected={}, failed={}",
                     totalDurationMs, fetchDurationMs, updateDurationMs, updatedRows, batchInsertDurationMs, histories.size(), activityLogs.size(), notificationItems.size(), selected, rejected, failed);
+            forms.stream().filter(f -> rejectedFormIds.contains(f.getFormId())).forEach(f -> notifyStudentTrackingUpdate(f, "Rejected by Office: " + trimmedReason));
         }
 
         return new BulkRejectSummaryDTO(selected, rejected, failed);
@@ -1757,7 +1871,53 @@ public class ReductionFormService {
             }
         }
 
+        if (form.getCurrentStatus().name().startsWith("Rejected")) {
+            if (tracking.getRejectedTime() == null && form.getRejectedAt() != null) {
+                tracking.setRejectedTime(form.getRejectedAt());
+            }
+            if (tracking.getRejectionReason() == null && form.getRejectReason() != null) {
+                tracking.setRejectionReason(form.getRejectReason());
+            }
+            if (tracking.getRejectedBy() == null) {
+                tracking.setRejectedBy(form.getRejectedStage() != null
+                        ? form.getRejectedStage().name().replace("Pending", "")
+                        : form.getCurrentStatus().name().replace("Rejected", ""));
+            }
+        }
+
         return tracking;
+    }
+
+    public void notifyStudentTrackingUpdate(ReductionForm form, String message) {
+        if (studentSseService == null || form == null || form.getStudentDetails() == null) {
+            return;
+        }
+        final Long studentId = form.getStudentDetails().getStudentId();
+        final Long formId = form.getFormId();
+        if (studentId == null || formId == null) {
+            return;
+        }
+
+        Runnable sendTask = () -> {
+            try {
+                RequestTrackingResDTO tracking = getTrackingDetails(formId);
+                studentSseService.sendTrackingUpdate(studentId, formId, tracking, message);
+            } catch (Exception e) {
+                log.warn("Failed to dispatch SSE update to student {}: {}", studentId, e.getMessage());
+            }
+        };
+
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            sendTask.run();
+                        }
+                    });
+        } else {
+            sendTask.run();
+        }
     }
 }
 

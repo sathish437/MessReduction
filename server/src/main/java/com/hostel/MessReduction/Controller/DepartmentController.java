@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class DepartmentController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'Warden', 'DeputyWarden', 'Office')")
     public ResponseEntity<?> getDepartments(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive,
@@ -45,17 +47,20 @@ public class DepartmentController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'Warden', 'DeputyWarden', 'Office')")
     public ResponseEntity<DepartmentResDTO> getDepartmentById(@PathVariable Long id) {
         return ResponseEntity.ok(departmentService.getDepartmentById(id));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DepartmentResDTO> createDepartment(@Valid @RequestBody DepartmentReqDTO reqDTO) {
         DepartmentResDTO created = departmentService.createDepartment(reqDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DepartmentResDTO> updateDepartment(
             @PathVariable Long id,
             @Valid @RequestBody DepartmentReqDTO reqDTO) {
@@ -64,6 +69,7 @@ public class DepartmentController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DepartmentResDTO> toggleDepartmentStatus(
             @PathVariable Long id,
             @RequestBody Map<String, Boolean> statusMap) {

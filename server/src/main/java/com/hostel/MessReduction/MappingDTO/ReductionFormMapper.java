@@ -74,7 +74,9 @@ public class ReductionFormMapper {
         reductionFormResDTO.setDeletedByStudent(reductionForm.isDeletedByStudent());
         reductionFormResDTO.setDeletedAt(reductionForm.getDeletedAt());
         reductionFormResDTO.setRejectedStage(reductionForm.getRejectedStage() != null ? reductionForm.getRejectedStage().name() : null);
+        reductionFormResDTO.setRejectedAt(reductionForm.getRejectedAt());
         reductionFormResDTO.setResumeStage(reductionForm.getResumeStage() != null ? reductionForm.getResumeStage().name() : null);
+        reductionFormResDTO.setActive(reductionForm.isActive());
         return reductionFormResDTO;
     }
 

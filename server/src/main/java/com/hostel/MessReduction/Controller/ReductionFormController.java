@@ -6,6 +6,12 @@ import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.DTO.ResDTO.RequestTrackingResDTO;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Service.ReductionFormService;
+import com.hostel.MessReduction.Service.ExtraSubmissionService;
+import com.hostel.MessReduction.security.CustomUserDetails;
+import com.hostel.MessReduction.CustomException.BadRequestException;
+import com.hostel.MessReduction.CustomException.UnauthorizedUserException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -14,8 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import com.hostel.MessReduction.Service.ExtraSubmissionService;
 
 @RestController
 @RequestMapping("/api/student-form")
@@ -27,6 +31,19 @@ public class ReductionFormController {
     public ReductionFormController(ReductionFormService reductionFormService, ExtraSubmissionService extraSubmissionService) {
         this.reductionFormService = reductionFormService;
         this.extraSubmissionService = extraSubmissionService;
+    }
+
+    private void validateStudentAccess(Long studentId, Authentication authentication) {
+        if (studentId == null || authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedUserException("Authentication required to access student forms");
+        }
+        if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (!studentId.equals(userDetails.getStudentId())) {
+                logger.warn("Security Alert: Student {} (ID: {}) attempted unauthorized access to studentId {}",
+                        userDetails.getUsername(), userDetails.getStudentId(), studentId);
+                throw new AccessDeniedException("Access denied: You are not authorized to view or modify another student's records");
+            }
+        }
     }
 
     @GetMapping("/server-time")
@@ -42,8 +59,9 @@ public class ReductionFormController {
     }
 
     @GetMapping("/Student/{studentId}")
-    public ResponseEntity<?> fetchStudentData(@PathVariable Long studentId) {
+    public ResponseEntity<?> fetchStudentData(@PathVariable Long studentId, Authentication authentication) {
         logger.info("Student controller entered: GET /Student/{}", studentId);
+        validateStudentAccess(studentId, authentication);
         try {
             if (studentId == null || studentId <= 0) {
                 return ResponseEntity.badRequest().body(java.util.Map.of("message", "Invalid student ID", "statusCode", 400));
@@ -69,20 +87,26 @@ public class ReductionFormController {
     @PostMapping("/StudentForm/{studentId}")
     public ResponseEntity<ReductionFormResDTO> studentSubmitForm(
             @Valid @RequestBody ReductionFormReqDTO dto,
-            @PathVariable Long studentId) {
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.formSubmit(dto, studentId));
     }
 
     @GetMapping("/StudentForm/{studentId}")
     public ResponseEntity<List<ReductionFormResDTO>> getStudentForms(
-            @PathVariable Long studentId) {
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.formDetails(studentId));
     }
 
     @GetMapping("/StudentForm/{studentId}/{formId}")
     public ResponseEntity<ReductionFormResDTO> getStudentFormForEdit(
             @PathVariable Long studentId,
-            @PathVariable Long formId) {
+            @PathVariable Long formId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.getFormForEdit(formId, studentId));
     }
 
@@ -90,34 +114,43 @@ public class ReductionFormController {
     public ResponseEntity<ReductionFormResDTO> resubmitStudentForm(
             @PathVariable Long studentId,
             @PathVariable Long formId,
-            @Valid @RequestBody ReductionFormReqDTO dto) {
+            @Valid @RequestBody ReductionFormReqDTO dto,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.resubmitForm(formId, studentId, dto));
     }
 
     @GetMapping("/StudentForm/{studentId}/{formId}/history")
     public ResponseEntity<List<ReductionFormHistoryResDTO>> getStudentFormHistory(
             @PathVariable Long studentId,
-            @PathVariable Long formId) {
+            @PathVariable Long formId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.getFormHistory(formId, studentId));
     }
 
     @GetMapping("/StudentForm/{studentId}/{formId}/tracking")
     public ResponseEntity<RequestTrackingResDTO> getRequestTracking(
             @PathVariable Long studentId,
-            @PathVariable Long formId) {
+            @PathVariable Long formId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(reductionFormService.getTrackingDetails(formId));
     }
 
     @DeleteMapping("/StudentForm/{studentId}/{formId}")
     public ResponseEntity<java.util.Map<String, String>> deleteStudentRequest(
             @PathVariable Long studentId,
-            @PathVariable Long formId) {
+            @PathVariable Long formId,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         reductionFormService.deleteStudentRequest(formId, studentId);
         return ResponseEntity.ok(java.util.Map.of("message", "Request deleted successfully"));
     }
 
     @GetMapping("/limits/{studentId}")
-    public ResponseEntity<?> getStudentLimits(@PathVariable Long studentId) {
+    public ResponseEntity<?> getStudentLimits(@PathVariable Long studentId, Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         try {
             StudentDetails student = reductionFormService.getStudentDetails(studentId);
             int count = student.getDailySubmissionCount() != null ? student.getDailySubmissionCount() : 0;
@@ -149,7 +182,9 @@ public class ReductionFormController {
     @PostMapping("/extra-submission/{studentId}")
     public ResponseEntity<?> requestExtraSubmission(
             @PathVariable Long studentId,
-            @RequestBody java.util.Map<String, String> payload) {
+            @RequestBody java.util.Map<String, String> payload,
+            Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         String reason = payload.get("reason");
         if (reason == null || reason.trim().isEmpty()) {
             return ResponseEntity.badRequest().body((java.util.Map) java.util.Map.of("message", "Reason is required", "statusCode", 400));
@@ -158,7 +193,8 @@ public class ReductionFormController {
     }
 
     @GetMapping("/extra-submission/{studentId}")
-    public ResponseEntity<?> getExtraSubmissionRequests(@PathVariable Long studentId) {
+    public ResponseEntity<?> getExtraSubmissionRequests(@PathVariable Long studentId, Authentication authentication) {
+        validateStudentAccess(studentId, authentication);
         return ResponseEntity.ok(extraSubmissionService.getRequestsByStudent(studentId));
     }
 }

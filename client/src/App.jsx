@@ -20,10 +20,18 @@ const AdminLogin = lazy(() => import('./AdminLogin'));
 const AdminLayout = lazy(() => import('./AdminLayout'));
 
 const RouteLoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[60vh] w-full text-[var(--color-text-secondary)]">
-    <div className="flex items-center gap-3">
-      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs font-bold uppercase tracking-wider">Loading...</span>
+  <div className="flex items-center justify-center min-h-[60vh] w-full">
+    <div className="flex flex-col items-center gap-3">
+      <div
+        className="w-6 h-6 rounded-full border-2 animate-spin"
+        style={{ borderColor: 'var(--theme-border-strong)', borderTopColor: 'var(--theme-btn-primary)' }}
+      />
+      <span
+        className="text-[11px] font-medium uppercase tracking-[0.12em]"
+        style={{ color: 'var(--theme-text-secondary)' }}
+      >
+        Loading
+      </span>
     </div>
   </div>
 );

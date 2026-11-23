@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiClock, FiCalendar, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertCircle, FiClock, FiCalendar } from 'react-icons/fi';
 import apiClient from './api/apiClient';
 import Toast from './components/Toast';
 
@@ -124,219 +123,237 @@ const AdminSettings = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] w-full text-[var(--color-text-secondary)] font-medium">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-semibold">Loading settings...</span>
-        </div>
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        <div className="skeleton h-6 w-44" />
+        <div className="skeleton h-3.5 w-72" />
+        <div className="skeleton mt-2 h-64 w-full" />
+        <div className="skeleton h-64 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col space-y-5 sm:space-y-6 min-w-0 w-full max-w-4xl mx-auto relative pb-10 text-[var(--color-text-primary)]">
+    <div className="relative mx-auto flex w-full max-w-4xl min-w-0 flex-col gap-5 pb-10">
       {/* Toast Notification Panel */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Page Title */}
+      {/* Page Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-text-primary)]">
-          System Settings
-        </h1>
-        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium mt-1">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">
           Configure notification schedules and mess reduction holiday deduction policies.
         </p>
       </div>
 
       {/* Setting 1: Reminder Before Arrival */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-soft p-5 sm:p-7 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-[var(--color-border)]">
-          <div className="w-10 h-10 rounded-xl bg-purple-600/10 border border-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-lg shrink-0">
-            <FiClock size={20} />
+      <section className="panel">
+        <header className="panel-header">
+          <div className="flex items-start gap-3">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
+              style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+            >
+              <FiClock size={17} />
+            </div>
+            <div>
+              <h2 className="panel-title">Reminder before arrival</h2>
+              <p className="panel-subtitle">
+                Number of days before a student&apos;s arrival that warden reminders are generated.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
-              Reminder Before Arrival
-            </h2>
-            <p className="text-xs text-[var(--color-text-secondary)] font-normal">
-              Set the offset in days when upcoming arrival reminders trigger automatically for hostel staff.
-            </p>
-          </div>
-        </div>
+        </header>
 
-        <form onSubmit={handleSaveReminder} className="space-y-6">
-          <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-              Reminder Timing Window
-            </label>
-            <div className="flex items-center gap-3">
+        <form onSubmit={handleSaveReminder} className="space-y-5 p-5">
+          <div>
+            <label className="field-label" htmlFor="reminder-offset">Reminder timing window</label>
+            <div className="flex flex-wrap items-center gap-3">
               <input
+                id="reminder-offset"
                 type="number"
                 min="1"
                 step="1"
                 value={reminderOffset}
                 onChange={handleReminderChange}
-                className={`w-36 h-11 bg-[var(--color-primary-bg)] border rounded-xl px-4 text-base font-bold text-[var(--color-text-primary)] focus:outline-none transition-all shadow-sm ${
-                  reminderError
-                    ? 'border-rose-500 ring-2 ring-rose-500/20'
-                    : 'border-[var(--color-border)] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                }`}
+                className="h-10 w-28 text-[13px] font-semibold"
+                style={reminderError ? { borderColor: 'var(--color-danger)' } : undefined}
               />
-              <span className="text-sm font-bold text-[var(--color-text-secondary)]">Days Before Arrival</span>
+              <span className="text-[12.5px] font-medium text-[var(--theme-text-secondary)]">
+                days before arrival
+              </span>
             </div>
 
             {/* Quick Select Presets */}
-            <div className="pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)] mb-2 block">
-                Quick Select Presets:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {[1, 2, 3, 5, 7].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => {
-                      setReminderOffset(String(num));
-                      setReminderError('');
-                    }}
-                    className={`h-9 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      Number(reminderOffset) === num
-                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                        : 'bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-card)]'
-                    }`}
-                  >
-                    {num} {num === 1 ? 'Day' : 'Days'}
-                  </button>
-                ))}
+            <div className="mt-4">
+              <span className="section-label">Quick presets</span>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[1, 2, 3, 5, 7].map((num) => {
+                  const active = Number(reminderOffset) === num;
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setReminderOffset(String(num));
+                        setReminderError('');
+                      }}
+                      aria-pressed={active}
+                      className="h-8 rounded-[var(--radius-sm)] border px-3 text-[12px] font-medium transition-colors"
+                      style={
+                        active
+                          ? {
+                              background: 'var(--theme-btn-primary)',
+                              borderColor: 'var(--theme-btn-primary)',
+                              color: '#ffffff'
+                            }
+                          : {
+                              background: 'var(--theme-card)',
+                              borderColor: 'var(--theme-border)',
+                              color: 'var(--theme-text-secondary)'
+                            }
+                      }
+                    >
+                      {num} {num === 1 ? 'day' : 'days'}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Validation Error */}
             {reminderError && (
-              <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5 mt-2">
-                <FiAlertCircle size={14} />
+              <p className="mt-2 flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: 'var(--color-danger)' }}>
+                <FiAlertCircle size={13} />
                 {reminderError}
               </p>
             )}
           </div>
 
-          <div className="pt-4 border-t border-[var(--color-border)] flex justify-end">
+          <div
+            className="flex justify-end pt-3.5"
+            style={{ borderTop: '1px solid var(--theme-border)' }}
+          >
             <button
               type="submit"
               disabled={savingReminder || Boolean(reminderError)}
-              className={`h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                savingReminder || Boolean(reminderError)
-                  ? 'bg-purple-600/50 text-white/50 cursor-not-allowed border border-purple-600/30'
-                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white cursor-pointer shadow-md shadow-purple-500/20 active:scale-95'
-              }`}
+              className="btn btn-primary"
             >
               {savingReminder ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Saving…
                 </>
               ) : (
-                'Save Reminder Changes'
+                'Save reminder changes'
               )}
             </button>
           </div>
         </form>
-      </div>
+      </section>
 
       {/* Setting 2: Holiday Deduction */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-soft p-5 sm:p-7 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-[var(--color-border)]">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-lg shrink-0">
-            <FiCalendar size={20} />
+      <section className="panel">
+        <header className="panel-header">
+          <div className="flex items-start gap-3">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
+              style={{ background: 'var(--color-info-soft)', color: 'var(--color-info)' }}
+            >
+              <FiCalendar size={17} />
+            </div>
+            <div>
+              <h2 className="panel-title">Holiday deduction</h2>
+              <p className="panel-subtitle">
+                Days deducted from the start of every new mess reduction request.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)]">
-              Holiday Deduction
-            </h2>
-            <p className="text-xs text-[var(--color-text-secondary)] font-normal">
-              Admin-configured days (N) deducted from the start of new student mess reduction requests.
-            </p>
-          </div>
-        </div>
+        </header>
 
-        <form onSubmit={handleSaveDeduction} className="space-y-6">
-          <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-              Days to Deduct
-            </label>
-            <div className="flex items-center gap-3">
+        <form onSubmit={handleSaveDeduction} className="space-y-5 p-5">
+          <div>
+            <label className="field-label" htmlFor="holiday-deduction">Days to deduct</label>
+            <div className="flex flex-wrap items-center gap-3">
               <input
+                id="holiday-deduction"
                 type="number"
                 min="0"
                 step="1"
                 value={holidayDeduction}
                 onChange={handleDeductionChange}
-                className={`w-36 h-11 bg-[var(--color-primary-bg)] border rounded-xl px-4 text-base font-bold text-[var(--color-text-primary)] focus:outline-none transition-all shadow-sm ${
-                  deductionError
-                    ? 'border-rose-500 ring-2 ring-rose-500/20'
-                    : 'border-[var(--color-border)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
-                }`}
+                className="h-10 w-28 text-[13px] font-semibold"
+                style={deductionError ? { borderColor: 'var(--color-danger)' } : undefined}
               />
-              <span className="text-sm font-bold text-[var(--color-text-secondary)]">Days Deducted</span>
+              <span className="text-[12.5px] font-medium text-[var(--theme-text-secondary)]">
+                days deducted
+              </span>
             </div>
 
             {/* Quick Select Presets */}
-            <div className="pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)] mb-2 block">
-                Quick Select Presets:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {[0, 1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => {
-                      setHolidayDeduction(String(num));
-                      setDeductionError('');
-                    }}
-                    className={`h-9 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      Number(holidayDeduction) === num
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                        : 'bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-card)]'
-                    }`}
-                  >
-                    {num} {num === 1 ? 'Day' : 'Days'}
-                  </button>
-                ))}
+            <div className="mt-4">
+              <span className="section-label">Quick presets</span>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[0, 1, 2, 3, 4, 5].map((num) => {
+                  const active = Number(holidayDeduction) === num;
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setHolidayDeduction(String(num));
+                        setDeductionError('');
+                      }}
+                      aria-pressed={active}
+                      className="h-8 rounded-[var(--radius-sm)] border px-3 text-[12px] font-medium transition-colors"
+                      style={
+                        active
+                          ? {
+                              background: 'var(--theme-btn-primary)',
+                              borderColor: 'var(--theme-btn-primary)',
+                              color: '#ffffff'
+                            }
+                          : {
+                              background: 'var(--theme-card)',
+                              borderColor: 'var(--theme-border)',
+                              color: 'var(--theme-text-secondary)'
+                            }
+                      }
+                    >
+                      {num} {num === 1 ? 'day' : 'days'}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Validation Error */}
             {deductionError && (
-              <p className="text-xs font-bold text-rose-500 flex items-center gap-1.5 mt-2">
-                <FiAlertCircle size={14} />
+              <p className="mt-2 flex items-center gap-1.5 text-[11.5px] font-medium" style={{ color: 'var(--color-danger)' }}>
+                <FiAlertCircle size={13} />
                 {deductionError}
               </p>
             )}
           </div>
 
-          <div className="pt-4 border-t border-[var(--color-border)] flex justify-end">
+          <div
+            className="flex justify-end pt-3.5"
+            style={{ borderTop: '1px solid var(--theme-border)' }}
+          >
             <button
               type="submit"
               disabled={savingDeduction || Boolean(deductionError)}
-              className={`h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                savingDeduction || Boolean(deductionError)
-                  ? 'bg-indigo-600/50 text-white/50 cursor-not-allowed border border-indigo-600/30'
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white cursor-pointer shadow-md shadow-indigo-500/20 active:scale-95'
-              }`}
+              className="btn btn-primary"
             >
               {savingDeduction ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Saving…
                 </>
               ) : (
-                'Save Deduction Changes'
+                'Save deduction changes'
               )}
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 };

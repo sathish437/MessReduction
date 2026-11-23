@@ -98,6 +98,9 @@ public class ReductionForm {
     @Enumerated(EnumType.STRING)
     private FormStatus rejectedStage;
 
+    @Column
+    private LocalDateTime rejectedAt;
+
     @Enumerated(EnumType.STRING)
     private FormStatus resumeStage;
 

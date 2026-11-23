@@ -14,37 +14,42 @@ const TYPE_CONFIG = {
   success: {
     title: 'Success',
     icon: FiCheckCircle,
-    accentBorder: 'border-emerald-500/50',
-    iconBg: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
-    glow: 'from-emerald-500/10'
+    accent: 'var(--color-success)',
+    chipBg: 'var(--color-success-soft)',
+    chipColor: 'var(--color-success)',
+    chipBorder: 'var(--color-success-border)'
   },
   warning: {
     title: 'Warning',
     icon: FiAlertTriangle,
-    accentBorder: 'border-amber-500/50',
-    iconBg: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
-    glow: 'from-amber-500/10'
+    accent: 'var(--color-warning)',
+    chipBg: 'var(--color-warning-soft)',
+    chipColor: 'var(--color-warning)',
+    chipBorder: 'var(--color-warning-border)'
   },
   'already-registered': {
     title: 'Already Registered',
     icon: FiAlertTriangle,
-    accentBorder: 'border-amber-500/50',
-    iconBg: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
-    glow: 'from-amber-500/10'
+    accent: 'var(--color-warning)',
+    chipBg: 'var(--color-warning-soft)',
+    chipColor: 'var(--color-warning)',
+    chipBorder: 'var(--color-warning-border)'
   },
   error: {
     title: 'Error',
     icon: FiXCircle,
-    accentBorder: 'border-rose-500/50',
-    iconBg: 'bg-rose-500/20 text-rose-400 border border-rose-500/40',
-    glow: 'from-rose-500/10'
+    accent: 'var(--color-danger)',
+    chipBg: 'var(--color-danger-soft)',
+    chipColor: 'var(--color-danger)',
+    chipBorder: 'var(--color-danger-border)'
   },
   info: {
     title: 'Information',
     icon: FiInfo,
-    accentBorder: 'border-sky-500/50',
-    iconBg: 'bg-sky-500/20 text-sky-400 border border-sky-500/40',
-    glow: 'from-sky-500/10'
+    accent: 'var(--color-info)',
+    chipBg: 'var(--color-info-soft)',
+    chipColor: 'var(--color-info)',
+    chipBorder: 'var(--color-info-border)'
   }
 };
 
@@ -86,60 +91,88 @@ export default function Toast({ toast, onClose, onLogin }) {
       {toast && (
         <motion.div
           key="centered-toast-portal"
-          initial={{ opacity: 0, y: -40, x: "-50%", scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
-          exit={{ opacity: 0, y: -40, x: "-50%", scale: 0.95 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="fixed top-6 left-1/2 z-[99999] w-[calc(100vw-2.5rem)] sm:w-[480px] max-w-[520px] pointer-events-auto"
+          role="status"
+          aria-live="polite"
+          initial={{ opacity: 0, y: -24, x: '-50%', scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
+          exit={{ opacity: 0, y: -16, x: '-50%', scale: 0.98 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed top-5 sm:top-6 left-1/2 z-[99999] w-[calc(100vw-2rem)] sm:w-[440px] max-w-[520px] pointer-events-auto"
         >
-          <div className={`relative flex items-start gap-4 min-h-[96px] p-4 sm:p-5 rounded-2xl bg-slate-900/95 text-white border ${config.accentBorder} shadow-2xl shadow-black/80 backdrop-blur-md overflow-hidden group select-none`}>
-            {/* Subtle background gradient glow */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${config.glow} to-transparent opacity-40 pointer-events-none`} />
+          <div
+            className="relative flex items-start gap-3.5 p-4 rounded-[var(--radius-lg)] overflow-hidden"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-raised)'
+            }}
+          >
+            <span
+              className="absolute left-0 top-0 bottom-0 w-[3px]"
+              style={{ background: config.accent }}
+              aria-hidden="true"
+            />
 
-            {/* Left Accent Bar */}
-            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-              typeKey === 'success' ? 'bg-emerald-500' :
-              typeKey === 'error' ? 'bg-rose-500' :
-              typeKey === 'info' ? 'bg-sky-500' : 'bg-amber-500'
-            }`} />
-
-            {/* Icon Badge */}
-            <div className={`mt-0.5 p-3 rounded-xl shrink-0 ${config.iconBg} shadow-md`}>
-              <IconComponent className="text-2xl sm:text-3xl" />
+            <div
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
+              style={{
+                background: config.chipBg,
+                color: config.chipColor,
+                border: `1px solid ${config.chipBorder}`
+              }}
+            >
+              <IconComponent className="text-lg" />
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 min-w-0 pr-1 relative z-10 my-auto">
-              <h4 className="text-base sm:text-lg font-bold tracking-tight text-white leading-snug">
+            <div className="flex-1 min-w-0">
+              <h4
+                className="text-[13.5px] font-semibold leading-snug"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
                 {title}
               </h4>
               {message && (
-                <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed mt-1 break-words opacity-95">
+                <p
+                  className="mt-1 text-xs leading-relaxed break-words"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
                   {message}
                 </p>
               )}
 
-              {/* Special Action Button for Already Registered */}
               {typeKey === 'already-registered' && onLogin && (
                 <button
                   type="button"
                   onClick={onLogin}
-                  className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 transition-all cursor-pointer shadow-sm"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer"
+                  style={{
+                    background: 'var(--color-warning-soft)',
+                    color: 'var(--color-warning)',
+                    border: '1px solid var(--color-warning-border)'
+                  }}
                 >
-                  <FiLogIn size={14} /> Go to Student Login
+                  <FiLogIn size={13} /> Go to Student Login
                 </button>
               )}
             </div>
 
-            {/* Close Button */}
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="shrink-0 p-1.5 -mr-1.5 -mt-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer relative z-10"
-                title="Dismiss"
+                aria-label="Dismiss notification"
+                className="shrink-0 -mr-1 -mt-1 rounded-[var(--radius-sm)] p-1.5 transition-colors cursor-pointer"
+                style={{ color: 'var(--theme-text-faint)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--theme-bg-soft)';
+                  e.currentTarget.style.color = 'var(--theme-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--theme-text-faint)';
+                }}
               >
-                <FiX className="text-lg sm:text-xl" />
+                <FiX size={16} />
               </button>
             )}
           </div>

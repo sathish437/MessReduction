@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MdSearch, MdFilterList,
-  MdDelete, MdEdit, MdVisibility, MdMoreVert, MdCheckCircle, MdCancel
+  MdSearch, MdAdd, MdPeople,
+  MdDelete, MdEdit, MdVisibility
 } from 'react-icons/md';
 import apiClient from './api/apiClient';
 import { getActiveDepartments } from './api/departmentService';
@@ -226,71 +226,82 @@ const AdminStudents = () => {
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Header Actions */}
-      <div className="flex items-center justify-between gap-3 w-full">
-        <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-text-primary)]">Students</h2>
-        <button 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Students</h1>
+          <p className="page-subtitle">Hostel student directory and account records.</p>
+        </div>
+        <button
           onClick={() => {
             setFormData({ name: '', emailId: '', registerNo: '', rollNo: '', phoneNo: '', dob: '', department: '', gender: '', currentYear: '' });
             setShowForm(true);
           }}
-          className="h-10 sm:h-11 px-3.5 sm:px-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-95"
+          className="btn btn-primary self-start sm:self-auto"
         >
-          + Add Student
+          <MdAdd size={16} /> Add student
         </button>
       </div>
 
-      {/* Admin Filters Card */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-3 sm:p-4 shadow-soft flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 w-full">
-        <div className="relative flex-1">
-          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
-          <input 
-            type="text"
-            placeholder="Search Name, Reg No, Roll No, Phone..."
-            className="w-full h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        
-        <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full md:w-auto">
-          <select 
-            value={selectedDept}
-            onChange={(e) => { setSelectedDept(e.target.value); setPage(0); }}
-            className="h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2 sm:px-3 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full min-w-0"
-          >
-            <option value="">All Depts</option>
-            {activeDepts.length > 0 ? (
-              activeDepts.map(d => (
-                <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
-              ))
-            ) : (
-              ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
-                <option key={code} value={code}>{code}</option>
-              ))
-            )}
-          </select>
+      {/* Filters */}
+      <div className="panel p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="field-shell flex-1 lg:max-w-sm">
+            <MdSearch size={16} style={{ color: 'var(--theme-text-faint)' }} />
+            <input
+              type="text"
+              placeholder="Search name, register no, roll no or phone"
+              className="w-full flex-1 bg-transparent text-[13px] font-medium focus:outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-          <select 
-            value={selectedGender}
-            onChange={(e) => { setSelectedGender(e.target.value); setPage(0); }}
-            className="h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2 sm:px-3 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full min-w-0"
-          >
-            <option value="">Genders</option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:ml-auto lg:grid-cols-3">
+            <label className="sr-only" htmlFor="student-dept-filter">Department</label>
+            <select
+              id="student-dept-filter"
+              value={selectedDept}
+              onChange={(e) => { setSelectedDept(e.target.value); setPage(0); }}
+              className="h-9 min-h-0 py-0 text-[12px] font-medium"
+            >
+              <option value="">All departments</option>
+              {activeDepts.length > 0 ? (
+                activeDepts.map(d => (
+                  <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
+                ))
+              ) : (
+                ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MECHATRONICS"].map(code => (
+                  <option key={code} value={code}>{code}</option>
+                ))
+              )}
+            </select>
 
-          <select 
-            value={selectedYear}
-            onChange={(e) => { setSelectedYear(e.target.value); setPage(0); }}
-            className="h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2 sm:px-3 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full min-w-0"
-          >
-            <option value="">Years</option>
-            <option value="1">1st Year</option>
-            <option value="2">2nd Year</option>
-            <option value="3">3rd Year</option>
-            <option value="4">4th Year</option>
-          </select>
+            <label className="sr-only" htmlFor="student-gender-filter">Gender</label>
+            <select
+              id="student-gender-filter"
+              value={selectedGender}
+              onChange={(e) => { setSelectedGender(e.target.value); setPage(0); }}
+              className="h-9 min-h-0 py-0 text-[12px] font-medium"
+            >
+              <option value="">All genders</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+
+            <label className="sr-only" htmlFor="student-year-filter">Year</label>
+            <select
+              id="student-year-filter"
+              value={selectedYear}
+              onChange={(e) => { setSelectedYear(e.target.value); setPage(0); }}
+              className="h-9 min-h-0 py-0 text-[12px] font-medium"
+            >
+              <option value="">All years</option>
+              <option value="1">1st year</option>
+              <option value="2">2nd year</option>
+              <option value="3">3rd year</option>
+              <option value="4">4th year</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -298,109 +309,168 @@ const AdminStudents = () => {
       <AnimatePresence>
         {selectedIds.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-rose-300"
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col items-stretch justify-between gap-3 rounded-[var(--radius-lg)] p-3.5 sm:flex-row sm:items-center"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--color-danger-border)',
+              boxShadow: 'var(--shadow-raised)'
+            }}
           >
-            <span className="text-xs sm:text-sm font-bold">{selectedIds.length} students selected</span>
-            <div className="flex gap-2">
-              <button onClick={handleBulkDelete} className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer">
-                <MdDelete size={18} /> Delete
-              </button>
+            <div className="flex items-center gap-2.5">
+              <span
+                className="flex h-7 min-w-7 items-center justify-center rounded-[6px] px-1.5 text-[11.5px] font-semibold text-white"
+                style={{ background: 'var(--color-danger)' }}
+              >
+                {selectedIds.length}
+              </span>
+              <span className="text-[12.5px] font-medium text-[var(--theme-text-primary)]">
+                {selectedIds.length === 1 ? 'student selected' : 'students selected'}
+              </span>
             </div>
+            <button onClick={handleBulkDelete} className="btn btn-danger flex-1 sm:flex-none">
+              <MdDelete size={16} /> Delete selected
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Data Table Container */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-soft flex flex-col min-w-0 w-full">
-        <div className="overflow-x-auto select-none w-full">
-          <table className="w-full text-left text-xs sm:text-sm min-w-[750px] border-collapse">
-            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+      <div className="panel overflow-hidden">
+        {!loading && students.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <MdPeople size={20} style={{ color: 'var(--color-accent)' }} />
+            </div>
+            <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No students found</h3>
+            <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+              No records match the current filters. Try a different department, year or search term.
+            </p>
+          </div>
+        )}
+        <div className={`select-none overflow-x-auto ${!loading && students.length === 0 ? 'hidden' : ''}`}>
+          <table className="data-table min-w-[820px]">
+            <thead>
               <tr>
-                <th className="px-4 py-3.5 w-12 text-center">
+                <th className="w-12 text-center">
                   <input
                     type="checkbox"
-                    className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
+                    className="h-4 w-4 cursor-pointer accent-[var(--theme-btn-primary)]"
                     onChange={handleSelectAll}
                     checked={students.length > 0 && selectedIds.length === students.length}
+                    aria-label="Select all students"
                   />
                 </th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('registerNo')}>Reg No {sortBy === 'registerNo' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('name')}>Name {sortBy === 'name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('department')}>Dept {sortBy === 'department' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('year')}>Year {sortBy === 'year' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('phoneNo')}>Phone</th>
-                <th className="px-4 py-3.5 text-center">Actions</th>
+                {[
+                  { key: 'registerNo', label: 'Reg No' },
+                  { key: 'name', label: 'Name' },
+                  { key: 'department', label: 'Dept' },
+                  { key: 'year', label: 'Year' }
+                ].map(col => (
+                  <th
+                    key={col.key}
+                    className="cursor-pointer select-none transition-colors hover:text-[var(--theme-text-primary)]"
+                    onClick={() => handleSort(col.key)}
+                  >
+                    {col.label}{' '}
+                    <span className="text-[10px] text-[var(--theme-text-faint)]">
+                      {sortBy === col.key ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                    </span>
+                  </th>
+                ))}
+                <th>Phone</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">
-                    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    Loading students...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan="7">
+                      <div className="skeleton my-1.5 h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
               ) : students.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">No students found.</td>
+                  <td colSpan="7">
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <MdPeople size={20} style={{ color: 'var(--color-accent)' }} />
+                      </div>
+                      <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No students found</h3>
+                      <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+                        No records match the current filters. Try a different department, year or search term.
+                      </p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 students.map((student) => (
-                  <tr key={student.studentId} className="hover:bg-[var(--color-card)]/50 transition-colors">
-                    <td className="px-4 py-3.5 text-center">
+                  <tr key={student.studentId}>
+                    <td className="text-center">
                       <input
                         type="checkbox"
-                        className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
+                        className="h-4 w-4 cursor-pointer accent-[var(--theme-btn-primary)]"
                         checked={selectedIds.includes(student.studentId)}
                         onChange={() => handleSelectOne(student.studentId)}
+                        aria-label={`Select ${student.name}`}
                       />
                     </td>
-                    <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">{student.registerNo}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-purple-600/10 border border-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">
+                    <td className="whitespace-nowrap">
+                      <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{student.registerNo}</span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-semibold"
+                          style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                        >
                           {student.name.charAt(0)}
                         </div>
-                        <div>
-                          <div className="font-bold text-[var(--color-text-primary)]">{student.name}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)] font-normal">{student.emailId}</div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold text-[var(--theme-text-primary)]">{student.name}</p>
+                          <p className="truncate text-[11px] text-[var(--theme-text-secondary)]">{student.emailId}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-bold text-[var(--color-text-primary)]">
-                        {student.department}
-                      </span>
+                    <td>
+                      <span className="badge badge-neutral">{student.department}</span>
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-medium">
-                      {student.currentYear ? `${student.currentYear}${student.currentYear === 1 ? 'st' : student.currentYear === 2 ? 'nd' : student.currentYear === 3 ? 'rd' : 'th'} Year` : '-'}
+                    <td className="whitespace-nowrap text-[12px] font-medium text-[var(--theme-text-secondary)]">
+                      {student.currentYear ? `${student.currentYear}${student.currentYear === 1 ? 'st' : student.currentYear === 2 ? 'nd' : student.currentYear === 3 ? 'rd' : 'th'} year` : '—'}
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-mono text-xs font-semibold">{student.phoneNo}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="whitespace-nowrap">
+                      <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{student.phoneNo}</span>
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => { setSelectedStudent(student); setShowDetails(true); }}
-                          className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                          title="View Details"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-accent-border)', color: 'var(--color-accent)' }}
+                          title="View details"
                         >
-                          <MdVisibility size={18} />
+                          <MdVisibility size={15} />
                         </button>
                         <button
                           onClick={() => { setFormData(student); setShowForm(true); }}
-                          className="w-9 h-9 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                          title="Edit Student"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={{ background: 'var(--color-info-soft)', borderColor: 'var(--color-info-border)', color: 'var(--color-info)' }}
+                          title="Edit student"
                         >
-                          <MdEdit size={18} />
+                          <MdEdit size={15} />
                         </button>
                         <button
                           onClick={() => handleDeleteOne(student.studentId)}
-                          className="w-9 h-9 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                          title="Delete Student"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={{ background: 'var(--color-danger-soft)', borderColor: 'var(--color-danger-border)', color: 'var(--color-danger)' }}
+                          title="Delete student"
                         >
-                          <MdDelete size={18} />
+                          <MdDelete size={15} />
                         </button>
                       </div>
                     </td>
@@ -412,13 +482,15 @@ const AdminStudents = () => {
         </div>
 
         {/* Pagination */}
-        <div className="border-t border-[var(--color-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--color-surface)] w-full">
-          <div className="flex items-center gap-3 text-xs sm:text-sm text-[var(--color-text-secondary)] font-semibold">
-            <span>Rows per page:</span>
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--theme-border)] bg-[var(--theme-card)] px-4 py-3 sm:flex-row">
+          <div className="flex items-center gap-2 text-[11.5px] text-[var(--theme-text-secondary)]">
+            <span>Rows per page</span>
             <select
-              className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 outline-none focus:border-purple-500 text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
+              className="h-8 min-h-0 py-0 text-[12px] font-medium"
+              style={{ width: 'auto' }}
               value={size}
               onChange={(e) => { setSize(Number(e.target.value)); setPage(0); }}
+              aria-label="Rows per page"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -426,99 +498,112 @@ const AdminStudents = () => {
               <option value={100}>100</option>
             </select>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-            >
+          <div className="flex items-center gap-2">
+            <button className="btn btn-secondary h-8 px-3 text-[12px]" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
               Previous
             </button>
-            <span className="text-xs sm:text-sm font-bold px-2 text-[var(--color-text-primary)]">Page {page + 1} of {Math.max(1, totalPages)}</span>
-            <button
-              className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages - 1}
-            >
+            <span className="text-[11.5px] font-medium text-[var(--theme-text-secondary)]">
+              Page <span className="font-semibold text-[var(--theme-text-primary)]">{page + 1}</span> of {Math.max(1, totalPages)}
+            </span>
+            <button className="btn btn-secondary h-8 px-3 text-[12px]" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
               Next
             </button>
           </div>
         </div>
       </div>
 
+
       {/* Student Details Dialog */}
       {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 backdrop-blur-[2px]"
+            style={{ background: 'rgba(11, 23, 40, 0.55)' }}
+            onClick={() => setShowDetails(false)}
+          />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-3xl max-h-[90vh] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="true"
+            className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[var(--radius-lg)]"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-modal)'
+            }}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Student Details</h3>
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--theme-border)] px-6 py-4">
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">Student details</h3>
+                <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                  {selectedStudent?.name || 'Student record'}
+                </p>
+              </div>
               <button
                 onClick={() => setShowDetails(false)}
-                className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-primary-bg)] transition-colors text-base cursor-pointer"
+                aria-label="Close"
+                className="rounded-[var(--radius-sm)] p-1.5 text-[var(--theme-text-faint)] transition-colors hover:bg-[var(--theme-bg-soft)] hover:text-[var(--theme-text-primary)]"
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 sm:p-8 overflow-y-auto flex-1 bg-[var(--color-surface)] space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Personal Information */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
-                    Personal Information
+                <div className="space-y-3">
+                  <h4 className="section-label" style={{ color: 'var(--color-accent)' }}>
+                    Personal information
                   </h4>
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Name</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.name || '-'}</span>
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Name</span>
+                      <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">{selectedStudent?.name || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Email</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)] break-all">{selectedStudent?.emailId || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Email</span>
+                      <span className="break-all text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.emailId || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Phone</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.phoneNo || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Phone</span>
+                      <span className="font-mono text-[12.5px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.phoneNo || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">DOB</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.dob || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Date of birth</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.dob || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Gender</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.gender || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Gender</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.gender || '—'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Academic Information */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
-                    Academic Information
+                <div className="space-y-3">
+                  <h4 className="section-label" style={{ color: 'var(--color-accent)' }}>
+                    Academic information
                   </h4>
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Register No</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.registerNo || '-'}</span>
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Register no</span>
+                      <span className="font-mono text-[12.5px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.registerNo || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Roll No</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.rollNo || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Roll no</span>
+                      <span className="font-mono text-[12.5px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.rollNo || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Department</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.department || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Department</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.department || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Year</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedStudent?.currentYear || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Year</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedStudent?.currentYear || '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -526,11 +611,11 @@ const AdminStudents = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[var(--color-border)] flex justify-end bg-[var(--color-surface)]">
-              <button
-                onClick={() => setShowDetails(false)}
-                className="px-5 py-2 rounded-xl bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-purple-500/40 transition-all cursor-pointer"
-              >
+            <div
+              className="flex justify-end px-6 py-3.5"
+              style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
+            >
+              <button onClick={() => setShowDetails(false)} className="btn btn-secondary">
                 Close
               </button>
             </div>
@@ -540,46 +625,76 @@ const AdminStudents = () => {
 
       {/* Add / Edit Student Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 backdrop-blur-[2px]"
+            style={{ background: 'rgba(11, 23, 40, 0.55)' }}
+            onClick={() => setShowForm(false)}
+          />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="admin-card w-full max-w-2xl max-h-[90vh] rounded-2xl border border-[var(--color-border)] overflow-hidden flex flex-col shadow-2xl bg-[var(--color-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-[var(--color-border)]"
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="true"
+            className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--radius-lg)]"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-modal)'
+            }}
           >
-            <div className="p-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-primary-bg)]">
-              <h3 className="text-xl font-bold">{formData.studentId ? 'Edit Student' : 'Add Student'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">✕</button>
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--theme-border)] px-6 py-4">
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">
+                  {formData.studentId ? 'Edit student' : 'Add student'}
+                </h3>
+                <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                  {formData.studentId
+                    ? 'Update the student record and save your changes.'
+                    : 'Create a new student record for the hostel directory.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                aria-label="Close"
+                className="rounded-[var(--radius-sm)] p-1.5 text-[var(--theme-text-faint)] transition-colors hover:bg-[var(--theme-bg-soft)] hover:text-[var(--theme-text-primary)]"
+              >
+                ✕
+              </button>
             </div>
-            <form onSubmit={handleFormSubmit} className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <form onSubmit={handleFormSubmit} className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Name</label>
-                  <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-name">Name</label>
+                  <input id="student-name" required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Email</label>
-                  <input required type="email" value={formData.emailId} onChange={e => setFormData({ ...formData, emailId: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-email">Email</label>
+                  <input id="student-email" required type="email" value={formData.emailId} onChange={e => setFormData({ ...formData, emailId: e.target.value })} className="w-full text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Register No</label>
-                  <input required type="text" value={formData.registerNo} onChange={e => setFormData({ ...formData, registerNo: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-register">Register no</label>
+                  <input id="student-register" required type="text" value={formData.registerNo} onChange={e => setFormData({ ...formData, registerNo: e.target.value })} className="w-full font-mono text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Roll No</label>
-                  <input required type="text" value={formData.rollNo} onChange={e => setFormData({ ...formData, rollNo: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-roll">Roll no</label>
+                  <input id="student-roll" required type="text" value={formData.rollNo} onChange={e => setFormData({ ...formData, rollNo: e.target.value })} className="w-full font-mono text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Phone No</label>
-                  <input required type="text" value={formData.phoneNo} onChange={e => setFormData({ ...formData, phoneNo: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-phone">Phone no</label>
+                  <input id="student-phone" required type="text" value={formData.phoneNo} onChange={e => setFormData({ ...formData, phoneNo: e.target.value })} className="w-full font-mono text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">DOB</label>
-                  <input required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300" />
+                  <label className="field-label" htmlFor="student-dob">Date of birth</label>
+                  <input id="student-dob" required type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} className="w-full text-[13px]" />
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Department</label>
-                  <select required value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-all duration-300">
-                    <option value="">Select Dept</option>
+                  <label className="field-label" htmlFor="student-department">Department</label>
+                  <select id="student-department" required value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full text-[13px]">
+                    <option value="">Select department</option>
                     {activeDepts.length > 0 ? (
                       activeDepts.map(d => (
                         <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
@@ -592,27 +707,35 @@ const AdminStudents = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Gender</label>
-                  <select required value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300">
-                    <option value="">Select Gender</option>
-                    <option value="MALE">MALE</option>
-                    <option value="FEMALE">FEMALE</option>
+                  <label className="field-label" htmlFor="student-gender">Gender</label>
+                  <select id="student-gender" required value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="w-full text-[13px]">
+                    <option value="">Select gender</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Year</label>
-                  <select required value={formData.currentYear} onChange={e => setFormData({ ...formData, currentYear: e.target.value })} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all duration-300">
-                    <option value="">Select Year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
+                  <label className="field-label" htmlFor="student-year">Year</label>
+                  <select id="student-year" required value={formData.currentYear} onChange={e => setFormData({ ...formData, currentYear: e.target.value })} className="w-full text-[13px]">
+                    <option value="">Select year</option>
+                    <option value="1">1st year</option>
+                    <option value="2">2nd year</option>
+                    <option value="3">3rd year</option>
+                    <option value="4">4th year</option>
                   </select>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-border)]">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-card)] transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-colors font-medium">Save Student</button>
+
+              <div
+                className="flex items-center justify-end gap-2 pt-3.5"
+                style={{ borderTop: '1px solid var(--theme-border)' }}
+              >
+                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {formData.studentId ? 'Save changes' : 'Add student'}
+                </button>
               </div>
             </form>
           </motion.div>

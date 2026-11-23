@@ -134,6 +134,22 @@ public class JwtFilter extends OncePerRequestFilter {
             return headerAuth.substring(7);
         }
 
+        // Support native EventSource query parameter token authentication
+        String tokenParam = request.getParameter("token");
+        if (StringUtils.hasText(tokenParam)) {
+            return tokenParam;
+        }
+
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("staffToken".equals(cookie.getName()) || "token".equals(cookie.getName())) {
+                    if (StringUtils.hasText(cookie.getValue())) {
+                        return cookie.getValue();
+                    }
+                }
+            }
+        }
+
         return null;
     }
 }

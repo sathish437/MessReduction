@@ -77,6 +77,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(exp.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<HashMap<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException exp) {
+        return buildErrorResponse(exp.getMessage() != null ? exp.getMessage() : "Access Denied", HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<HashMap<String, Object>> handleBadRequest(BadRequestException exp) {
         telegram.sendExceptionAlert(exp, "BadRequestException");

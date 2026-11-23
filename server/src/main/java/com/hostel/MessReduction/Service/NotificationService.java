@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 public class NotificationService {
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
     
-    // Testing Mode configuration
-    private static final boolean TESTING_MODE = true;
+    // Production Notification configuration - historical notifications are persisted
+    private static final boolean TESTING_MODE = false;
     private Long appStartId = 0L;
     
     private final AppNotificationRepository notificationRepo;

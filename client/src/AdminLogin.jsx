@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MdAdminPanelSettings, MdLock, MdPerson, MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { MdAdminPanelSettings, MdPerson, MdVisibility, MdVisibilityOff, MdLockOutline } from 'react-icons/md';
+import { FiAlertCircle } from 'react-icons/fi';
 import apiClient from './api/apiClient';
 import { setStaffAuth } from './services/authService';
+import AuthShell, { AuthCardHeader } from './components/AuthShell';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -26,7 +28,7 @@ const AdminLogin = () => {
       });
 
       const { token, role } = response.data;
-      
+
       if (role !== 'ADMIN') {
         setError('Access denied. Admin role required.');
         return;
@@ -34,7 +36,6 @@ const AdminLogin = () => {
 
       setStaffAuth(token, username, role);
       navigate('/admin/dashboard');
-
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check credentials.');
     } finally {
@@ -43,83 +44,118 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="admin-bg min-h-screen flex items-center justify-center p-3 sm:p-4 overflow-hidden relative">
-      {/* Background Effects */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-900/20 rounded-full blur-[100px]"></div>
-      </div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="admin-glass w-full max-w-md p-5 sm:p-8 rounded-2xl relative z-10 shadow-2xl shadow-black"
-      >
-        <div className="text-center mb-5 sm:mb-8">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
-            className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-purple-800 rounded-2xl mx-auto flex items-center justify-center mb-3 sm:mb-4 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-          >
-            <MdAdminPanelSettings className="text-2xl sm:text-3xl text-white" />
-          </motion.div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-wider text-white">ADMIN<span className="text-purple-500">PORTAL</span></h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-1 sm:mt-2 font-medium">Secure System Authentication</p>
-        </div>
+    <AuthShell
+      onNavigate={navigate}
+      backTo="/"
+      backLabel="Portal home"
+      maxWidth="410px"
+      footerNote="Administration Console"
+    >
+      <div className="panel p-6 sm:p-7">
+        <AuthCardHeader
+          eyebrow="Administration"
+          title="Administrator sign in"
+          subtitle="Secure access for system administrators only."
+          icon={<MdAdminPanelSettings size={19} />}
+        />
 
         {error && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-purple-500/10 border border-purple-500/50 text-purple-500 text-xs sm:text-sm p-2.5 sm:p-3 rounded-xl mb-4 sm:mb-6 text-center">
-            {error}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-xs font-medium"
+            style={{
+              background: 'var(--color-danger-soft)',
+              border: '1px solid var(--color-danger-border)',
+              color: 'var(--color-danger)'
+            }}
+          >
+            <FiAlertCircle className="mt-[1px] shrink-0" size={14} />
+            <span>{error}</span>
           </motion.div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-5">
-          <div className="relative">
-            <MdPerson className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base sm:text-xl" />
-            <input 
-              type="text" 
-              placeholder="Admin Username" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-[#0A0A0A] border border-gray-800 rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-4 text-xs sm:text-base text-white focus:outline-none focus:border-purple-500 focus:shadow-[0_0_10px_rgba(168,85,247,0.2)] transition-all"
-              required 
-            />
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="flex w-full flex-col gap-1.5 text-left">
+            <label htmlFor="admin-username" className="field-label">
+              Administrator username
+            </label>
+            <div className="field-shell">
+              <span className="shrink-0" style={{ color: 'var(--theme-text-faint)' }}>
+                <MdPerson size={17} />
+              </span>
+              <input
+                id="admin-username"
+                type="text"
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+                className="w-full flex-1 bg-transparent font-medium focus:outline-none"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <MdLock className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-gray-500 text-base sm:text-xl" />
-            <input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#0A0A0A] border border-gray-800 rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-10 sm:pr-12 text-xs sm:text-base text-white focus:outline-none focus:border-purple-500 focus:shadow-[0_0_10px_rgba(168,85,247,0.2)] transition-all"
-              required 
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 sm:right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              {showPassword ? <MdVisibilityOff className="text-base sm:text-xl" /> : <MdVisibility className="text-base sm:text-xl" />}
-            </button>
+
+          <div className="flex w-full flex-col gap-1.5 text-left">
+            <label htmlFor="admin-password" className="field-label">
+              Password
+            </label>
+            <div className="field-shell relative">
+              <span className="shrink-0" style={{ color: 'var(--theme-text-faint)' }}>
+                <MdLockOutline size={17} />
+              </span>
+              <input
+                id="admin-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="w-full flex-1 bg-transparent pr-8 font-medium focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 flex items-center justify-center transition-colors"
+                style={{ color: 'var(--theme-text-faint)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--theme-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--theme-text-faint)'; }}
+              >
+                {showPassword ? <MdVisibilityOff size={17} /> : <MdVisibility size={17} />}
+              </button>
+            </div>
           </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs sm:text-base font-bold rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.3)] hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all admin-lift disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
+
+          <button type="submit" disabled={loading} className="btn btn-primary mt-1 w-full">
             {loading ? (
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Authenticating…
+              </>
             ) : (
-              'AUTHORIZE ACCESS'
+              'Authorise access'
             )}
           </button>
         </form>
-      </motion.div>
-    </div>
+
+        <div
+          className="mt-5 flex items-start gap-2 rounded-[var(--radius-md)] px-3 py-2.5"
+          style={{ background: 'var(--theme-bg-soft)', border: '1px solid var(--theme-border)' }}
+        >
+          <span className="mt-[1px] shrink-0" style={{ color: 'var(--theme-text-faint)' }}>
+            <MdAdminPanelSettings size={15} />
+          </span>
+          <p className="text-[11px] leading-relaxed" style={{ color: 'var(--theme-text-secondary)' }}>
+            All administrator activity is logged. Unauthorised access attempts are recorded and
+            reported to the college IT cell.
+          </p>
+        </div>
+      </div>
+    </AuthShell>
   );
 };
 

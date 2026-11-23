@@ -37,8 +37,15 @@ export default function CustomSelect({
         setIsOpen(false);
       }
     };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   const handleSelect = (optionValue) => {
@@ -49,10 +56,10 @@ export default function CustomSelect({
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full text-left relative" ref={dropdownRef}>
+    <div className="relative flex w-full flex-col gap-1.5 text-left" ref={dropdownRef}>
       {label && (
-        <label htmlFor={id} className="text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
+        <label htmlFor={id} className="field-label">
+          {label} {required && <span style={{ color: 'var(--color-danger)' }}>*</span>}
         </label>
       )}
 
@@ -60,46 +67,66 @@ export default function CustomSelect({
         type="button"
         id={id}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         onClick={() => !disabled && setIsOpen(prev => !prev)}
-        className={`flex items-center justify-between gap-3 rounded-[12px] border px-4 py-3.5 transition-all duration-200 w-full text-left cursor-pointer
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-black/10' : 'bg-[var(--color-surface)]'}
-          ${error ? 'border-[var(--color-danger)]/50 bg-[var(--color-danger)]/5' : 'border-[var(--color-border)] hover:border-[var(--color-btn-primary)]/50'}
-          ${isOpen ? 'border-[var(--color-btn-primary)] ring-2 ring-[var(--color-btn-primary)]/20' : ''}
-          ${className}`}
+        className={`field-shell w-full justify-between text-left ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${className}`}
+        style={{
+          borderColor: error
+            ? 'var(--color-danger-border)'
+            : isOpen
+              ? 'var(--theme-btn-primary)'
+              : undefined,
+          background: disabled ? 'var(--theme-card-muted)' : 'var(--theme-card)',
+          boxShadow: isOpen ? '0 0 0 3px rgba(23, 74, 120, 0.12)' : undefined
+        }}
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <span className="flex min-w-0 flex-1 items-center gap-2.5">
           {icon && (
-            <span className={`shrink-0 text-lg transition-colors ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}>
+            <span
+              className="shrink-0"
+              style={{ color: error ? 'var(--color-danger)' : 'var(--theme-text-faint)' }}
+            >
               {icon}
             </span>
           )}
-          <span className={`text-base font-medium truncate ${selectedOption ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]/60'}`}>
+          <span
+            className="truncate text-[13.5px] font-medium"
+            style={{ color: selectedOption ? 'var(--theme-text-primary)' : 'var(--theme-text-faint)' }}
+          >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
-        </div>
+        </span>
 
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="text-[var(--color-text-secondary)] shrink-0"
+          transition={{ duration: 0.18 }}
+          className="shrink-0"
+          style={{ color: 'var(--theme-text-faint)' }}
         >
-          <FiChevronDown size={18} />
+          <FiChevronDown size={16} />
         </motion.span>
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={isTop ? { opacity: 0, y: 6, scale: 0.98 } : { opacity: 0, y: -6, scale: 0.98 }}
-            animate={isTop ? { opacity: 1, y: -4, scale: 1 } : { opacity: 1, y: 4, scale: 1 }}
-            exit={isTop ? { opacity: 0, y: 6, scale: 0.98 } : { opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute left-0 right-0 z-[100] max-h-60 overflow-y-auto rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-2xl backdrop-blur-xl ${
+            role="listbox"
+            initial={isTop ? { opacity: 0, y: 4 } : { opacity: 0, y: -4 }}
+            animate={isTop ? { opacity: 1, y: -4 } : { opacity: 1, y: 4 }}
+            exit={isTop ? { opacity: 0, y: 4 } : { opacity: 0, y: -4 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
+            className={`absolute left-0 right-0 z-[100] max-h-60 overflow-y-auto rounded-[var(--radius-md)] p-1 ${
               isTop ? 'bottom-full mb-1' : 'top-full mt-1'
             }`}
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-raised)'
+            }}
           >
             {normalizedOptions.length === 0 ? (
-              <div className="p-3 text-center text-sm text-[var(--color-text-secondary)]">
+              <div className="px-3 py-3 text-center text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
                 No options available
               </div>
             ) : (
@@ -109,12 +136,25 @@ export default function CustomSelect({
                   <button
                     key={String(opt.value)}
                     type="button"
+                    role="option"
+                    aria-selected={isSelected}
                     onClick={() => handleSelect(opt.value)}
-                    className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-[8px] text-sm font-medium transition-colors text-left cursor-pointer
-                      ${isSelected ? 'bg-[var(--color-btn-primary)]/20 text-[var(--color-btn-primary)] font-bold' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-btn-primary)]/10 hover:text-[var(--color-btn-primary)]'}`}
+                    className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-[13px] font-medium transition-colors"
+                    style={{
+                      background: isSelected ? 'var(--color-accent-soft)' : 'transparent',
+                      color: isSelected ? 'var(--color-accent)' : 'var(--theme-text-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'var(--theme-bg-soft)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                    }}
                   >
                     <span className="truncate">{opt.label}</span>
-                    {isSelected && <FiCheck size={16} className="text-[var(--color-btn-primary)] shrink-0 ml-2" />}
+                    {isSelected && (
+                      <FiCheck size={14} className="ml-2 shrink-0" style={{ color: 'var(--color-accent)' }} />
+                    )}
                   </button>
                 );
               })
@@ -124,7 +164,7 @@ export default function CustomSelect({
       </AnimatePresence>
 
       {error && (
-        <span className="text-xs font-medium text-[var(--color-danger)] mt-1">
+        <span className="text-[11px] font-medium" style={{ color: 'var(--color-danger)' }}>
           {error}
         </span>
       )}

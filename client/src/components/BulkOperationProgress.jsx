@@ -12,28 +12,31 @@ import {
 
 const OPERATION_CONFIG = {
   APPROVE: {
-    title: 'Approving Requests...',
+    title: 'Approving requests',
     actionVerb: 'approved',
     icon: FiCheckCircle,
-    color: 'emerald',
-    badgeBg: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    barColor: 'from-emerald-500 via-teal-400 to-emerald-500'
+    fg: 'var(--color-success)',
+    soft: 'var(--color-success-soft)',
+    border: 'var(--color-success-border)',
+    solid: 'var(--color-success)'
   },
   DELETE: {
-    title: 'Deleting Records...',
+    title: 'Deleting records',
     actionVerb: 'deleted',
     icon: FiTrash2,
-    color: 'rose',
-    badgeBg: 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
-    barColor: 'from-rose-500 via-pink-400 to-rose-500'
+    fg: 'var(--color-danger)',
+    soft: 'var(--color-danger-soft)',
+    border: 'var(--color-danger-border)',
+    solid: 'var(--color-danger)'
   },
   REJECT: {
-    title: 'Rejecting Requests...',
+    title: 'Rejecting requests',
     actionVerb: 'rejected',
     icon: FiAlertTriangle,
-    color: 'amber',
-    badgeBg: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-    barColor: 'from-amber-500 via-yellow-400 to-amber-500'
+    fg: 'var(--color-warning)',
+    soft: 'var(--color-warning-soft)',
+    border: 'var(--color-warning-border)',
+    solid: 'var(--color-warning)'
   }
 };
 
@@ -72,10 +75,10 @@ export default function BulkOperationProgress({
   const defaultTitle = isProcessing
     ? (title || config.title)
     : isSuccess
-    ? 'Operation Completed'
+    ? 'Operation completed'
     : isPartial
-    ? 'Completed with Errors'
-    : 'Operation Failed';
+    ? 'Completed with errors'
+    : 'Operation failed';
 
   const IconComponent = isSuccess
     ? FiCheckCircle
@@ -85,132 +88,150 @@ export default function BulkOperationProgress({
     ? FiXCircle
     : config.icon;
 
-  const iconBadgeClass = isSuccess
-    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+  const state = isSuccess
+    ? { fg: 'var(--color-success)', soft: 'var(--color-success-soft)', border: 'var(--color-success-border)', solid: 'var(--color-success)' }
     : isPartial
-    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+    ? { fg: 'var(--color-warning)', soft: 'var(--color-warning-soft)', border: 'var(--color-warning-border)', solid: 'var(--color-warning)' }
     : isFailed
-    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-    : config.badgeBg;
+    ? { fg: 'var(--color-danger)', soft: 'var(--color-danger-soft)', border: 'var(--color-danger-border)', solid: 'var(--color-danger)' }
+    : config;
+
+  const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 select-none overflow-y-auto"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-labelledby="bulk-progress-title"
         >
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 backdrop-blur-[2px]"
+            style={{ background: 'rgba(11, 23, 40, 0.55)' }}
           />
 
-          {/* Modal Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 20 }}
+            initial={{ opacity: 0, scale: 0.97, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 20 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="relative w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-2xl p-6 sm:p-7 shadow-2xl text-white z-10 overflow-hidden"
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-[var(--radius-lg)]"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-modal)'
+            }}
           >
-            {/* Top Close Button for Non-Processing states */}
             {!isProcessing && onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close modal"
-                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                aria-label="Close dialog"
+                className="absolute top-3.5 right-3.5 rounded-[var(--radius-sm)] p-1.5 transition-colors cursor-pointer"
+                style={{ color: 'var(--theme-text-faint)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--theme-bg-soft)';
+                  e.currentTarget.style.color = 'var(--theme-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--theme-text-faint)';
+                }}
               >
-                <FiX className="text-lg" />
+                <FiX size={17} />
               </button>
             )}
 
-            <div className="flex flex-col items-center text-center">
-              {/* Icon Badge */}
-              <div className={`relative p-4 rounded-2xl mb-4 ${iconBadgeClass} shadow-inner`}>
-                <IconComponent className="text-3xl sm:text-4xl" />
+            <div className="flex flex-col items-center px-6 pt-7 pb-6 text-center">
+              <div
+                className="relative mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)]"
+                style={{ background: state.soft, color: state.fg, border: `1px solid ${state.border}` }}
+              >
+                <IconComponent className="text-xl" />
                 {isProcessing && (
                   <motion.span
                     animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                    className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center"
+                    transition={{ repeat: Infinity, duration: 1.6, ease: 'linear' }}
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full"
+                    style={{ background: 'var(--theme-card)', border: '1px solid var(--theme-border)' }}
                   >
-                    <FiLoader className="text-sm text-white drop-shadow" />
+                    <FiLoader className="text-xs" style={{ color: 'var(--theme-text-secondary)' }} />
                   </motion.span>
                 )}
               </div>
 
-              {/* Title */}
               <h3
                 id="bulk-progress-title"
-                className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2 leading-snug"
+                className="text-[15px] font-semibold tracking-tight leading-snug"
+                style={{ color: 'var(--theme-text-primary)' }}
               >
                 {defaultTitle}
               </h3>
 
-              {/* Body Content by State */}
               {isProcessing && (
-                <div className="w-full mt-2 mb-2 flex flex-col items-center">
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium mb-4 leading-relaxed">
-                    Processing <span className="text-white font-bold">{total}</span> selected {total === 1 ? 'record' : 'records'}...
+                <div className="mt-3 w-full flex flex-col items-center">
+                  <p className="mb-4 text-[13px] leading-relaxed" style={{ color: 'var(--theme-text-secondary)' }}>
+                    Processing <span className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>{total}</span>{' '}
+                    selected {total === 1 ? 'record' : 'records'}…
                   </p>
 
-                  {/* Indeterminate Animated Progress Bar */}
                   <div
                     role="progressbar"
                     aria-busy="true"
                     aria-label={`Processing ${total} items`}
-                    className="relative w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700/70 shadow-inner"
+                    className="relative h-2 w-full overflow-hidden rounded-full"
+                    style={{ background: 'var(--theme-bg-soft)', border: '1px solid var(--theme-border)' }}
                   >
                     <motion.div
-                      animate={{
-                        x: ['-100%', '100%']
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.4,
-                        ease: 'easeInOut'
-                      }}
-                      className={`absolute top-0 bottom-0 w-2/3 bg-gradient-to-r ${config.barColor} rounded-full shadow-lg`}
+                      animate={{ x: ['-110%', '110%'] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+                      className="absolute top-0 bottom-0 w-1/2 rounded-full"
+                      style={{ background: state.solid, opacity: 0.85 }}
                     />
                   </div>
 
-                  <p className="text-[11px] sm:text-xs text-slate-400 mt-3 font-medium">
+                  {total > 0 && (
+                    <p className="mt-2 text-[11px] font-medium" style={{ color: 'var(--theme-text-faint)' }}>
+                      {processed} of {total} processed · {pct}%
+                    </p>
+                  )}
+
+                  <p className="mt-3 text-[11px]" style={{ color: 'var(--theme-text-faint)' }}>
                     Please do not close this window or navigate away.
                   </p>
                 </div>
               )}
 
               {isSuccess && (
-                <div className="w-full mt-2 mb-2 flex flex-col items-center">
-                  {/* Progress completed bar */}
-                  <div
-                    role="progressbar"
-                    aria-valuenow={100}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    className="relative w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-emerald-500/40 mb-4"
-                  >
-                    <div className="h-full w-full bg-emerald-500 rounded-full" />
+                <div className="mt-3 w-full flex flex-col items-center">
+                  <div className="mb-4 h-2 w-full overflow-hidden rounded-full" style={{ background: 'var(--theme-bg-soft)' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className="h-full rounded-full"
+                      style={{ background: state.solid }}
+                    />
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-2">
-                    {total} / {total} processed (100%)
-                  </div>
+                  <span className="badge badge-success">
+                    {total} / {total} processed
+                  </span>
 
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-                    {total} {total === 1 ? 'record' : 'records'} {config.actionVerb} successfully.
+                  <p className="mt-2.5 text-[13px] leading-relaxed" style={{ color: 'var(--theme-text-secondary)' }}>
+                    {total} {total === 1 ? 'record was' : 'records were'} {config.actionVerb} successfully.
                   </p>
 
                   <button
                     type="button"
                     onClick={onClose}
-                    className="mt-5 w-full sm:w-auto min-w-[140px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+                    className="btn btn-primary mt-5 min-w-[130px]"
                   >
                     Done
                   </button>
@@ -218,48 +239,45 @@ export default function BulkOperationProgress({
               )}
 
               {isPartial && (
-                <div className="w-full mt-2 mb-2 flex flex-col items-center">
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium mb-4 leading-relaxed">
+                <div className="mt-3 w-full flex flex-col items-center">
+                  <p className="mb-4 text-[13px] leading-relaxed" style={{ color: 'var(--theme-text-secondary)' }}>
                     The operation finished, but some records could not be {config.actionVerb}.
                   </p>
 
-                  {/* Summary Grid */}
-                  <div className="grid grid-cols-3 gap-2 w-full mb-5">
-                    <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex flex-col items-center">
-                      <span className="text-[11px] text-slate-400 font-medium">Selected</span>
-                      <span className="text-base sm:text-lg font-bold text-white mt-0.5">{total}</span>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col items-center">
-                      <span className="text-[11px] text-emerald-400 font-medium">Successful</span>
-                      <span className="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">{successCount}</span>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 flex flex-col items-center">
-                      <span className="text-[11px] text-rose-400 font-medium">Failed</span>
-                      <span className="text-base sm:text-lg font-bold text-rose-300 mt-0.5">{failedCount}</span>
-                    </div>
+                  <div className="mb-5 grid w-full grid-cols-3 gap-2">
+                    {[
+                      { label: 'Selected', value: total, color: 'var(--theme-text-primary)' },
+                      { label: 'Successful', value: successCount, color: 'var(--color-success)' },
+                      { label: 'Failed', value: failedCount, color: 'var(--color-danger)' }
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="flex flex-col items-center rounded-[var(--radius-md)] px-2 py-2.5"
+                        style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}
+                      >
+                        <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: 'var(--theme-text-secondary)' }}>
+                          {item.label}
+                        </span>
+                        <span className="mt-0.5 text-base font-semibold" style={{ color: item.color }}>
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-full sm:w-auto min-w-[140px] px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-amber-600/30 transition-all cursor-pointer"
-                  >
+                  <button type="button" onClick={onClose} className="btn btn-secondary min-w-[130px]">
                     Dismiss
                   </button>
                 </div>
               )}
 
               {isFailed && (
-                <div className="w-full mt-2 mb-2 flex flex-col items-center">
-                  <p className="text-xs sm:text-sm text-rose-300 font-medium mb-5 px-1 leading-relaxed break-words">
+                <div className="mt-3 w-full flex flex-col items-center">
+                  <p className="mb-5 px-1 text-[13px] leading-relaxed break-words" style={{ color: 'var(--theme-text-secondary)' }}>
                     {error || 'An unexpected error occurred while processing the bulk operation. Please try again.'}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-full sm:w-auto min-w-[140px] px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 font-bold text-xs sm:text-sm shadow transition-all cursor-pointer"
-                  >
+                  <button type="button" onClick={onClose} className="btn btn-secondary min-w-[130px]">
                     Close
                   </button>
                 </div>

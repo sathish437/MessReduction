@@ -18,6 +18,7 @@ public class StudentVerificationService {
     private final String apiUrl;
     private final String apiKey;
     private final boolean isEnabled;
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> verifiedRegisterNumbers = new java.util.concurrent.ConcurrentHashMap<>();
 
     public StudentVerificationService(
             WebClient webClient,
@@ -106,6 +107,7 @@ public class StudentVerificationService {
                 }
                 logger.warn("Hostel verification failed for registerNo: {}", req.getRegisterNo());
             } else {
+                markVerified(req.getRegisterNo());
                 logger.info("Hostel verification successful for registerNo: {}", req.getRegisterNo());
             }
             return response;
@@ -125,6 +127,33 @@ public class StudentVerificationService {
             logger.error("Hostel Verification API call failed or is unavailable: {}", e.getMessage());
             throw new StudentVerificationServiceUnavailableException(
                     "Unable to connect to the College Hostel Verification Server. Please try again later.", e);
+        }
+    }
+
+    public void markVerified(String registerNo) {
+        if (registerNo != null) {
+            verifiedRegisterNumbers.put(registerNo.trim().toUpperCase(), System.currentTimeMillis());
+        }
+    }
+
+    public boolean isRegisterNoVerified(String registerNo) {
+        if (!isEnabled) {
+            return true;
+        }
+        if (registerNo == null) return false;
+        Long timestamp = verifiedRegisterNumbers.get(registerNo.trim().toUpperCase());
+        if (timestamp == null) return false;
+        // Valid for 15 minutes
+        if (System.currentTimeMillis() - timestamp > 15 * 60 * 1000L) {
+            verifiedRegisterNumbers.remove(registerNo.trim().toUpperCase());
+            return false;
+        }
+        return true;
+    }
+
+    public void consumeVerification(String registerNo) {
+        if (registerNo != null) {
+            verifiedRegisterNumbers.remove(registerNo.trim().toUpperCase());
         }
     }
 }

@@ -14,9 +14,11 @@ apiClient.interceptors.request.use((config) => {
   // Check for both student and staff tokens (sessionStorage, localStorage, cookies)
   const token = localStorage.getItem('auth_token') ||
     sessionStorage.getItem('token') ||
+    localStorage.getItem('token') ||
     localStorage.getItem('staffToken') ||
     sessionStorage.getItem('staffToken') ||
-    getCookie('staffToken');
+    getCookie('staffToken') ||
+    getCookie('token');
 
   if (token) {
     const requestPath = config.url || '';

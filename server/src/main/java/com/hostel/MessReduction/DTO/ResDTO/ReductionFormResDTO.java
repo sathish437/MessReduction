@@ -75,6 +75,8 @@ public class ReductionFormResDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime deletedAt;
     private String rejectedStage;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime rejectedAt;
     private String resumeStage;
 
     private String registerNo;
@@ -83,4 +85,5 @@ public class ReductionFormResDTO {
     private String phoneNo;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submittedAt;
+    private boolean isActive = true;
 }

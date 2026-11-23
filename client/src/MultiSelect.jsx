@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronDown, FiCheck, FiX, FiSquare, FiCheckSquare } from 'react-icons/fi';
+import { FiChevronDown, FiX, FiSquare, FiCheckSquare } from 'react-icons/fi';
 
 export default function MultiSelect({
   label,
@@ -31,6 +31,54 @@ export default function MultiSelect({
 
   const isAllSelected = selectedValues.length === 0 || selectedValues.includes("ALL");
 
+  const filteredOptions = searchQuery.trim()
+    ? normalizedOptions.filter(opt => {
+        const query = searchQuery.trim().toLowerCase();
+        return (
+          String(opt.label || '').toLowerCase().includes(query) ||
+          String(opt.value || '').toLowerCase().includes(query)
+        );
+      })
+    : normalizedOptions;
+
+  const getButtonText = () => {
+    if (isAllSelected) return allOptionLabel || placeholder;
+    if (selectedValues.length === 1) {
+      const match = normalizedOptions.find(opt => String(opt.value) === selectedValues[0]);
+      return match ? match.label : selectedValues[0];
+    }
+    return `${selectedValues.length} selected`;
+  };
+
+  const handleSelectAll = () => {
+    if (disabled) return;
+    onChange?.([]);
+  };
+
+  const handleClearAll = () => {
+    if (disabled) return;
+    onChange?.([]);
+  };
+
+  const handleToggleOption = (optionValue) => {
+    if (disabled) return;
+    const val = String(optionValue);
+    const current = selectedValues.filter(v => v !== "ALL");
+    const next = current.includes(val)
+      ? current.filter(v => v !== val)
+      : [...current, val];
+    onChange?.(next);
+  };
+
+  const toggleOpen = () => {
+    if (disabled) return;
+    setIsOpen(prev => {
+      const next = !prev;
+      if (next) setSearchQuery("");
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (isOpen && dropdownRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
@@ -54,59 +102,10 @@ export default function MultiSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleToggleOption = (optionValue) => {
-    if (!onChange) return;
-    const strVal = String(optionValue);
-
-    if (strVal === "ALL") {
-      onChange([]);
-      return;
-    }
-
-    let newSelected;
-    if (selectedValues.includes(strVal)) {
-      newSelected = selectedValues.filter(v => v !== strVal && v !== "ALL");
-    } else {
-      newSelected = [...selectedValues.filter(v => v !== "ALL"), strVal];
-    }
-
-    // If all individual options selected, reset to empty (ALL)
-    if (newSelected.length === normalizedOptions.length) {
-      onChange([]);
-    } else {
-      onChange(newSelected);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (onChange) onChange([]);
-  };
-
-  const handleClearAll = () => {
-    if (onChange) onChange([]);
-  };
-
-  const filteredOptions = normalizedOptions.filter(opt =>
-    opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    opt.value.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Render button text summary
-  const getButtonText = () => {
-    if (isAllSelected || selectedValues.length === 0) {
-      return allOptionLabel;
-    }
-    if (selectedValues.length === 1) {
-      const match = normalizedOptions.find(o => String(o.value) === selectedValues[0]);
-      return match ? match.label : selectedValues[0];
-    }
-    return `${selectedValues.length} Selected (${selectedValues.join(', ')})`;
-  };
-
   return (
-    <div className="flex flex-col gap-1.5 w-full text-left relative" ref={dropdownRef}>
+    <div className="relative flex w-full flex-col text-left" ref={dropdownRef}>
       {label && (
-        <label htmlFor={id} className="block text-xs font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider">
+        <label htmlFor={id} className="field-label">
           {label}
         </label>
       )}
@@ -115,80 +114,100 @@ export default function MultiSelect({
         type="button"
         id={id}
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen(prev => !prev)}
-        className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 transition-all duration-200 w-full text-left cursor-pointer text-sm
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-[var(--theme-card)]/50' : 'bg-[var(--theme-bg)] hover:bg-[var(--theme-card)]'}
-          ${!isAllSelected ? 'border-[var(--theme-btn-primary)] bg-[var(--theme-btn-primary)]/10 text-[var(--theme-btn-primary)] font-semibold' : 'border-[var(--theme-border)] text-[var(--theme-text-primary)]'}
-          ${isOpen ? 'ring-2 ring-[var(--theme-btn-primary)]/30 border-[var(--theme-btn-primary)]' : ''}
-          ${className}`}
+        onClick={toggleOpen}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`flex w-full items-center justify-between gap-2 rounded-[var(--radius-md)] border px-3 text-left text-[13px] transition-colors ${className}`}
+        style={{
+          minHeight: '2.5rem',
+          background: disabled ? 'var(--theme-card-muted)' : 'var(--theme-card)',
+          borderColor: (!isAllSelected || isOpen) ? 'var(--theme-btn-primary)' : 'var(--theme-border-strong)',
+          color: 'var(--theme-text-primary)',
+          opacity: disabled ? 0.65 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer'
+        }}
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {icon && <span className="shrink-0 text-base text-[var(--theme-text-secondary)]">{icon}</span>}
-          <span className="truncate">{getButtonText()}</span>
-        </div>
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {icon && <span className="shrink-0" style={{ color: 'var(--theme-text-faint)' }}>{icon}</span>}
+          <span className={`truncate ${!isAllSelected ? 'font-semibold' : 'font-medium'}`}>{getButtonText()}</span>
+        </span>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <span className="flex shrink-0 items-center gap-1.5">
           {!isAllSelected && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--theme-btn-primary)] text-white">
-              {selectedValues.length}
+            <span
+              className="rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold text-white"
+              style={{ background: 'var(--theme-btn-primary)' }}
+            >
+              {selectedValues.filter(v => v !== "ALL").length}
             </span>
           )}
           <motion.span
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.15 }}
-            className="text-[var(--theme-text-secondary)]"
+            style={{ color: 'var(--theme-text-faint)' }}
           >
-            <FiChevronDown size={16} />
+            <FiChevronDown size={15} />
           </motion.span>
-        </div>
+        </span>
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: openUpward ? 4 : -4, scale: 0.98 }}
+            initial={{ opacity: 0, y: openUpward ? 4 : -4, scale: 0.99 }}
             animate={{ opacity: 1, y: openUpward ? -4 : 4, scale: 1 }}
-            exit={{ opacity: 0, y: openUpward ? 4 : -4, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute left-0 right-0 ${openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} z-50 flex flex-col rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-card)] p-2.5 shadow-xl backdrop-blur-xl border-white/10 w-full min-w-0 max-w-full`}
+            exit={{ opacity: 0, y: openUpward ? 4 : -4, scale: 0.99 }}
+            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            role="listbox"
+            className={`absolute left-0 right-0 z-50 flex w-full min-w-0 max-w-full flex-col rounded-[var(--radius-md)] p-1.5 ${openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'}`}
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-modal)'
+            }}
           >
             {/* Search Box if list is larger */}
             {normalizedOptions.length > 6 && (
-              <div className="relative mb-2">
+              <div className="relative mb-1.5">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search department..."
-                  className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl px-3 py-1.5 text-xs text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)]/50 focus:outline-none focus:border-[var(--theme-btn-primary)]"
+                  placeholder="Search options…"
+                  className="h-8 w-full text-[12px]"
                 />
               </div>
             )}
 
             {/* Header controls: Select All / Reset */}
-            <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-[var(--theme-border)] px-1 text-xs">
+            <div
+              className="mb-1 flex items-center justify-between px-1.5 pb-1.5 text-[11.5px]"
+              style={{ borderBottom: '1px solid var(--theme-border)' }}
+            >
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className={`font-semibold transition-colors cursor-pointer ${isAllSelected ? 'text-[var(--theme-btn-primary)] font-bold' : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]'}`}
+                className="font-medium transition-colors"
+                style={{ color: isAllSelected ? 'var(--theme-btn-primary)' : 'var(--theme-text-secondary)' }}
               >
-                Select All ({allOptionLabel})
+                Select all ({allOptionLabel})
               </button>
               {!isAllSelected && (
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 cursor-pointer"
+                  className="flex items-center gap-1 font-medium transition-colors"
+                  style={{ color: 'var(--color-danger)' }}
                 >
-                  <FiX size={12} /> Reset
+                  <FiX size={11} /> Reset
                 </button>
               )}
             </div>
 
             {/* Options list */}
-            <div className="overflow-y-auto touch-pan-y max-h-[200px] sm:max-h-[250px] flex flex-col gap-0.5 pr-1.5 custom-scrollbar [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/30">
+            <div className="flex max-h-[220px] flex-col gap-0.5 overflow-y-auto pr-0.5">
               {filteredOptions.length === 0 ? (
-                <div className="p-3 text-center text-xs text-[var(--theme-text-secondary)] font-medium">
+                <div className="p-3 text-center text-[11.5px] font-medium" style={{ color: 'var(--theme-text-secondary)' }}>
                   No matching options
                 </div>
               ) : (
@@ -198,18 +217,27 @@ export default function MultiSelect({
                     <button
                       key={String(opt.value)}
                       type="button"
+                      role="option"
+                      aria-selected={isChecked}
                       onClick={() => handleToggleOption(opt.value)}
-                      className={`flex items-center justify-between w-full px-3 sm:px-3.5 py-2.5 sm:py-2 my-0.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-left cursor-pointer border active:scale-[0.99] ${
+                      className="flex w-full items-center justify-between rounded-[5px] px-2 py-1.5 text-left text-[12.5px] font-medium transition-colors"
+                      style={
                         isChecked
-                          ? 'bg-[var(--theme-btn-primary)]/15 border-[var(--theme-btn-primary)]/30 text-[var(--theme-btn-primary)] font-bold'
-                          : 'border-transparent text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg)] hover:border-[var(--theme-border)]/50'
-                      }`}
+                          ? { background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }
+                          : { color: 'var(--theme-text-primary)' }
+                      }
+                      onMouseEnter={(e) => {
+                        if (!isChecked) e.currentTarget.style.background = 'var(--theme-bg-soft)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isChecked) e.currentTarget.style.background = 'transparent';
+                      }}
                     >
-                      <span className="flex-1 min-w-0 pr-2 tracking-wide truncate">{opt.label}</span>
+                      <span className="min-w-0 flex-1 truncate pr-2">{opt.label}</span>
                       {isChecked ? (
-                        <FiCheckSquare size={16} className="text-[var(--theme-btn-primary)] shrink-0 ml-2" />
+                        <FiCheckSquare size={14} className="ml-2 shrink-0" />
                       ) : (
-                        <FiSquare size={16} className="text-[var(--theme-text-secondary)]/50 shrink-0 ml-2" />
+                        <FiSquare size={14} className="ml-2 shrink-0" style={{ color: 'var(--theme-text-faint)' }} />
                       )}
                     </button>
                   );

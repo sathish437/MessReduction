@@ -203,10 +203,10 @@ const AdminExtraSubmissions = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'PENDING': return <span className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/30 inline-flex items-center gap-1">Pending</span>;
-      case 'APPROVED': return <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/30 inline-flex items-center gap-1">Approved</span>;
-      case 'REJECTED': return <span className="px-3 py-1 rounded-xl bg-rose-500/10 text-rose-400 text-xs font-bold border border-rose-500/30 inline-flex items-center gap-1">Rejected</span>;
-      default: return <span className="px-3 py-1 rounded-xl bg-slate-500/10 text-[var(--color-text-secondary)] text-xs font-bold border border-slate-500/30">{status}</span>;
+      case 'PENDING': return <span className="badge badge-warning">Pending</span>;
+      case 'APPROVED': return <span className="badge badge-success">Approved</span>;
+      case 'REJECTED': return <span className="badge badge-danger">Rejected</span>;
+      default: return <span className="badge badge-neutral">{status}</span>;
     }
   };
 
@@ -222,30 +222,38 @@ const AdminExtraSubmissions = () => {
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-3 w-full">
-        <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--color-text-primary)]">Extra Submission Requests</h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="page-title">Extra submissions</h1>
+          <p className="page-subtitle">Student requests for an additional submission beyond the daily limit.</p>
+        </div>
+        <span className="badge badge-warning self-start sm:self-auto">
+          {requests.filter(r => r.status === 'PENDING').length} pending
+        </span>
       </div>
 
-      {/* Admin Filters Card */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-3 sm:p-4 shadow-soft flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
-        <div className="relative flex-1">
-          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" size={20} />
-          <input 
-            type="text"
-            placeholder="Search Name, Reg No, Dept..."
-            className="w-full h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/70 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); setSelectedIds([]); }}
-          />
-        </div>
+      {/* Filters */}
+      <div className="panel p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="field-shell flex-1">
+            <MdSearch size={16} style={{ color: 'var(--theme-text-faint)' }} />
+            <input
+              type="text"
+              placeholder="Search name, register no or department"
+              className="w-full flex-1 bg-transparent text-[13px] font-medium focus:outline-none"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); setSelectedIds([]); }}
+            />
+          </div>
 
-        <div className="w-full sm:w-60 shrink-0">
-          <select 
+          <label className="sr-only" htmlFor="extra-dept-filter">Department</label>
+          <select
+            id="extra-dept-filter"
             value={selectedDept}
             onChange={(e) => { setSelectedDept(e.target.value); setPage(0); setSelectedIds([]); }}
-            className="h-10 sm:h-11 bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-3 text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm cursor-pointer w-full"
+            className="h-9 min-h-0 py-0 text-[12px] font-medium lg:w-60"
           >
-            <option value="">All Departments</option>
+            <option value="">All departments</option>
             {activeDepts.length > 0 ? (
               activeDepts.map(d => (
                 <option key={d.id} value={d.departmentCode}>{d.departmentCode}</option>
@@ -263,18 +271,34 @@ const AdminExtraSubmissions = () => {
       <AnimatePresence>
         {selectedIds.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center justify-between gap-3 bg-purple-500/10 border border-purple-500/30 p-3.5 rounded-2xl text-purple-300"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col items-stretch justify-between gap-3 rounded-[var(--radius-lg)] p-3.5 sm:flex-row sm:items-center"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--color-accent)',
+              boxShadow: 'var(--shadow-raised)'
+            }}
           >
-            <span className="text-xs sm:text-sm font-bold">{selectedIds.length} requests selected</span>
-            <div className="flex gap-2">
-              <button onClick={() => handleBulkAction('approve')} className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer">
-                Approve Selected
+            <div className="flex items-center gap-2.5">
+              <span
+                className="flex h-7 min-w-7 items-center justify-center rounded-[6px] px-1.5 text-[11.5px] font-semibold text-white"
+                style={{ background: 'var(--theme-btn-primary)' }}
+              >
+                {selectedIds.length}
+              </span>
+              <span className="text-[12.5px] font-medium text-[var(--theme-text-primary)]">
+                {selectedIds.length === 1 ? 'request selected' : 'requests selected'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => handleBulkAction('approve')} className="btn btn-primary flex-1 sm:flex-none">
+                <MdCheckCircle size={15} /> Approve
               </button>
-              <button onClick={() => handleBulkAction('reject')} className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer">
-                Reject Selected
+              <button onClick={() => handleBulkAction('reject')} className="btn btn-danger flex-1 sm:flex-none">
+                <MdCancel size={15} /> Reject
               </button>
             </div>
           </motion.div>
@@ -282,15 +306,26 @@ const AdminExtraSubmissions = () => {
       </AnimatePresence>
 
       {/* Data Table Container */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-soft flex flex-col min-w-0 w-full">
-        <div className="overflow-x-auto select-none w-full">
-          <table className="w-full text-left text-xs sm:text-sm min-w-[750px] border-collapse">
-            <thead className="bg-[var(--color-primary-bg)] border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+      <div className="panel overflow-hidden">
+        {!loading && currentRequests.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <MdPendingActions size={20} style={{ color: 'var(--color-accent)' }} />
+            </div>
+            <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No requests found</h3>
+            <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+              No extra submission request matches the current filters.
+            </p>
+          </div>
+        )}
+        <div className={`select-none overflow-x-auto ${!loading && currentRequests.length === 0 ? 'hidden' : ''}`}>
+          <table className="data-table min-w-[820px]">
+            <thead>
               <tr>
-                <th className="px-4 py-3.5 w-12 text-center">
+                <th className="w-12 text-center">
                   <input
                     type="checkbox"
-                    className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
+                    className="h-4 w-4 cursor-pointer accent-[var(--theme-btn-primary)]"
                     checked={currentRequests.length > 0 && selectedIds.length === currentRequests.length}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -299,36 +334,61 @@ const AdminExtraSubmissions = () => {
                         setSelectedIds([]);
                       }
                     }}
+                    aria-label="Select all requests on this page"
                   />
                 </th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('registerNo')}>Reg No {sortBy === 'registerNo' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('name')}>Student {sortBy === 'name' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('department')}>Dept {sortBy === 'department' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('count')}>Submissions Today {sortBy === 'count' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('createdAt')}>Requested At {sortBy === 'createdAt' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 cursor-pointer hover:text-[var(--color-text-primary)] transition-colors" onClick={() => handleSort('status')}>Status {sortBy === 'status' && (sortDir === 'asc' ? '↑' : '↓')}</th>
-                <th className="px-4 py-3.5 text-center">Actions</th>
+                {[
+                  { key: 'registerNo', label: 'Reg no' },
+                  { key: 'name', label: 'Student' },
+                  { key: 'department', label: 'Dept' },
+                  { key: 'count', label: 'Submissions today' },
+                  { key: 'createdAt', label: 'Requested at' },
+                  { key: 'status', label: 'Status' }
+                ].map(col => (
+                  <th
+                    key={col.key}
+                    className="cursor-pointer select-none transition-colors hover:text-[var(--theme-text-primary)]"
+                    onClick={() => handleSort(col.key)}
+                  >
+                    {col.label}{' '}
+                    <span className="text-[10px] text-[var(--theme-text-faint)]">
+                      {sortBy === col.key ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                    </span>
+                  </th>
+                ))}
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">
-                    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    Loading requests...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan="8">
+                      <div className="skeleton my-1.5 h-9 w-full" />
+                    </td>
+                  </tr>
+                ))
               ) : currentRequests.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-12 text-center text-[var(--color-text-secondary)] font-medium">No requests found.</td>
+                  <td colSpan="8">
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <MdPendingActions size={20} style={{ color: 'var(--color-accent)' }} />
+                      </div>
+                      <h3 className="text-[14px] font-semibold text-[var(--theme-text-primary)]">No requests found</h3>
+                      <p className="max-w-xs text-xs text-[var(--theme-text-secondary)]">
+                        No extra submission request matches the current filters.
+                      </p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 currentRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-[var(--color-card)]/50 transition-colors">
-                    <td className="px-4 py-3.5 text-center">
+                  <tr key={req.id}>
+                    <td className="text-center">
                       <input
                         type="checkbox"
-                        className="rounded border-[var(--color-border)] bg-[var(--color-surface)] text-purple-600 focus:ring-purple-500 cursor-pointer w-4 h-4"
+                        className="h-4 w-4 cursor-pointer accent-[var(--theme-btn-primary)]"
                         checked={selectedIds.includes(req.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -337,58 +397,63 @@ const AdminExtraSubmissions = () => {
                             setSelectedIds(prev => prev.filter(id => id !== req.id));
                           }
                         }}
+                        aria-label={`Select ${req.studentDetails?.name || 'request'}`}
                       />
                     </td>
-                    <td className="px-4 py-3.5 font-bold font-mono text-[var(--color-text-primary)]">{req.studentDetails?.registerNo}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-purple-600/10 border border-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">
+                    <td className="whitespace-nowrap">
+                      <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{req.studentDetails?.registerNo}</span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-semibold"
+                          style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                        >
                           {req.studentDetails?.name?.charAt(0)}
                         </div>
-                        <div>
-                          <div className="font-bold text-[var(--color-text-primary)]">{req.studentDetails?.name}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)] font-normal">{req.studentDetails?.rollNo}</div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold text-[var(--theme-text-primary)]">{req.studentDetails?.name}</p>
+                          <p className="truncate font-mono text-[11px] text-[var(--theme-text-secondary)]">{req.studentDetails?.rollNo}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-bold text-[var(--color-text-primary)]">
-                        {req.studentDetails?.department}
-                      </span>
+                    <td>
+                      <span className="badge badge-neutral">{req.studentDetails?.department}</span>
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--color-text-primary)] font-bold">
+                    <td className="whitespace-nowrap text-[12.5px] font-semibold text-[var(--theme-text-primary)]">
                       {req.studentDetails?.dailySubmissionCount || 0} / 3
                     </td>
-                    <td className="px-4 py-3.5 text-[var(--color-text-secondary)] font-mono text-xs font-medium">
-                      {formatDate(req.createdAt)}
+                    <td className="whitespace-nowrap">
+                      <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{formatDate(req.createdAt)}</span>
                     </td>
-                    <td className="px-4 py-3.5">
-                      {getStatusBadge(req.status)}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-center gap-2">
+                    <td>{getStatusBadge(req.status)}</td>
+                    <td>
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => { setSelectedRequest(req); setShowDetails(true); }}
-                          className="w-9 h-9 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                          title="View Details"
+                          className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                          style={{ background: 'var(--color-accent-soft)', borderColor: 'var(--color-accent-border)', color: 'var(--color-accent)' }}
+                          title="View details"
                         >
-                          <MdVisibility size={18} />
+                          <MdVisibility size={15} />
                         </button>
                         {req.status === 'PENDING' && (
                           <>
                             <button
                               onClick={() => handleAction(req.id, 'approve')}
-                              className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                              style={{ background: 'var(--color-success-soft)', borderColor: 'var(--color-success-border)', color: 'var(--color-success)' }}
                               title="Approve"
                             >
-                              <MdCheckCircle size={18} />
+                              <MdCheckCircle size={15} />
                             </button>
                             <button
                               onClick={() => handleAction(req.id, 'reject')}
-                              className="w-9 h-9 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                              className="flex h-7 w-7 items-center justify-center rounded-[6px] border transition-colors"
+                              style={{ background: 'var(--color-danger-soft)', borderColor: 'var(--color-danger-border)', color: 'var(--color-danger)' }}
                               title="Reject"
                             >
-                              <MdCancel size={18} />
+                              <MdCancel size={15} />
                             </button>
                           </>
                         )}
@@ -402,13 +467,15 @@ const AdminExtraSubmissions = () => {
         </div>
 
         {/* Pagination */}
-        <div className="border-t border-[var(--color-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--color-surface)] w-full">
-          <div className="flex items-center gap-3 text-xs sm:text-sm text-[var(--color-text-secondary)] font-semibold">
-            <span>Rows per page:</span>
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--theme-border)] bg-[var(--theme-card)] px-4 py-3 sm:flex-row">
+          <div className="flex items-center gap-2 text-[11.5px] text-[var(--theme-text-secondary)]">
+            <span>Rows per page</span>
             <select
-              className="bg-[var(--color-primary-bg)] border border-[var(--color-border)] rounded-xl px-2.5 py-1.5 outline-none focus:border-purple-500 text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
+              className="h-8 min-h-0 py-0 text-[12px] font-medium"
+              style={{ width: 'auto' }}
               value={size}
               onChange={(e) => { setSize(Number(e.target.value)); setPage(0); }}
+              aria-label="Rows per page"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -416,20 +483,14 @@ const AdminExtraSubmissions = () => {
               <option value={100}>100</option>
             </select>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              className="px-4 py-2 border border-[var(--color-border)] rounded-xl bg-[var(--color-primary-bg)] hover:bg-[var(--color-card)] disabled:opacity-50 transition-all text-xs font-bold cursor-pointer"
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-            >
+          <div className="flex items-center gap-2">
+            <button className="btn btn-secondary h-8 px-3 text-[12px]" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
               Previous
             </button>
-            <span className="text-sm px-2">Page {page + 1} of {Math.max(1, totalPages)}</span>
-            <button
-              className="px-3 py-1 border border-[var(--color-border)] rounded hover:bg-[var(--color-card)] disabled:opacity-50 transition-colors text-sm"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages - 1}
-            >
+            <span className="text-[11.5px] font-medium text-[var(--theme-text-secondary)]">
+              Page <span className="font-semibold text-[var(--theme-text-primary)]">{page + 1}</span> of {Math.max(1, totalPages)}
+            </span>
+            <button className="btn btn-secondary h-8 px-3 text-[12px]" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
               Next
             </button>
           </div>
@@ -438,84 +499,98 @@ const AdminExtraSubmissions = () => {
 
       {/* Details Dialog */}
       {showDetails && selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 backdrop-blur-[2px]"
+            style={{ background: 'rgba(11, 23, 40, 0.55)' }}
+            onClick={() => setShowDetails(false)}
+          />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="w-full max-w-3xl max-h-[90vh] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="true"
+            className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[var(--radius-lg)]"
+            style={{
+              background: 'var(--theme-card)',
+              border: '1px solid var(--theme-border)',
+              boxShadow: 'var(--shadow-modal)'
+            }}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Request Details</h3>
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--theme-border)] px-6 py-4">
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">Request details</h3>
+                <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                  {selectedRequest.studentDetails?.name} · {selectedRequest.studentDetails?.registerNo}
+                </p>
+              </div>
               <button
                 onClick={() => setShowDetails(false)}
-                className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-primary-bg)] transition-colors text-base cursor-pointer"
+                aria-label="Close"
+                className="rounded-[var(--radius-sm)] p-1.5 text-[var(--theme-text-faint)] transition-colors hover:bg-[var(--theme-bg-soft)] hover:text-[var(--theme-text-primary)]"
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 sm:p-8 overflow-y-auto flex-1 bg-[var(--color-surface)] space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Student Information */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
-                    Student Information
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Name</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.name || '-'}</span>
+                <div className="space-y-3">
+                  <h4 className="section-label" style={{ color: 'var(--color-accent)' }}>Student information</h4>
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Name</span>
+                      <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.name || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Register No</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.registerNo || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Register no</span>
+                      <span className="font-mono text-[12.5px] font-medium text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.registerNo || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Roll No</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.rollNo || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Roll no</span>
+                      <span className="font-mono text-[12.5px] font-medium text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.rollNo || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Department</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.department || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Department</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.department || '—'}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[100px]">Year</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.currentYear || '-'}</span>
+                    <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[100px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Year</span>
+                      <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.currentYear || '—'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Request Information */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-[var(--color-border)]">
-                    Request Information
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Status</span>
+                <div className="space-y-3">
+                  <h4 className="section-label" style={{ color: 'var(--color-accent)' }}>Request information</h4>
+                  <div className="space-y-2.5">
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-center">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Status</span>
                       <span>{getStatusBadge(selectedRequest.status)}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Requested</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{formatDate(selectedRequest.createdAt)}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Requested</span>
+                      <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{formatDate(selectedRequest.createdAt)}</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Submissions</span>
-                      <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.studentDetails?.dailySubmissionCount || 0}</span>
+                    <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                      <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Submissions today</span>
+                      <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">{selectedRequest.studentDetails?.dailySubmissionCount || 0}</span>
                     </div>
                     {selectedRequest.approvedBy && (
-                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                        <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Action By</span>
-                        <span className="text-sm font-bold text-[var(--color-text-primary)]">{selectedRequest.approvedBy}</span>
+                      <div className="flex flex-col justify-between gap-1 border-b border-[var(--theme-border)] pb-2 sm:flex-row sm:items-baseline">
+                        <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Action by</span>
+                        <span className="text-[13px] font-medium text-[var(--theme-text-primary)]">{selectedRequest.approvedBy}</span>
                       </div>
                     )}
                     {selectedRequest.approvedAt && (
-                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-2 border-b border-[var(--color-border)]/40">
-                        <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider min-w-[110px]">Action Time</span>
-                        <span className="text-sm font-bold text-[var(--color-text-primary)]">{formatDate(selectedRequest.approvedAt)}</span>
+                      <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline">
+                        <span className="min-w-[110px] text-[10.5px] font-medium uppercase tracking-wide text-[var(--theme-text-faint)]">Action time</span>
+                        <span className="font-mono text-[11.5px] font-medium text-[var(--theme-text-secondary)]">{formatDate(selectedRequest.approvedAt)}</span>
                       </div>
                     )}
                   </div>
@@ -523,36 +598,33 @@ const AdminExtraSubmissions = () => {
               </div>
 
               {/* Reason Section */}
-              <div className="space-y-2 pt-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400">Reason for Extra Submission</h4>
-                <div className="bg-[var(--color-primary-bg)] p-4 rounded-xl border border-[var(--color-border)] text-sm font-medium text-[var(--color-text-primary)] leading-relaxed">
+              <div className="space-y-2">
+                <h4 className="section-label">Reason for extra submission</h4>
+                <div
+                  className="rounded-[var(--radius-md)] px-3.5 py-3 text-[13px] font-normal leading-relaxed text-[var(--theme-text-secondary)]"
+                  style={{ background: 'var(--theme-card-muted)', border: '1px solid var(--theme-border)' }}
+                >
                   {selectedRequest.reason}
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-end gap-3 bg-[var(--color-surface)]">
+            <div
+              className="flex items-center justify-end gap-2 px-6 py-3.5"
+              style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
+            >
               {selectedRequest.status === 'PENDING' && (
                 <>
-                  <button
-                    onClick={() => handleAction(selectedRequest.id, 'reject')}
-                    className="px-4 py-2 border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                  >
+                  <button onClick={() => handleAction(selectedRequest.id, 'reject')} className="btn btn-danger">
                     Reject
                   </button>
-                  <button
-                    onClick={() => handleAction(selectedRequest.id, 'approve')}
-                    className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md"
-                  >
+                  <button onClick={() => handleAction(selectedRequest.id, 'approve')} className="btn btn-primary">
                     Approve
                   </button>
                 </>
               )}
-              <button
-                onClick={() => setShowDetails(false)}
-                className="px-5 py-2 rounded-xl bg-[var(--color-primary-bg)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-purple-500/40 transition-all cursor-pointer"
-              >
+              <button onClick={() => setShowDetails(false)} className="btn btn-secondary">
                 Close
               </button>
             </div>

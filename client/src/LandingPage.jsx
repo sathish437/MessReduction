@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from './context/ThemeContext';
 import { motion } from 'framer-motion';
-import { FiSun, FiMoon, FiUser, FiShield, FiArrowRight, FiLock } from 'react-icons/fi';
+import { FiSun, FiMoon, FiUser, FiShield, FiArrowRight, FiLock, FiInfo } from 'react-icons/fi';
 import image from './assets/1000088399.png';
 
 function LandingPage({ onNavigate }) {
@@ -84,29 +84,25 @@ function LandingPage({ onNavigate }) {
               Student access
             </h2>
             <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--theme-text-secondary)]">
-              Sign in with your register or roll number and date of birth to submit a mess reduction
-              request and follow its approval status.
+              Log in directly using your official Hostel App credentials (Register Number and Password) to submit mess reduction requests and monitor their status.
             </p>
+
+            <div
+              className="mt-4 flex items-center gap-2 rounded-[var(--radius-md)] p-2.5 text-xs text-[var(--theme-text-secondary)]"
+              style={{ background: 'var(--theme-bg-soft)', border: '1px solid var(--theme-border)' }}
+            >
+              <FiInfo className="shrink-0 text-[var(--color-accent)]" size={14} />
+              <span>Use your official GCES Hostel App account credentials to sign in.</span>
+            </div>
 
             <button
               type="button"
               onClick={() => navigate('/student-login')}
-              className="btn btn-primary mt-6 w-full"
+              className="btn btn-primary mt-5 w-full"
             >
               Continue as student
               <FiArrowRight size={15} />
             </button>
-
-            <p className="mt-3 text-center text-xs text-[var(--theme-text-secondary)]">
-              New to the portal?{' '}
-              <button
-                type="button"
-                onClick={() => navigate('/hostel-verification')}
-                className="font-semibold text-[var(--color-accent)] underline-offset-2 hover:underline"
-              >
-                Create an account
-              </button>
-            </p>
           </motion.section>
 
           <motion.section

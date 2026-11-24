@@ -2,6 +2,11 @@
 **/target/
 **/dist/
 **/build/
+**/dist-ssr/
+*.class
+*.jar
+*.war
+*.ear
 
 # Node dependencies & cache
 **/node_modules/
@@ -12,14 +17,32 @@
 # Environment files and credentials
 *.env
 *.env.local
+*.env.*
 *.env.*.local
 server/.env
 client/.env
+!*.env.example
+!**/.env.example
+
+# Secrets & Certificates
+*.pem
+*.key
+*.pkcs12
+*.pfx
+*.p12
+*service-account*.json
+firebase-adminsdk*.json
 
 # IDE and Editor
 .idea/
 .vscode/
 *.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+.factorypath
 *.sublime-project
 *.sublime-workspace
 
@@ -27,13 +50,22 @@ client/.env
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
 
-# Logs
+# Logs & Crash Dumps
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+hs_err_pid*
+replay_pid*
 
-# Test coverage
+# Test coverage & Temporary files
 **/coverage/
+*.tmp
+*.temp
+*~
+*.swp
+*.swo

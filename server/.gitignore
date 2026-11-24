@@ -1,0 +1,37 @@
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json
+firebase-adminsdk*.json
+
+# IDE & Editor
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+
+# Logs & Crash Dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS
+.DS_Store
+Thumbs.db

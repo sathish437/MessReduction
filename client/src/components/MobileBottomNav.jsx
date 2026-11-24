@@ -4,7 +4,7 @@ import { FiHome, FiActivity } from 'react-icons/fi';
 const MobileBottomNav = ({ activeTab, setActiveTab, isAnyProcessing }) => {
     return (
         <nav
-            className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md px-4 py-2 flex items-center justify-around safe-bottom"
+            className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t backdrop-blur-md px-4 py-2 flex items-center justify-around safe-bottom"
             style={{
                 background: 'var(--theme-card)',
                 borderColor: 'var(--theme-border)',

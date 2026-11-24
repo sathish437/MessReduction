@@ -132,7 +132,7 @@ export default function AppLayout({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMobileOpen(false)}
-            className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden"
             aria-hidden="true"
           />
         )}
@@ -143,11 +143,11 @@ export default function AppLayout({
         initial={false}
         animate={
           isMobile
-            ? { x: mobileOpen ? 0 : -360 }
+            ? { x: mobileOpen ? 0 : -380, width: "min(85vw, 340px)" }
             : { x: 0, width: collapsed ? 80 : 280 }
         }
         transition={{ type: "tween", duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen h-dvh min-h-screen flex-col shadow-2xl border-r border-white/[0.08] ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-full h-dvh min-h-dvh max-h-dvh flex-col shadow-2xl border-r border-white/[0.08] overflow-hidden ${
           isMobile ? "w-[85vw] max-w-[340px]" : ""
         }`}
         style={{ backgroundColor: "#0F2A4A" }}

@@ -766,7 +766,7 @@ function MessReductionPage() {
         }
     }, [studentId]);
 
-    const { connectionStatus: sseConnectionStatus } = useStudentTrackSse({
+    const { connectionStatus: sseConnectionStatus, disconnect: disconnectSse } = useStudentTrackSse({
         studentId,
         onTrackUpdate: handleTrackUpdate
     });
@@ -984,7 +984,9 @@ function MessReductionPage() {
             confirmText: "Logout",
             confirmVariant: "danger",
             onConfirm: () => {
-                disconnectSse();
+                if (typeof disconnectSse === 'function') {
+                    disconnectSse();
+                }
                 logoutStudent();
             }
         });

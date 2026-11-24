@@ -5,6 +5,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hostel.MessReduction.DTO.ReqDTO.ReductionFormReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO;
 import com.hostel.MessReduction.Entity.FormStatus;
+import com.hostel.MessReduction.Entity.StudentDetails;
+import com.hostel.MessReduction.security.CustomUserDetails;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.hostel.MessReduction.Service.ExtraSubmissionService;
 import com.hostel.MessReduction.Service.ReductionFormService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,12 +48,35 @@ class ReductionFormControllerTest {
 
     @InjectMocks
     private ReductionFormController reductionFormController;
+    private UsernamePasswordAuthenticationToken auth;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(reductionFormController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(reductionFormController)
+                .setCustomArgumentResolvers(new org.springframework.web.method.support.HandlerMethodArgumentResolver() {
+                    @Override
+                    public boolean supportsParameter(org.springframework.core.MethodParameter parameter) {
+                        return org.springframework.security.core.Authentication.class.isAssignableFrom(parameter.getParameterType());
+                    }
+
+                    @Override
+                    public Object resolveArgument(org.springframework.core.MethodParameter parameter,
+                                                  org.springframework.web.method.support.ModelAndViewContainer mavContainer,
+                                                  org.springframework.web.context.request.NativeWebRequest webRequest,
+                                                  org.springframework.web.bind.support.WebDataBinderFactory binderFactory) {
+                        return SecurityContextHolder.getContext().getAuthentication();
+                    }
+                })
+                .build();
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+
+        StudentDetails student = new StudentDetails();
+        student.setStudentId(101L);
+        student.setRegisterNo("830121104001");
+        CustomUserDetails userDetails = new CustomUserDetails(student);
+        auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test
@@ -81,7 +108,7 @@ class ReductionFormControllerTest {
 
         when(reductionFormService.formSubmit(any(ReductionFormReqDTO.class), eq(101L))).thenReturn(res);
 
-        mockMvc.perform(post("/api/student-form/StudentForm/101")
+        mockMvc.perform(post("/api/student-form/StudentForm/101").principal(auth)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -98,7 +125,7 @@ class ReductionFormControllerTest {
 
         when(reductionFormService.formDetails(101L)).thenReturn(List.of(form));
 
-        mockMvc.perform(get("/api/student-form/StudentForm/101"))
+        mockMvc.perform(get("/api/student-form/StudentForm/101").principal(auth))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].formId").value(501));
     }
@@ -106,7 +133,7 @@ class ReductionFormControllerTest {
     @Test
     @DisplayName("WF-HAPPY-19: DELETE /api/student-form/StudentForm/{studentId}/{formId} soft-deletes form")
     void testDeleteStudentForm() throws Exception {
-        mockMvc.perform(delete("/api/student-form/StudentForm/101/501"))
+        mockMvc.perform(delete("/api/student-form/StudentForm/101/501").principal(auth))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Request deleted successfully"));
 
@@ -131,7 +158,7 @@ class ReductionFormControllerTest {
 
         when(reductionFormService.resubmitForm(eq(501L), eq(101L), any(ReductionFormReqDTO.class))).thenReturn(res);
 
-        mockMvc.perform(post("/api/student-form/StudentForm/101/501/resubmit")
+        mockMvc.perform(post("/api/student-form/StudentForm/101/501/resubmit").principal(auth)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())

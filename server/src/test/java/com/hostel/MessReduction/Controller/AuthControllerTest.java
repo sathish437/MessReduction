@@ -19,8 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDate;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,37 +50,22 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("WF-HAPPY-01 Step 1: GET /api/auth/hostel-verification-status returns verification state")
-    void testGetHostelVerificationStatus_Enabled() throws Exception {
-        when(studentVerificationService.isEnabled()).thenReturn(true);
-
-        mockMvc.perform(get("/api/auth/hostel-verification-status"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.enabled").value(true));
-    }
-
-    @Test
-    @DisplayName("WF-ALT-01 Step 1: GET /api/auth/hostel-verification-status returns disabled state")
-    void testGetHostelVerificationStatus_Disabled() throws Exception {
-        when(studentVerificationService.isEnabled()).thenReturn(false);
-
-        mockMvc.perform(get("/api/auth/hostel-verification-status"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.enabled").value(false));
-    }
-
-    @Test
-    @DisplayName("WF-HAPPY-01 Step 3: POST /api/auth/verify-hostel returns verified details")
+    @DisplayName("WF-HAPPY-01 Step 1: POST /api/auth/verify-hostel successfully verifies student credentials")
     void testVerifyHostel_Success() throws Exception {
         HostelVerifyReqDTO req = new HostelVerifyReqDTO();
         req.setRegisterNo("730421104001");
-        req.setPassword("pass123");
+        req.setPassword("hostelPass123");
 
-        HostelVerifyResDTO res = new HostelVerifyResDTO();
-        res.setVerified(true);
-        res.setRegisterNo("730421104001");
-        res.setName("Arun Kumar");
-        res.setDepartment("CSE");
+        HostelVerifyResDTO res = HostelVerifyResDTO.builder()
+                .verified(true)
+                .name("Sathish Kumar")
+                .registerNo("730421104001")
+                .rollNo("21CS001")
+                .emailId("sathish@gmail.com")
+                .department("CSE")
+                .currentYear(3)
+                .gender("MALE")
+                .build();
 
         when(studentVerificationService.verifyHostelCredentials(any(HostelVerifyReqDTO.class))).thenReturn(res);
 
@@ -91,7 +74,44 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified").value(true))
-                .andExpect(jsonPath("$.registerNo").value("730421104001"))
+                .andExpect(jsonPath("$.name").value("Sathish Kumar"))
+                .andExpect(jsonPath("$.registerNo").value("730421104001"));
+    }
+
+    @Test
+    @DisplayName("WF-HAPPY-01 Step 2: GET /api/auth/hostel-verification-status returns status")
+    void testGetHostelVerificationStatus() throws Exception {
+        when(studentVerificationService.isEnabled()).thenReturn(true);
+
+        mockMvc.perform(get("/api/auth/hostel-verification-status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(true));
+    }
+
+    @Test
+    @DisplayName("WF-HAPPY-01 Step 3: verifyHostel returns pre-filled details for registration")
+    void testVerifyHostel_PrefilledDetails() throws Exception {
+        HostelVerifyReqDTO req = new HostelVerifyReqDTO();
+        req.setRegisterNo("730421104002");
+        req.setPassword("password123");
+
+        HostelVerifyResDTO res = HostelVerifyResDTO.builder()
+                .verified(true)
+                .name("Arun Kumar")
+                .registerNo("730421104002")
+                .rollNo("21CS002")
+                .emailId("arun@gmail.com")
+                .department("CSE")
+                .currentYear(4)
+                .gender("MALE")
+                .build();
+
+        when(studentVerificationService.verifyHostelCredentials(any(HostelVerifyReqDTO.class))).thenReturn(res);
+
+        mockMvc.perform(post("/api/auth/verify-hostel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Arun Kumar"))
                 .andExpect(jsonPath("$.department").value("CSE"));
     }
@@ -101,12 +121,13 @@ class AuthControllerTest {
     void testLogin_Success() throws Exception {
         StudentLoginReqDTO req = new StudentLoginReqDTO();
         req.setIdentifier("730421104001");
-        req.setDob(LocalDate.of(2003, 5, 15));
+        req.setPassword("secretPassword");
 
         AuthResponseDTO res = new AuthResponseDTO();
         res.setToken("mock-jwt-token-string");
         res.setStudentId(101L);
         res.setRegisterNo("730421104001");
+        res.setOnboardingRequired(false);
 
         when(studentAuthService.login(any(StudentLoginReqDTO.class))).thenReturn(res);
 

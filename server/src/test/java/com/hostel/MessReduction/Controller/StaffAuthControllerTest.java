@@ -70,6 +70,7 @@ class StaffAuthControllerTest {
     @Test
     @DisplayName("WF-NEG-25: GET /api/staff/validate without security context returns 401")
     void testValidateToken_Unauthenticated() throws Exception {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         mockMvc.perform(get("/api/staff/validate"))
                 .andExpect(status().isUnauthorized());
     }

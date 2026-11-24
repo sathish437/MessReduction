@@ -2,10 +2,13 @@ package com.hostel.MessReduction.Controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hostel.MessReduction.DTO.ReqDTO.CompleteProfileReqDTO;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentDetailsReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.StudentDetailsResDTO;
 import com.hostel.MessReduction.Entity.Gender;
+import com.hostel.MessReduction.Service.StudentAuthService;
 import com.hostel.MessReduction.Service.StudentRegistrationService;
+import com.hostel.MessReduction.security.CustomUserDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,12 +17,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,6 +40,9 @@ class StudentDetailsControllerTest {
 
     @Mock
     private StudentRegistrationService studentRegistrationService;
+
+    @Mock
+    private StudentAuthService studentAuthService;
 
     @InjectMocks
     private StudentDetailsController studentDetailsController;
@@ -69,5 +79,27 @@ class StudentDetailsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studentId").value(101))
                 .andExpect(jsonPath("$.emailId").value("sathish@gmail.com"));
+    }
+
+    @Test
+    @DisplayName("POST /api/student/complete-profile successfully completes student profile")
+    void testCompleteProfile_Success() throws Exception {
+        CompleteProfileReqDTO req = new CompleteProfileReqDTO();
+        req.setDob(LocalDate.of(2003, 5, 15));
+        req.setPhoneNo("9876543210");
+
+        doNothing().when(studentAuthService).completeProfile(any(), any(), any(CompleteProfileReqDTO.class));
+
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken("730421104001", null, java.util.Collections.emptyList());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        mockMvc.perform(post("/api/student/complete-profile")
+                        .principal(auth)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Profile completed successfully."));
     }
 }

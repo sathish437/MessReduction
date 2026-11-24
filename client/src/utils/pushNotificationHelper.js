@@ -68,14 +68,17 @@ export async function unregisterPush() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      return;
+    }
+    const subscription = await registration.pushManager?.getSubscription?.();
     
     if (subscription) {
       const endpoint = subscription.endpoint;
       
       try {
-        await apiClient.delete(`/api/push/unsubscribe`, { data: { endpoint } });
+        await apiClient.delete(`/api/push/unsubscribe`, { data: { endpoint }, timeout: 2000 });
       } catch (err) {
       }
 

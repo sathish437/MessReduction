@@ -984,8 +984,13 @@ function MessReductionPage() {
             confirmText: "Logout",
             confirmVariant: "danger",
             onConfirm: () => {
-                if (typeof disconnectSse === 'function') {
-                    disconnectSse();
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+                try {
+                    if (typeof disconnectSse === 'function') {
+                        disconnectSse();
+                    }
+                } catch (e) {
+                    console.error("Failed to disconnect SSE on logout:", e);
                 }
                 logoutStudent();
             }

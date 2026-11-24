@@ -130,34 +130,38 @@ export const clearStudentAuth = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_type');
   localStorage.removeItem('student_data');
+  localStorage.removeItem('fcm_current_token');
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('currentUser');
+  sessionStorage.removeItem('fcm_token_registered');
   deleteCookie('token');
+  deleteCookie('auth_token');
 };
 
-export const logoutStudent = async () => {
-  try {
-    await Promise.allSettled([
-      unregisterPush(),
-      unregisterFcmToken()
-    ]);
-  } catch (e) {}
-
+export const logoutStudent = () => {
+  // 1. Immediately wipe all student authentication tokens & storage
   clearStudentAuth();
 
-  // Redirect to student login page cleanly
+  // 2. Fire push / FCM unregistration in background without blocking redirection
+  try {
+    Promise.allSettled([
+      unregisterPush(),
+      unregisterFcmToken()
+    ]).catch(() => {});
+  } catch (e) {}
+
+  // 3. Immediately redirect to student login
   window.location.replace('/student-login');
 };
 
-export const logout = async () => {
-  // Clear push subscriptions first before navigating away
+export const logout = () => {
+  // Clear push subscriptions in background without blocking
   try {
-    await Promise.allSettled([
+    Promise.allSettled([
       unregisterPush(),
       unregisterFcmToken()
-    ]);
-  } catch (e) {
-  }
+    ]).catch(() => {});
+  } catch (e) {}
 
   // Clear localStorage
   localStorage.removeItem('auth_token');
@@ -165,6 +169,7 @@ export const logout = async () => {
   localStorage.removeItem('student_data');
   localStorage.removeItem('staff_data');
   localStorage.removeItem('staff_role');
+  localStorage.removeItem('fcm_current_token');
 
   // Clear sessionStorage
   sessionStorage.clear();
@@ -173,9 +178,11 @@ export const logout = async () => {
   deleteCookie('staffToken');
   deleteCookie('staffUsername');
   deleteCookie('staffRole');
+  deleteCookie('token');
+  deleteCookie('auth_token');
 
   // Redirect
-  window.location.href = '/';
+  window.location.replace('/staff-login');
 };
 
 // Route resolution for staff

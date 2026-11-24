@@ -17,7 +17,7 @@ public interface PushSubscriptionRepository extends JpaRepository<PushSubscripti
     @Transactional
     void deleteByUsername(String username);
     
-    @Query(value = "SELECT * FROM push_subscriptions WHERE subscriptions_json LIKE CONCAT('%', :endpoint, '%')", nativeQuery = true)
+    @Query(value = "SELECT * FROM mr_push_subscriptions WHERE subscriptions_json LIKE CONCAT('%', :endpoint, '%')", nativeQuery = true)
     List<PushSubscription> findByEndpointLike(@Param("endpoint") String endpoint);
     
     boolean existsByUsername(String username);

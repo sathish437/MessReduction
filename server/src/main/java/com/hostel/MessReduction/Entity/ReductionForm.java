@@ -27,7 +27,7 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "reduction_form", indexes = {
+@Table(name = "mr_reduction_form", indexes = {
         @Index(name = "idx_rf_status_active", columnList = "current_status, is_active"),
         @Index(name = "idx_rf_deputy_active", columnList = "assigned_deputy_warden, is_active"),
         @Index(name = "idx_rf_deputy_status_active", columnList = "assigned_deputy_warden, current_status, is_active"),

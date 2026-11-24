@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "queued_notifications")
+@Table(name = "mr_queued_notifications")
 public class QueuedNotification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

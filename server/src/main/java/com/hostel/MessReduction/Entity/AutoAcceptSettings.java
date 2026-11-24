@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(
-    name = "auto_accept_settings",
+    name = "mr_auto_accept_settings",
     indexes = {
         @Index(name = "idx_username", columnList = "username"),
         @Index(name = "idx_enabled_dates", columnList = "enabled, fromDate, toDate")

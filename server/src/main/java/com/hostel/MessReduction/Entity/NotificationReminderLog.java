@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "notification_reminder_logs")
+@Table(name = "mr_notification_reminder_logs")
 public class NotificationReminderLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

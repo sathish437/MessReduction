@@ -50,8 +50,8 @@ public class TestDataInitializer implements CommandLineRunner {
         seedDeputyWarden4Forms();
 
         try {
-            jdbcTemplate.execute("SELECT setval('student_details_student_id_seq', COALESCE((SELECT MAX(student_id) FROM student_details), 0) + 1, false)");
-            jdbcTemplate.execute("SELECT setval('reduction_form_form_id_seq', COALESCE((SELECT MAX(form_id) FROM reduction_form), 0) + 1, false)");
+            jdbcTemplate.execute("SELECT setval('mr_student_details_student_id_seq', COALESCE((SELECT MAX(student_id) FROM mr_student_details), 0) + 1, false)");
+            jdbcTemplate.execute("SELECT setval('mr_reduction_form_form_id_seq', COALESCE((SELECT MAX(form_id) FROM mr_reduction_form), 0) + 1, false)");
             logger.info("PostgreSQL sequences synchronized successfully.");
         } catch (Exception e) {
             logger.error("Failed to sync sequences: {}", e.getMessage());

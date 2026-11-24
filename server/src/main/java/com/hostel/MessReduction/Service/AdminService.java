@@ -453,17 +453,17 @@ public class AdminService {
                         : "UNKNOWN");
 
         String sql = "TRUNCATE TABLE "
-                + "reduction_form_history, "
-                + "reduction_form, "
-                + "extra_submission_request, "
-                + "student_details, "
-                + "activity_log, "
-                + "app_notification, "
-                + "audit_log, "
-                + "queued_notifications, "
-                + "notification_reminder_logs, "
-                + "fcm_tokens, "
-                + "push_subscriptions "
+                + "mr_reduction_form_history, "
+                + "mr_reduction_form, "
+                + "mr_extra_submission_request, "
+                + "mr_student_details, "
+                + "mr_activity_log, "
+                + "mr_app_notification, "
+                + "mr_audit_log, "
+                + "mr_queued_notifications, "
+                + "mr_notification_reminder_logs, "
+                + "mr_fcm_tokens, "
+                + "mr_push_subscriptions "
                 + "RESTART IDENTITY CASCADE";
 
         entityManager.createNativeQuery(sql).executeUpdate();
@@ -474,23 +474,23 @@ public class AdminService {
                 "success", true,
                 "message", "All data has been truncated. Default data (staff, departments, settings) preserved.",
                 "tablesCleared", List.of(
-                        "reduction_form_history",
-                        "reduction_form",
-                        "extra_submission_request",
-                        "student_details",
-                        "activity_log",
-                        "app_notification",
-                        "audit_log",
-                        "queued_notifications",
-                        "notification_reminder_logs",
-                        "fcm_tokens",
-                        "push_subscriptions"
+                        "mr_reduction_form_history",
+                        "mr_reduction_form",
+                        "mr_extra_submission_request",
+                        "mr_student_details",
+                        "mr_activity_log",
+                        "mr_app_notification",
+                        "mr_audit_log",
+                        "mr_queued_notifications",
+                        "mr_notification_reminder_logs",
+                        "mr_fcm_tokens",
+                        "mr_push_subscriptions"
                 ),
                 "tablesPreserved", List.of(
-                        "staff_users",
-                        "department",
-                        "system_settings",
-                        "auto_accept_settings"
+                        "mr_staff_users",
+                        "mr_departments",
+                        "mr_system_settings",
+                        "mr_auto_accept_settings"
                 )
         );
     }

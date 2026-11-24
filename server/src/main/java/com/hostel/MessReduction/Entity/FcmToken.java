@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "fcm_tokens", indexes = {
+@Table(name = "mr_fcm_tokens", indexes = {
         @Index(name = "idx_fcm_username", columnList = "username"),
         @Index(name = "idx_fcm_token", columnList = "token"),
         @Index(name = "idx_fcm_active", columnList = "active")

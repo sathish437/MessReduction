@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "push_subscriptions")
+@Table(name = "mr_push_subscriptions")
 public class PushSubscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

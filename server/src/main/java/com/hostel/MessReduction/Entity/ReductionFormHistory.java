@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "reduction_form_history", indexes = {
+@Table(name = "mr_reduction_form_history", indexes = {
         @Index(name = "idx_rfh_form_id", columnList = "form_id"),
         @Index(name = "idx_rfh_event_timestamp", columnList = "eventTimestamp")
 })

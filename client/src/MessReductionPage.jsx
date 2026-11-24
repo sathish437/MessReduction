@@ -9,7 +9,7 @@ import {
     FiCheckCircle, FiXCircle, FiActivity, FiMapPin, FiLogOut, FiPlus, FiRotateCcw
 } from "react-icons/fi";
 import apiClient from "./api/apiClient";
-import { logout } from "./services/authService";
+import { logout, logoutStudent } from "./services/authService";
 import Toast from "./components/Toast";
 import ConfirmModal from "./components/ConfirmModal";
 import MobileBottomNav from "./components/MobileBottomNav";
@@ -453,6 +453,7 @@ function MessReductionPage() {
     const [extraReason, setExtraReason] = useState("");
     const [isRequestingExtra, setIsRequestingExtra] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [extraRequests, setExtraRequests] = useState([]);
     const [confirmState, setConfirmState] = useState({
         isOpen: false,
@@ -975,6 +976,20 @@ function MessReductionPage() {
         }
     };
 
+    const handleLogoutPrompt = () => {
+        setConfirmState({
+            isOpen: true,
+            title: "Confirm Logout",
+            message: "Are you sure you want to logout?",
+            confirmText: "Logout",
+            confirmVariant: "danger",
+            onConfirm: () => {
+                disconnectSse();
+                logoutStudent();
+            }
+        });
+    };
+
     if (loading) {
         return (
             <div className="min-h-[100dvh] w-full bg-[var(--color-primary-bg)]">
@@ -1015,19 +1030,20 @@ function MessReductionPage() {
                 role: `Reg: ${studentDetails?.registerNo || formData.id || ""} · Room: ${studentDetails?.roomNo || formData.roomNo || ""}`,
                 userName: studentDetails?.registerNo || formData.id
             }}
-            onLogout={() => logout()}
+            onLogout={handleLogoutPrompt}
+            onMobileDrawerChange={setIsDrawerOpen}
         >
             {/* Toast Notification Panel */}
             <Toast toast={toast} onClose={() => setToast(null)} />
 
-            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6">
+            <div className="w-full space-y-6 pb-24 md:pb-8">
 
                         {activeTab === 'dashboard' && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full space-y-6">
                                 {/* Extra Submission Request Status Banner Card */}
                                 {latestExtraRequest && (
                                     <div
-                                        className="flex items-start gap-4 rounded-[var(--radius-md)] p-4 sm:p-5"
+                                        className="flex items-start gap-4 rounded-[var(--radius-md)] p-3.5 sm:p-5"
                                         style={{
                                             background: latestExtraRequest.status === 'PENDING'
                                                 ? 'var(--color-warning-soft)'
@@ -1056,9 +1072,9 @@ function MessReductionPage() {
                                             {latestExtraRequest.status === 'APPROVED' && <FiCheckCircle size={18} />}
                                             {latestExtraRequest.status === 'REJECTED' && <FiXCircle size={18} />}
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <h4
-                                                className="text-[13.5px] font-semibold"
+                                                className="text-[13.5px] font-semibold truncate"
                                                 style={{
                                                     color: latestExtraRequest.status === 'PENDING'
                                                         ? 'var(--color-warning)'
@@ -1071,7 +1087,7 @@ function MessReductionPage() {
                                                 {latestExtraRequest.status === 'APPROVED' && 'Extra submission request approved'}
                                                 {latestExtraRequest.status === 'REJECTED' && 'Extra submission request rejected'}
                                             </h4>
-                                            <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
+                                            <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)] break-words">
                                                 {latestExtraRequest.status === 'PENDING' && 'Your request has been sent to the administrator and is awaiting review.'}
                                                 {latestExtraRequest.status === 'APPROVED' && 'The administrator has granted you one additional submission.'}
                                                 {latestExtraRequest.status === 'REJECTED' && 'Your request for an additional submission has been rejected by the administrator.'}
@@ -1081,53 +1097,53 @@ function MessReductionPage() {
                                 )}
 
                                 {/* Student Profile Information Card */}
-                                <div className="panel p-5 sm:p-6">
-                                    <div className="flex items-center gap-3 pb-3 mb-4 border-b border-[var(--theme-border)]">
+                                <div className="panel p-5 sm:p-7">
+                                    <div className="flex items-center gap-3.5 pb-4 mb-5 border-b border-[var(--theme-border)]">
                                         <div
-                                            className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)]"
+                                            className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0 shadow-sm"
                                             style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
                                         >
-                                            <FiUser size={18} />
+                                            <FiUser size={22} />
                                         </div>
-                                        <div>
-                                            <h3 className="panel-title">
+                                        <div className="min-w-0">
+                                            <h3 className="panel-title text-base sm:text-lg font-bold truncate">
                                                 Student profile
                                             </h3>
-                                            <p className="panel-subtitle">
+                                            <p className="panel-subtitle text-xs sm:text-sm truncate">
                                                 Verified institutional enrollment details
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Name</span>
-                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)] truncate">{studentDetails?.name || formData.name || "N/A"}</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Name</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold text-[var(--theme-text-primary)] truncate">{studentDetails?.name || formData.name || "N/A"}</span>
                                         </div>
 
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Register Number</span>
-                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.registerNo || formData.id || "N/A"}</span>
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Register Number</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold font-mono text-[var(--theme-text-primary)] truncate">{studentDetails?.registerNo || formData.id || "N/A"}</span>
                                         </div>
 
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Roll Number</span>
-                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.rollNo || formData.rollNo || "N/A"}</span>
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Roll Number</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold font-mono text-[var(--theme-text-primary)] truncate">{studentDetails?.rollNo || formData.rollNo || "N/A"}</span>
                                         </div>
 
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Department</span>
-                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)]">{studentDetails?.department || formData.dept || "N/A"}</span>
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Department</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold text-[var(--theme-text-primary)] truncate">{studentDetails?.department || formData.dept || "N/A"}</span>
                                         </div>
 
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Gender</span>
-                                            <span className="text-[13.5px] font-semibold text-[var(--theme-text-primary)] capitalize">{studentDetails?.gender ? (studentDetails.gender.toLowerCase() === 'male' ? 'Male' : studentDetails.gender.toLowerCase() === 'female' ? 'Female' : studentDetails.gender) : "N/A"}</span>
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Gender</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold text-[var(--theme-text-primary)] capitalize truncate">{studentDetails?.gender ? (studentDetails.gender.toLowerCase() === 'male' ? 'Male' : studentDetails.gender.toLowerCase() === 'female' ? 'Female' : studentDetails.gender) : "N/A"}</span>
                                         </div>
 
-                                        <div className="rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3 flex flex-col">
-                                            <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Phone Number</span>
-                                            <span className="text-[13.5px] font-semibold font-mono text-[var(--theme-text-primary)]">{studentDetails?.phoneNo || studentDetails?.phone || formData.mobile || "N/A"}</span>
+                                        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-3.5 sm:p-4 flex flex-col min-w-0 shadow-sm">
+                                            <span className="text-[11px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1">Phone Number</span>
+                                            <span className="text-[15px] sm:text-[16px] font-semibold font-mono text-[var(--theme-text-primary)] truncate">{studentDetails?.phoneNo || studentDetails?.phone || formData.mobile || "N/A"}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1138,29 +1154,29 @@ function MessReductionPage() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3 }}
-                                        className="panel p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-emerald-500/25 bg-emerald-500/5"
+                                        className="panel p-5 sm:p-7 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-5 border-emerald-500/25 bg-emerald-500/5 shadow-sm"
                                     >
-                                        <div className="flex items-center gap-3.5">
+                                        <div className="flex items-center gap-4 min-w-0">
                                             <span
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
                                                 style={{
                                                     backgroundColor: "var(--color-success-soft)",
                                                     color: "var(--color-success)",
                                                     border: "1px solid var(--color-success-border)"
                                                 }}
                                             >
-                                                <FiCheckCircle size={22} className="text-emerald-600 dark:text-emerald-400" />
+                                                <FiCheckCircle size={24} className="text-emerald-600 dark:text-emerald-400" />
                                             </span>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[17px] font-semibold text-[var(--theme-text-primary)]">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2.5 flex-wrap">
+                                                    <span className="text-[17px] sm:text-[19px] font-bold text-[var(--theme-text-primary)]">
                                                         Applied
                                                     </span>
-                                                    <span className="badge badge-success text-[11px]">
+                                                    <span className="badge badge-success text-[12px] font-semibold">
                                                         {getStatusDisplay(activeRequest?.currentStatus || "Submitted")}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-[var(--theme-text-secondary)] mt-0.5">
+                                                <p className="text-xs sm:text-sm text-[var(--theme-text-secondary)] mt-1 break-words">
                                                     Your mess reduction request has been submitted and is currently in review.
                                                 </p>
                                             </div>
@@ -1169,9 +1185,9 @@ function MessReductionPage() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab('track')}
-                                            className="btn btn-secondary text-xs h-9 px-4 shrink-0"
+                                            className="btn btn-primary h-11 px-5 text-sm font-semibold shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm"
                                         >
-                                            <FiActivity size={14} /> Track Status
+                                            <FiActivity size={16} /> Track Status
                                         </button>
                                     </motion.div>
                                 )}
@@ -1182,11 +1198,11 @@ function MessReductionPage() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3 }}
-                                        className="panel p-6 flex flex-col gap-5 border-[var(--color-danger-border)] bg-[var(--color-danger-soft)]"
+                                        className="panel p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 border-[var(--color-danger-border)] bg-[var(--color-danger-soft)]"
                                     >
                                         {/* Header with Rejected Badge & Stage */}
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-[var(--color-danger-border)]/40">
-                                            <div className="flex items-center gap-3.5">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-[var(--color-danger-border)]/40">
+                                            <div className="flex items-center gap-3.5 min-w-0">
                                                 <span
                                                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                                                     style={{
@@ -1197,9 +1213,9 @@ function MessReductionPage() {
                                                 >
                                                     <FiXCircle size={22} className="text-rose-600 dark:text-rose-400" />
                                                 </span>
-                                                <div>
+                                                <div className="min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-[17px] font-semibold text-[var(--theme-text-primary)]">
+                                                        <span className="text-[16px] sm:text-[17px] font-semibold text-[var(--theme-text-primary)]">
                                                             Application Rejected
                                                         </span>
                                                         <span className="badge badge-danger text-[11px] font-bold uppercase tracking-wider">
@@ -1217,18 +1233,18 @@ function MessReductionPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                                            <div className="flex items-center gap-2 self-stretch sm:self-auto flex-col sm:flex-row">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditRequest(activeRequest)}
-                                                    className="btn btn-primary h-9 px-4 text-xs font-semibold flex-1 sm:flex-initial"
+                                                    className="btn btn-primary h-10 sm:h-9 px-4 text-xs font-semibold w-full sm:w-auto flex items-center justify-center gap-1.5"
                                                 >
                                                     <FiEdit3 size={14} /> Edit & Resubmit
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setActiveTab('track')}
-                                                    className="btn btn-secondary h-9 px-3 text-xs flex-1 sm:flex-initial"
+                                                    className="btn btn-secondary h-10 sm:h-9 px-3 text-xs w-full sm:w-auto flex items-center justify-center gap-1.5"
                                                 >
                                                     <FiActivity size={14} /> Track Status
                                                 </button>
@@ -1243,7 +1259,7 @@ function MessReductionPage() {
                                                     Rejection Reason
                                                 </span>
                                             </div>
-                                            <p className="text-[13.5px] font-medium leading-relaxed text-[var(--theme-text-primary)]">
+                                            <p className="text-[13.5px] font-medium leading-relaxed text-[var(--theme-text-primary)] break-words">
                                                 {activeRequest.rejectReason || trackingDetails?.rejectionReason || "No specific reason provided by reviewer."}
                                             </p>
                                         </div>
@@ -1254,27 +1270,27 @@ function MessReductionPage() {
                                                 Original Application Details
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                                <div className="flex flex-col">
+                                                <div className="flex flex-col min-w-0">
                                                     <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Leave Schedule</span>
-                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)] truncate">
                                                         {activeRequest.leaveDate} {activeRequest.leaveTime ? activeRequest.leaveTime.substring(0, 5) : ''}
                                                     </span>
                                                 </div>
-                                                <div className="flex flex-col">
+                                                <div className="flex flex-col min-w-0">
                                                     <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Arrival Schedule</span>
-                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)] truncate">
                                                         {activeRequest.arrivalDate} {activeRequest.arrivalTime ? activeRequest.arrivalTime.substring(0, 5) : ''}
                                                     </span>
                                                 </div>
-                                                <div className="flex flex-col">
+                                                <div className="flex flex-col min-w-0">
                                                     <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Reason for Leave</span>
                                                     <span className="text-[13px] font-semibold text-[var(--theme-text-primary)] truncate" title={activeRequest.reason}>
                                                         {activeRequest.reason || "N/A"}
                                                     </span>
                                                 </div>
-                                                <div className="flex flex-col">
+                                                <div className="flex flex-col min-w-0">
                                                     <span className="text-[10px] font-semibold text-[var(--theme-text-secondary)] uppercase">Room / Year</span>
-                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)]">
+                                                    <span className="text-[13px] font-semibold text-[var(--theme-text-primary)] truncate">
                                                         Room {activeRequest.roomNo || "N/A"} · {activeRequest.year ? `${activeRequest.year} Year` : "N/A"}
                                                     </span>
                                                 </div>
@@ -1283,7 +1299,7 @@ function MessReductionPage() {
 
                                         {/* Helper Note & Fresh Application option */}
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 text-xs text-[var(--theme-text-secondary)]">
-                                            <p>
+                                            <p className="break-words">
                                                 You can correct your dates or reason and resubmit, or apply for an entirely new date window.
                                             </p>
                                             <button
@@ -1292,7 +1308,7 @@ function MessReductionPage() {
                                                     handleReset();
                                                     setIsApplying(true);
                                                 }}
-                                                className="text-xs font-semibold text-[var(--color-accent)] hover:underline whitespace-nowrap self-end sm:self-auto cursor-pointer"
+                                                className="text-xs font-semibold text-[var(--color-accent)] hover:underline whitespace-nowrap self-start sm:self-auto cursor-pointer"
                                             >
                                                 Submit fresh application instead →
                                             </button>
@@ -1306,10 +1322,10 @@ function MessReductionPage() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.25 }}
-                                        className="panel p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4"
+                                        className="panel p-4 sm:p-7 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4"
                                     >
-                                        <div>
-                                            <h3 className="panel-title">Mess Reduction Application</h3>
+                                        <div className="min-w-0">
+                                            <h3 className="panel-title truncate">Mess Reduction Application</h3>
                                             <p className="panel-subtitle">
                                                 Submit a request for hostel mess bill reduction during eligible leave days.
                                             </p>
@@ -1319,7 +1335,7 @@ function MessReductionPage() {
                                             type="button"
                                             onClick={() => setIsApplying(true)}
                                             disabled={isLimitReached}
-                                            className="btn btn-primary h-11 px-7 text-sm font-semibold shadow-sm w-full sm:w-auto"
+                                            className="btn btn-primary h-11 px-7 text-sm font-semibold shadow-sm w-full sm:w-auto flex items-center justify-center gap-2 shrink-0"
                                         >
                                             <FiEdit3 size={16} />
                                             Apply Mess Reduction
@@ -1337,8 +1353,8 @@ function MessReductionPage() {
                                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                                         className="panel overflow-visible"
                                     >
-                                    <div className="panel-header flex-wrap">
-                                        <div>
+                                    <div className="panel-header flex-col sm:flex-row items-start sm:items-center gap-3">
+                                        <div className="min-w-0">
                                             <h3 className="panel-title">
                                                 {editingFormId ? "Edit reduction request" : "New mess reduction request"}
                                             </h3>
@@ -1346,7 +1362,7 @@ function MessReductionPage() {
                                                 {editingFormId ? "Update your dates or reason and resubmit." : "Fill in your hostel leave schedule below."}
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-2.5 shadow-xs">
+                                        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--theme-border)] bg-[var(--theme-card-muted)] p-2.5 shadow-xs w-full sm:w-auto justify-between sm:justify-start">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider mb-0.5">Daily submission limit</span>
                                                 <div className="flex items-center gap-2">
@@ -1371,12 +1387,12 @@ function MessReductionPage() {
                                         </div>
                                     </div>
 
-                                    <div className="p-4 sm:p-5">
-                                        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 sm:gap-4">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                                    <div className="p-5 sm:p-7">
+                                        <form onSubmit={handleSubmit} className="flex flex-col gap-5 sm:gap-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                                 <CustomSelect
                                                     label="Year of Study"
-                                                    icon={<FiCalendar size={18} />}
+                                                    icon={<FiCalendar size={20} />}
                                                     name="year"
                                                     id="year-select"
                                                     value={formData.year}
@@ -1392,7 +1408,7 @@ function MessReductionPage() {
                                                 />
                                                 <Field
                                                     label="Room Number"
-                                                    icon={<FiMapPin size={18} />}
+                                                    icon={<FiMapPin size={20} />}
                                                     type="number"
                                                     placeholder="e.g. 4012"
                                                     name="room"
@@ -1402,35 +1418,40 @@ function MessReductionPage() {
                                                     required
                                                     id="room-input"
                                                     error={formErrors.room}
-                                                    className="flex-1 bg-transparent focus:outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 font-medium w-full appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                    className="flex-1 bg-transparent focus:outline-none text-[15px] sm:text-[16px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 font-medium w-full appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                <Field label="Leave Date" icon={<FiCalendar size={18} />} type="date" name="leaveDate" value={formData.leaveDate} onChange={handleChange} min={new Date().toLocaleDateString('en-CA')} required id="leave-date-input" />
-                                                <Field label="Leave Time" icon={<FiClock size={18} />} type="time" name="leaveTime" value={formData.leaveTime} onChange={handleChange} required id="leave-time-input" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                                <Field label="Leave Date" icon={<FiCalendar size={20} />} type="date" name="leaveDate" value={formData.leaveDate} onChange={handleChange} min={new Date().toLocaleDateString('en-CA')} required id="leave-date-input" />
+                                                <Field label="Leave Time" icon={<FiClock size={20} />} type="time" name="leaveTime" value={formData.leaveTime} onChange={handleChange} required id="leave-time-input" />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                                <Field label="Arrival Date" icon={<FiCalendar size={18} />} type="date" name="arrivalDate" value={formData.arrivalDate} onChange={handleChange} min={formData.leaveDate || new Date().toLocaleDateString('en-CA')} required id="arrival-date-input" />
-                                                <Field label="Arrival Time" icon={<FiClock size={18} />} type="time" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required id="arrival-time-input" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                                <Field label="Arrival Date" icon={<FiCalendar size={20} />} type="date" name="arrivalDate" value={formData.arrivalDate} onChange={handleChange} min={formData.leaveDate || new Date().toLocaleDateString('en-CA')} required id="arrival-date-input" />
+                                                <Field label="Arrival Time" icon={<FiClock size={20} />} type="time" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required id="arrival-time-input" />
                                             </div>
 
                                             <CustomSelect
                                                 label="Reason for Leave"
-                                                icon={<FiInfo size={18} />}
+                                                icon={<FiInfo size={20} />}
                                                 name="reason"
                                                 id="reason-select"
                                                 value={formData.reason}
                                                 onChange={handleChange}
                                                 required
-                                                placeholder="Select Reason"
-                                                position="top"
+                                                placeholder="Select Leave Reason"
                                                 options={[
-                                                    { value: "Study Holidays", label: "Study Holidays" },
-                                                    { value: "Medical Leave", label: "Medical Leave" },
-                                                    { value: "other", label: "Other Reason" }
+                                                    { value: "Going to home", label: "Going to home" },
+                                                    { value: "Going to hospital", label: "Going to hospital" },
+                                                    { value: "Attending symposium", label: "Attending symposium" },
+                                                    { value: "Attending conference", label: "Attending conference" },
+                                                    { value: "Attending workshop", label: "Attending workshop" },
+                                                    { value: "Industrial visit", label: "Industrial visit" },
+                                                    { value: "Sports event", label: "Sports event" },
+                                                    { value: "Other", label: "Other (Please specify)" }
                                                 ]}
+                                                dropUp={true}
                                             />
 
                                             <AnimatePresence>
@@ -1459,7 +1480,7 @@ function MessReductionPage() {
                                             </AnimatePresence>
 
                                             {isInProgressRequest && (
-                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
+                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-3.5 sm:p-4 flex items-start gap-3 text-[var(--color-warning)]">
                                                     <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
                                                     <p className="text-sm font-medium leading-relaxed">
                                                         You already have an active request. Please delete it or wait for processing to submit a new one.
@@ -1469,7 +1490,7 @@ function MessReductionPage() {
 
                                             {isCompletedRequest && (
                                                 <div
-                                                    className="flex items-start gap-3 rounded-[var(--radius-md)] p-4"
+                                                    className="flex items-start gap-3 rounded-[var(--radius-md)] p-3.5 sm:p-4"
                                                     style={{ background: 'var(--color-success-soft)', border: '1px solid var(--color-success-border)' }}
                                                 >
                                                     <FiCheckCircle size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--color-success)' }} />
@@ -1486,7 +1507,7 @@ function MessReductionPage() {
                                             )}
 
                                             {isLimitReached && !isInProgressRequest && !isCompletedRequest && (
-                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-4 flex items-start gap-3 text-[var(--color-warning)]">
+                                                <div className="rounded-[12px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 p-3.5 sm:p-4 flex items-start gap-3 text-[var(--color-warning)]">
                                                     <FiAlertTriangle size={18} className="shrink-0 mt-0.5" />
                                                     <div>
                                                         <p className="text-sm font-semibold leading-relaxed">
@@ -1499,9 +1520,9 @@ function MessReductionPage() {
                                                 </div>
                                             )}
 
-                                            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+                                            <div className="mt-2 flex flex-col gap-2.5 sm:flex-row">
                                                 <button
-                                                    className="btn btn-primary h-11 flex-1 text-[14px]"
+                                                    className="btn btn-primary h-11 flex-1 text-[14px] flex items-center justify-center gap-2"
                                                     type="submit"
                                                     disabled={isSubmitting || isSubmitBlocked || isAnyProcessing}
                                                 >
@@ -1519,7 +1540,7 @@ function MessReductionPage() {
                                                     type="button"
                                                     onClick={handleReset}
                                                     disabled={isAnyProcessing}
-                                                    className="btn btn-secondary h-11 px-8 text-[14px]"
+                                                    className="btn btn-secondary h-11 px-8 text-[14px] flex items-center justify-center"
                                                 >
                                                     Reset
                                                 </button>
@@ -1532,7 +1553,7 @@ function MessReductionPage() {
                                                         setFormErrors({});
                                                     }}
                                                     disabled={isAnyProcessing}
-                                                    className="btn btn-ghost h-11 px-6 text-[14px]"
+                                                    className="btn btn-ghost h-11 px-6 text-[14px] flex items-center justify-center"
                                                 >
                                                     Cancel
                                                 </button>
@@ -1546,29 +1567,29 @@ function MessReductionPage() {
 
 
                         {activeTab === 'track' && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full max-w-4xl mx-auto">
-                                <div className="panel p-5 sm:p-7">
-                                    <div className="mb-6 flex flex-col justify-between gap-3 border-b border-[var(--theme-border)] pb-5 sm:flex-row sm:items-center">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="w-full space-y-6">
+                                <div className="panel p-5 sm:p-8 shadow-sm">
+                                    <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[var(--theme-border)] pb-6 sm:flex-row sm:items-center">
                                         <div>
-                                            <div className="flex items-center gap-2.5">
-                                                <h2 className="text-[15px] font-semibold text-[var(--theme-text-primary)]">Track request</h2>
+                                            <div className="flex items-center gap-3">
+                                                <h2 className="text-lg sm:text-xl font-bold text-[var(--theme-text-primary)]">Track request</h2>
                                                 {sseConnectionStatus === 'connected' && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live
                                                     </span>
                                                 )}
                                                 {sseConnectionStatus === 'reconnecting' && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Reconnecting
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> Reconnecting
                                                     </span>
                                                 )}
                                                 {sseConnectionStatus === 'disconnected' && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-gray-400" /> Disconnected
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20">
+                                                        <span className="h-2 w-2 rounded-full bg-gray-400" /> Disconnected
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="mt-0.5 text-xs text-[var(--theme-text-secondary)]">
+                                            <p className="mt-1 text-xs sm:text-sm text-[var(--theme-text-secondary)]">
                                                 Monitor the real-time status of your active application.
                                             </p>
                                         </div>
@@ -1613,7 +1634,7 @@ function MessReductionPage() {
                                                         type="button"
                                                         disabled={isAnyProcessing}
                                                         onClick={() => handleDeleteRequest(activeRequest.formId)}
-                                                        className="btn btn-secondary text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                                                        className="btn btn-secondary text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] w-full sm:w-auto flex items-center justify-center"
                                                         style={{ borderColor: 'var(--color-danger-border)' }}
                                                     >
                                                         {isDeleting ? 'Deleting…' : 'Delete request'}
@@ -1637,12 +1658,14 @@ function MessReductionPage() {
                         )}
                     </div>
 
-            {/* Mobile Bottom Navigation - Viewport Pinned */}
-            <MobileBottomNav
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                isAnyProcessing={isAnyProcessing}
-            />
+            {/* Mobile Bottom Navigation - Viewport Pinned, hidden when drawer is open */}
+            {!isDrawerOpen && (
+                <MobileBottomNav
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    isAnyProcessing={isAnyProcessing}
+                />
+            )}
 
             {/* Extra Submission Request Dialog */}
             <AnimatePresence>
@@ -1684,7 +1707,7 @@ function MessReductionPage() {
                             </div>
 
                             <div
-                                className="flex items-center justify-end gap-2 px-6 py-3.5"
+                                className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3.5"
                                 style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
                             >
                                 <button
@@ -1692,7 +1715,7 @@ function MessReductionPage() {
                                         setShowExtraDialog(false);
                                         setExtraReason("");
                                     }}
-                                    className="btn btn-secondary"
+                                    className="btn btn-secondary w-full sm:w-auto flex items-center justify-center"
                                     disabled={isRequestingExtra}
                                 >
                                     Cancel
@@ -1700,7 +1723,7 @@ function MessReductionPage() {
                                 <button
                                     onClick={handleRequestExtraSubmission}
                                     disabled={isRequestingExtra || !extraReason.trim()}
-                                    className="btn btn-primary"
+                                    className="btn btn-primary w-full sm:w-auto flex items-center justify-center"
                                 >
                                     {isRequestingExtra ? (
                                         <>

@@ -538,7 +538,7 @@ const Warden = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -6 }}
                             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                            className="max-w-7xl mx-auto space-y-5"
+                            className="w-full space-y-6"
                         >
                             <div>
                                 <h1 className="page-title">Overview</h1>
@@ -720,14 +720,14 @@ const Warden = () => {
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+                                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto lg:ml-auto">
                                         <label htmlFor="warden-gender-filter" className="sr-only">Gender</label>
                                         <select
                                             id="warden-gender-filter"
                                             value={genderFilter}
                                             onChange={(e) => setGenderFilter(e.target.value)}
-                                            className="h-9 min-h-0 py-0 text-[12px] font-medium"
-                                            style={{ width: 'auto', minWidth: '7.5rem' }}
+                                            className="h-9 min-h-0 flex-1 sm:flex-none py-0 text-[12px] font-medium"
+                                            style={{ minWidth: '7.5rem' }}
                                         >
                                             <option value="ALL">All genders</option>
                                             <option value="MALE">Male</option>
@@ -739,8 +739,8 @@ const Warden = () => {
                                             id="warden-dept-filter"
                                             value={deptFilter}
                                             onChange={(e) => setDeptFilter(e.target.value)}
-                                            className="h-9 min-h-0 py-0 text-[12px] font-medium"
-                                            style={{ width: 'auto', minWidth: '7.5rem' }}
+                                            className="h-9 min-h-0 flex-1 sm:flex-none py-0 text-[12px] font-medium"
+                                            style={{ minWidth: '7.5rem' }}
                                         >
                                             <option value="ALL">All departments</option>
                                             {activeDepts.length > 0 ? (
@@ -762,8 +762,8 @@ const Warden = () => {
                                                 setItemsPerPage(Number(e.target.value));
                                                 setCurrentPage(1);
                                             }}
-                                            className="h-9 min-h-0 py-0 text-[12px] font-medium"
-                                            style={{ width: 'auto', minWidth: '7.5rem' }}
+                                            className="h-9 min-h-0 flex-1 sm:flex-none py-0 text-[12px] font-medium"
+                                            style={{ minWidth: '7.5rem' }}
                                         >
                                             <option value={20}>20 per page</option>
                                             <option value={40}>40 per page</option>
@@ -1013,12 +1013,12 @@ const Warden = () => {
                                     </table>
                                 </div>
                                 <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--theme-border)] bg-[var(--theme-card)] px-4 py-3 sm:flex-row">
-                                    <p className="text-[11.5px] text-[var(--theme-text-secondary)]">
+                                    <p className="text-[11.5px] text-[var(--theme-text-secondary)] text-center sm:text-left">
                                         Showing <span className="font-semibold text-[var(--theme-text-primary)]">{pendingForms.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, pendingForms.length)}</span> of{' '}
                                         <span className="font-semibold text-[var(--theme-text-primary)]">{pendingForms.length}</span> requests
                                     </p>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                                         <button
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -1123,14 +1123,14 @@ const Warden = () => {
                             </div>
 
                             <div
-                                className="flex items-center justify-end gap-2 px-6 py-3.5"
+                                className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3.5"
                                 style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
                             >
                                 <button
                                     type="button"
                                     disabled={isRejecting}
                                     onClick={() => !isRejecting && setIsRejectModalOpen(false)}
-                                    className="btn btn-secondary"
+                                    className="btn btn-secondary w-full sm:w-auto"
                                 >
                                     Cancel
                                 </button>
@@ -1138,7 +1138,7 @@ const Warden = () => {
                                     type="button"
                                     disabled={isRejecting || !rejectReason.trim()}
                                     onClick={handleRejectSubmit}
-                                    className="btn btn-danger"
+                                    className="btn btn-danger w-full sm:w-auto"
                                 >
                                     {isRejecting ? (
                                         <>

@@ -132,6 +132,21 @@ export const clearStudentAuth = () => {
   localStorage.removeItem('student_data');
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('currentUser');
+  deleteCookie('token');
+};
+
+export const logoutStudent = async () => {
+  try {
+    await Promise.allSettled([
+      unregisterPush(),
+      unregisterFcmToken()
+    ]);
+  } catch (e) {}
+
+  clearStudentAuth();
+
+  // Redirect to student login page cleanly
+  window.location.replace('/student-login');
 };
 
 export const logout = async () => {

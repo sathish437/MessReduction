@@ -55,7 +55,7 @@ export default function SseNotificationToast({ notifications = [], onDismiss, on
   return (
     <div
       ref={containerRef}
-      className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+      className="fixed top-3 sm:top-4 right-3 sm:right-4 left-3 sm:left-auto z-[9999] flex flex-col gap-2.5 sm:max-w-sm pointer-events-none"
       aria-live="polite"
     >
       <AnimatePresence mode="popLayout">

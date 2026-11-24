@@ -102,7 +102,7 @@ const AdminLayout = () => {
   const expanded = isMobile ? true : sidebarOpen;
 
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
       {/* Mobile Backdrop */}
       <AnimatePresence>
         {isMobile && sidebarOpen && (
@@ -391,19 +391,19 @@ const AdminLayout = () => {
                 </div>
 
                 <div
-                  className="flex items-center justify-end gap-2 px-6 py-3.5"
+                  className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3.5"
                   style={{ borderTop: '1px solid var(--theme-border)', background: 'var(--theme-card-muted)' }}
                 >
                   <button
                     onClick={() => setShowSettingsModal(false)}
-                    className="btn btn-secondary"
+                    className="btn btn-secondary w-full sm:w-auto"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveSettings}
                     disabled={savingSettings}
-                    className="btn btn-primary"
+                    className="btn btn-primary w-full sm:w-auto"
                   >
                     {savingSettings ? (
                       <>

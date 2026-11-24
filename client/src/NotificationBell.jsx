@@ -117,7 +117,7 @@ const NotificationBell = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.96 }}
                         transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-card)] shadow-2xl overflow-hidden z-50 text-[var(--theme-text-primary)]"
+                        className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:mt-2.5 sm:w-96 max-w-[calc(100vw-24px)] rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-card)] shadow-2xl overflow-hidden z-50 text-[var(--theme-text-primary)]"
                     >
                         <div className="p-3.5 sm:p-4 border-b border-[var(--theme-border)] flex items-center justify-between bg-[var(--theme-card-muted)]">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--theme-text-primary)]">Notifications</h3>

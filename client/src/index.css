@@ -10,10 +10,10 @@
     color-scheme: light;
 
     /* Typography */
-    --base-font-size: 15px;
-    --h1: 2rem;
-    --h2: 1.5rem;
-    --h3: 1.125rem;
+    --base-font-size: 16px;
+    --h1: 2.25rem;
+    --h2: 1.625rem;
+    --h3: 1.25rem;
 
     /* Neutral surfaces */
     --theme-bg: #F5F7FA;
@@ -230,20 +230,20 @@
   }
 
   .panel-title {
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     font-weight: 650;
     color: var(--theme-text-primary);
     letter-spacing: -0.01em;
   }
 
   .panel-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--theme-text-secondary);
-    margin-top: 0.125rem;
+    margin-top: 0.2rem;
   }
 
   .section-label {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 650;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -255,10 +255,10 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    height: 2.5rem;
-    padding: 0 1rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
     border-radius: var(--radius-md);
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1;
     border: 1px solid transparent;
@@ -413,10 +413,10 @@
 
   .field-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--theme-text-secondary);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
     letter-spacing: 0.01em;
   }
 
@@ -424,8 +424,8 @@
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    min-height: 2.75rem;
-    padding: 0.5rem 0.875rem;
+    min-height: 2.875rem;
+    padding: 0.55rem 0.95rem;
     border: 1px solid var(--theme-border-strong);
     border-radius: var(--radius-md);
     background: var(--theme-card);
@@ -450,19 +450,19 @@
     z-index: 2;
     background: var(--theme-card-muted);
     color: var(--theme-text-secondary);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1.125rem;
     border-bottom: 1px solid var(--theme-border);
   }
 
   .data-table tbody td {
-    padding: 0.875rem 1rem;
+    padding: 1rem 1.125rem;
     border-bottom: 1px solid var(--theme-border);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     vertical-align: middle;
   }
 
@@ -514,16 +514,16 @@
   }
 
   .page-title {
-    font-size: clamp(1.25rem, 1.7vw, 1.5rem);
+    font-size: clamp(1.5rem, 2.2vw, 1.875rem);
     font-weight: 700;
     letter-spacing: -0.025em;
     color: var(--theme-text-primary);
   }
 
   .page-subtitle {
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
     color: var(--theme-text-secondary);
-    margin-top: 0.125rem;
+    margin-top: 0.25rem;
   }
 }
 

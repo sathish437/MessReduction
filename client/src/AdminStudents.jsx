@@ -727,13 +727,13 @@ const AdminStudents = () => {
               </div>
 
               <div
-                className="flex items-center justify-end gap-2 pt-3.5"
+                className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3.5"
                 style={{ borderTop: '1px solid var(--theme-border)' }}
               >
-                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary">
+                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary w-full sm:w-auto">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary w-full sm:w-auto">
                   {formData.studentId ? 'Save changes' : 'Add student'}
                 </button>
               </div>

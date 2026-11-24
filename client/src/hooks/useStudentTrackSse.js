@@ -105,23 +105,29 @@ export function useStudentTrackSse({ studentId, onTrackUpdate }) {
       es.onerror = () => {
         if (!isMountedRef.current) return;
         
-        // Native EventSource automatically attempts reconnection in background
-        if (es.readyState === EventSource.CONNECTING) {
-          setConnectionStatus('reconnecting');
-        } else if (es.readyState === EventSource.CLOSED) {
-          setConnectionStatus('reconnecting');
-          es.close();
+        // Immediately close the native EventSource to stop the browser's tight internal retry loop
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
           eventSourceRef.current = null;
-
-          // Schedule manual reconnect with exponential backoff if closed
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          reconnectAttemptsRef.current += 1;
-          reconnectTimerRef.current = setTimeout(() => {
-            if (isMountedRef.current) {
-              connect();
-            }
-          }, delay);
         }
+
+        reconnectAttemptsRef.current += 1;
+
+        // If backend is down or connection refused, stop hammering after 5 attempts
+        if (reconnectAttemptsRef.current >= 5) {
+          setConnectionStatus('disconnected');
+          return;
+        }
+
+        setConnectionStatus('reconnecting');
+
+        // Schedule next retry with exponential backoff (3s, 6s, 12s, 24s...)
+        const delay = Math.min(3000 * Math.pow(2, reconnectAttemptsRef.current - 1), 30000);
+        reconnectTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            connect();
+          }
+        }, delay);
       };
     } catch (err) {
       console.error('[StudentTrackSSE] Failed to initialize EventSource:', err);

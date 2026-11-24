@@ -14,6 +14,8 @@ public class HostelVerifyResDTO {
     private String rollNo;
     private String registerNo;
     private String name;
+    private String emailId;
+    private Integer currentYear;
     private String department;
     private String gender;
     private String message;

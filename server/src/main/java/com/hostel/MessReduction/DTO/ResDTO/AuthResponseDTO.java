@@ -15,4 +15,5 @@ public class AuthResponseDTO {
     private String name;
     private String registerNo;
     private String rollNo;
+    private Boolean onboardingRequired;
 }

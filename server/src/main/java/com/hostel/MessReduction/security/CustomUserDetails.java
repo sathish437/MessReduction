@@ -21,7 +21,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return student.getDob().toString();
+        return student.getDob() != null ? student.getDob().toString() : "";
     }
 
     @Override
@@ -57,6 +57,3 @@ public class CustomUserDetails implements UserDetails {
         return student.getName();
     }
 }
-
-
-

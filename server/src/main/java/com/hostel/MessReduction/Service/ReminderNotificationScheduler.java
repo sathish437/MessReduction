@@ -19,7 +19,7 @@ public class ReminderNotificationScheduler {
         this.reminderService = reminderService;
     }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedDelayString = "${notification.reminder.interval-ms:300000}")
     public void runReminderCheck() {
         if (!reminderEnabled) {
             return;

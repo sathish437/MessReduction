@@ -50,7 +50,17 @@ public class StudentAuthService {
                     return new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
                 });
 
-        // 2. Verify BCrypt password against hostelUser.password
+        // 2. Verify account is enabled and is a student account
+        if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
+            logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
+            throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+        }
+        if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+            logger.warn("Student login failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), identifier);
+            throw new InvalidCredentialsException("Only student accounts can sign in here.");
+        }
+
+        // 3. Verify BCrypt password against hostelUser.password
         if (hostelUser.getPassword() == null || !passwordEncoder.matches(rawPassword, hostelUser.getPassword())) {
             logger.warn("Student login failed: password mismatch for identifier '{}'", identifier);
             throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
@@ -83,7 +93,9 @@ public class StudentAuthService {
             student.setName(hostelUser.getName() != null ? hostelUser.getName() : "Student");
             student.setRegisterNo(regNo);
             student.setRollNo(rollNo);
-            student.setEmailId(hostelUser.getEmail() != null ? hostelUser.getEmail() : regNo + "@hostel.local");
+            student.setEmailId((hostelUser.getEmail() != null && !hostelUser.getEmail().trim().isEmpty())
+                    ? hostelUser.getEmail().trim()
+                    : regNo + "@hostel.local");
 
             // Look up corresponding student details from HostelStudent
             Optional<HostelStudent> hostelStudentOpt = hostelStudentRepository.findByUserId(hostelUser.getId())

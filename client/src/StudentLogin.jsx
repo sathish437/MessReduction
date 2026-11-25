@@ -153,7 +153,7 @@ function StudentLogin({ onNavigate }) {
                 type="text"
                 placeholder="e.g. 812321104001"
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
+                onChange={(e) => setIdentifier(e.target.value)}
                 autoComplete="username"
                 required
                 className="w-full flex-1 bg-transparent font-medium tracking-wide focus:outline-none"

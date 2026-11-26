@@ -35,6 +35,41 @@ public class StudentVerificationService {
         return isEnabled;
     }
 
+    public HostelVerifyResDTO fetchHostelStudentDetails(String identifier) {
+        if (!isEnabled || apiUrl == null || apiUrl.isBlank() || identifier == null || identifier.isBlank()) {
+            return null;
+        }
+        String detailsUrl = apiUrl.endsWith("/verify-details")
+                ? apiUrl.substring(0, apiUrl.length() - "/verify-details".length()) + "/student-details"
+                : apiUrl + "/student-details";
+        try {
+            String rawJson = webClient.get()
+                    .uri(detailsUrl + "?identifier=" + java.net.URLEncoder.encode(identifier.trim(), java.nio.charset.StandardCharsets.UTF_8))
+                    .header("X-Api-Key", apiKey)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            if (rawJson == null || !rawJson.trim().startsWith("{")) {
+                return null;
+            }
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<?, ?> map = mapper.readValue(rawJson.trim(), java.util.Map.class);
+            HostelVerifyResDTO dto = new HostelVerifyResDTO();
+            dto.setVerified(true);
+            if (map.get("name") != null) dto.setName(String.valueOf(map.get("name")));
+            if (map.get("registerNo") != null) dto.setRegisterNo(String.valueOf(map.get("registerNo")));
+            if (map.get("rollNo") != null) dto.setRollNo(String.valueOf(map.get("rollNo")));
+            if (map.get("department") != null) dto.setDepartment(String.valueOf(map.get("department")));
+            if (map.get("gender") != null) dto.setGender(String.valueOf(map.get("gender")));
+            if (map.get("emailId") != null) dto.setEmailId(String.valueOf(map.get("emailId")));
+            if (map.get("currentYear") instanceof Number n) dto.setCurrentYear(n.intValue());
+            return dto;
+        } catch (Exception e) {
+            logger.warn("Could not fetch hostel student details for '{}': {}", identifier, e.getMessage());
+            return null;
+        }
+    }
+
     public HostelVerifyResDTO verifyHostelCredentials(HostelVerifyReqDTO req) {
         if (!isEnabled) {
             logger.info("External student verification is disabled. Returning mock verified status.");

@@ -86,6 +86,13 @@ public class StudentAuthService {
             throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
         }
 
+        if (verifyRes.getName() == null || verifyRes.getDepartment() == null) {
+            HostelVerifyResDTO fetched = studentVerificationService.fetchHostelStudentDetails(identifier);
+            if (fetched != null) {
+                verifyRes = fetched;
+            }
+        }
+
         return issueAuthResponseForVerifiedStudent(identifier, verifyRes);
     }
 
@@ -114,7 +121,8 @@ public class StudentAuthService {
         }
 
         // Separate DB mode: HostelSsoService already verified the HMAC-SHA256 signature from GCESHostel
-        return issueAuthResponseForVerifiedStudent(trimmed, null);
+        HostelVerifyResDTO fetched = studentVerificationService.fetchHostelStudentDetails(trimmed);
+        return issueAuthResponseForVerifiedStudent(trimmed, fetched);
     }
 
     private AuthResponseDTO issueAuthResponseForVerifiedStudent(String identifier, HostelVerifyResDTO verifyRes) {
@@ -137,6 +145,38 @@ public class StudentAuthService {
 
         if (existingStudentOpt.isPresent()) {
             student = existingStudentOpt.get();
+            boolean updated = false;
+            if (verifyRes != null) {
+                if (verifyRes.getName() != null && !verifyRes.getName().isBlank()
+                        && ("Student".equals(student.getName()) || student.getName() == null || student.getName().isBlank())) {
+                    student.setName(verifyRes.getName().trim());
+                    updated = true;
+                }
+                if (verifyRes.getDepartment() != null && !verifyRes.getDepartment().isBlank()
+                        && ("GENERAL".equals(student.getDepartment()) || student.getDepartment() == null || student.getDepartment().isBlank())) {
+                    student.setDepartment(verifyRes.getDepartment().trim());
+                    updated = true;
+                }
+                if (verifyRes.getGender() != null && student.getGender() == null) {
+                    try {
+                        student.setGender(Gender.valueOf(verifyRes.getGender().trim().toUpperCase()));
+                        updated = true;
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (verifyRes.getCurrentYear() != null && student.getCurrentYear() == null) {
+                    student.setCurrentYear(verifyRes.getCurrentYear());
+                    updated = true;
+                }
+                if (verifyRes.getEmailId() != null && !verifyRes.getEmailId().isBlank()
+                        && (student.getEmailId() == null || student.getEmailId().endsWith("@hostel.local"))) {
+                    student.setEmailId(verifyRes.getEmailId().trim());
+                    updated = true;
+                }
+                if (updated) {
+                    student = studentDetailsRepo.save(student);
+                }
+            }
             onboardingRequired = student.getPhoneNo() == null
                     || student.getPhoneNo().trim().isEmpty();
         } else {
@@ -147,10 +187,15 @@ public class StudentAuthService {
                     : "Student");
             student.setRegisterNo(regNo);
             student.setRollNo(rollNo);
-            student.setEmailId(regNo + "@hostel.local");
+            student.setEmailId((verifyRes != null && verifyRes.getEmailId() != null && !verifyRes.getEmailId().isBlank())
+                    ? verifyRes.getEmailId().trim()
+                    : regNo + "@hostel.local");
             student.setDepartment((verifyRes != null && verifyRes.getDepartment() != null && !verifyRes.getDepartment().isBlank())
                     ? verifyRes.getDepartment().trim()
                     : "GENERAL");
+            if (verifyRes != null && verifyRes.getCurrentYear() != null) {
+                student.setCurrentYear(verifyRes.getCurrentYear());
+            }
             if (verifyRes != null && verifyRes.getGender() != null) {
                 try {
                     student.setGender(Gender.valueOf(verifyRes.getGender().trim().toUpperCase()));

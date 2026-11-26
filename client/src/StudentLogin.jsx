@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { FiUser, FiArrowRight, FiAlertCircle, FiPhone, FiCalendar, FiCheckCircle, FiInfo } from "react-icons/fi"
 import apiClient from "./api/apiClient"
@@ -7,11 +7,32 @@ import DobInputComponent from "./DobInputComponent"
 import { setStudentAuth } from "./services/authService"
 import AuthShell, { AuthCardHeader } from "./components/AuthShell"
 
+const SSO_ERROR_MESSAGES = {
+  sso_not_configured: "Hostel SSO is not configured on the server. Please sign in with your credentials.",
+  sso_invalid_request: "Invalid SSO request. Please try again or sign in with your credentials.",
+  sso_expired: "Your Hostel SSO link has expired. Please launch the portal again from the Hostel App.",
+  sso_replay: "This Hostel SSO link has already been used. Please launch the portal again from the Hostel App.",
+  sso_invalid_signature: "Hostel SSO verification failed. Please sign in with your credentials.",
+  sso_user_not_found: "No matching student account was found for your register number.",
+  sso_account_disabled: "Your hostel account is disabled. Please contact the Hostel Office.",
+}
+
 function StudentLogin({ onNavigate }) {
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ssoError = params.get("error")
+    if (ssoError) {
+      setError(
+        SSO_ERROR_MESSAGES[ssoError] ||
+        "Single sign-on failed. Please sign in with your Register Number and Hostel App Password."
+      )
+    }
+  }, [])
 
   // First-Time Setup Modal State
   const [showSetupModal, setShowSetupModal] = useState(false)

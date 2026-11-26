@@ -66,11 +66,43 @@ public class StudentAuthService {
             throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
         }
 
-        // 3. Resolve registerNo and rollNo
+        return issueAuthResponseForHostelUser(hostelUser);
+    }
+
+    /**
+     * Authenticates a student via verified HostelApp SSO without checking password.
+     */
+    @Transactional
+    public AuthResponseDTO loginBySsoIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new InvalidCredentialsException("Invalid SSO identifier.");
+        }
+
+        String trimmed = identifier.trim();
+        HostelUser hostelUser = findHostelUser(trimmed)
+                .orElseThrow(() -> {
+                    logger.warn("Student SSO failed: user not found in hostel users table with identifier '{}'", trimmed);
+                    return new InvalidCredentialsException("Student account not found in hostel records.");
+                });
+
+        if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
+            logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
+            throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+        }
+        if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+            logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), trimmed);
+            throw new InvalidCredentialsException("Only student accounts can sign in here.");
+        }
+
+        return issueAuthResponseForHostelUser(hostelUser);
+    }
+
+    private AuthResponseDTO issueAuthResponseForHostelUser(HostelUser hostelUser) {
+        // Resolve registerNo and rollNo
         String regNo = hostelUser.getRollNumber() != null ? String.valueOf(hostelUser.getRollNumber()) : hostelUser.getId();
         String rollNo = hostelUser.getId() != null ? hostelUser.getId() : regNo;
 
-        // 4. Check if student exists in mr_student_details
+        // Check if student exists in mr_student_details
         Optional<StudentDetails> existingStudentOpt = studentDetailsRepo.findByRegisterNo(regNo)
                 .or(() -> studentDetailsRepo.findByRollNo(rollNo))
                 .or(() -> studentDetailsRepo.findByRollNo(regNo))

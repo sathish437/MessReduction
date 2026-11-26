@@ -18,6 +18,7 @@ const Warden = lazy(() => import('./Warden'));
 const HostelOffice = lazy(() => import('./Hostel_office'));
 const AdminLogin = lazy(() => import('./AdminLogin'));
 const AdminLayout = lazy(() => import('./AdminLayout'));
+const SsoCallback = lazy(() => import('./SsoCallback'));
 
 const RouteLoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[60vh] w-full">
@@ -46,6 +47,7 @@ const ROUTE_CONFIG = {
   // Public routes
   '/':                    { screen: 'landing', protected: false },
   '/student-login':       { screen: 'student-login', protected: false },
+  '/sso-callback':        { screen: 'sso-callback', protected: false },
   '/staff-login':         { screen: 'staff-login', protected: false },
   '/admin-login':         { screen: 'admin-login', protected: false },
   '/hostel-verification': { screen: 'hostel-verification', protected: false },
@@ -181,6 +183,9 @@ function App() {
 
       case 'student-login':
         return <StudentLogin onNavigate={navigate} />;
+
+      case 'sso-callback':
+        return <SsoCallback onNavigate={navigate} />;
 
       case 'staff-login':
         return <StaffLogin onNavigate={navigate} />;

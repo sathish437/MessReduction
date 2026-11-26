@@ -3,9 +3,11 @@ package com.hostel.MessReduction.Controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hostel.MessReduction.DTO.ReqDTO.HostelVerifyReqDTO;
+import com.hostel.MessReduction.DTO.ReqDTO.SsoExchangeReqDTO;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentLoginReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.AuthResponseDTO;
 import com.hostel.MessReduction.DTO.ResDTO.HostelVerifyResDTO;
+import com.hostel.MessReduction.Service.HostelSsoService;
 import com.hostel.MessReduction.Service.StudentAuthService;
 import com.hostel.MessReduction.Service.StudentVerificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,9 @@ class AuthControllerTest {
 
     @Mock
     private StudentVerificationService studentVerificationService;
+
+    @Mock
+    private HostelSsoService hostelSsoService;
 
     @InjectMocks
     private AuthController authController;
@@ -137,5 +142,64 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("mock-jwt-token-string"))
                 .andExpect(jsonPath("$.studentId").value(101));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/hostel-sso redirects to /sso-callback?code=... on valid signature")
+    void testHostelSso_SuccessRedirect() throws Exception {
+        when(hostelSsoService.verifyAndCreateSsoCode("1700000000", "nonce-1", "730421104001", "sig-hex"))
+                .thenReturn("one-time-code-xyz");
+        when(hostelSsoService.buildFrontendRedirectUrl("/sso-callback?code=one-time-code-xyz"))
+                .thenReturn("/sso-callback?code=one-time-code-xyz");
+
+        mockMvc.perform(post("/api/auth/hostel-sso")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("ts", "1700000000")
+                        .param("nonce", "nonce-1")
+                        .param("regno", "730421104001")
+                        .param("sig", "sig-hex"))
+                .andExpect(status().isFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Location", "/sso-callback?code=one-time-code-xyz"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Cache-Control", "no-store"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Referrer-Policy", "no-referrer"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/hostel-sso redirects to /student-login?error=... on SSO failure")
+    void testHostelSso_FailureRedirect() throws Exception {
+        when(hostelSsoService.verifyAndCreateSsoCode("1700000000", "nonce-1", "730421104001", "bad"))
+                .thenThrow(new HostelSsoService.SsoException("sso_invalid_signature", "Invalid SSO signature."));
+        when(hostelSsoService.buildFrontendRedirectUrl("/student-login?error=sso_invalid_signature"))
+                .thenReturn("/student-login?error=sso_invalid_signature");
+
+        mockMvc.perform(post("/api/auth/hostel-sso")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("ts", "1700000000")
+                        .param("nonce", "nonce-1")
+                        .param("regno", "730421104001")
+                        .param("sig", "bad"))
+                .andExpect(status().isFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Location", "/student-login?error=sso_invalid_signature"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/sso-exchange exchanges one-time code for JWT session")
+    void testSsoExchange_Success() throws Exception {
+        SsoExchangeReqDTO req = new SsoExchangeReqDTO("one-time-code-xyz");
+        AuthResponseDTO res = new AuthResponseDTO("mock-jwt-token", 101L, "Alice", "730421104001", "21CS001", false);
+
+        when(hostelSsoService.exchangeCode("one-time-code-xyz")).thenReturn(res);
+
+        mockMvc.perform(post("/api/auth/sso-exchange")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("mock-jwt-token"))
+                .andExpect(jsonPath("$.studentId").value(101))
+                .andExpect(jsonPath("$.registerNo").value("730421104001"));
     }
 }

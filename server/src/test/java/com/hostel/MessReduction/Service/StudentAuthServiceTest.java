@@ -168,4 +168,33 @@ public class StudentAuthServiceTest {
         assertTrue(exception.getMessage().contains("Invalid credentials"));
         verifyNoInteractions(jwtUtil);
     }
+
+    @Test
+    void testLoginBySsoIdentifier_Success() {
+        when(hostelUserRepository.findByRollNumber(730421104001L)).thenReturn(Optional.of(hostelUser));
+        when(studentDetailsRepo.findByRegisterNo("730421104001")).thenReturn(Optional.of(student));
+        when(jwtUtil.generateToken("730421104001", 1L)).thenReturn("sso-jwt-token");
+
+        AuthResponseDTO result = studentAuthService.loginBySsoIdentifier("730421104001");
+
+        assertNotNull(result);
+        assertEquals("sso-jwt-token", result.getToken());
+        assertEquals("730421104001", result.getRegisterNo());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void testLoginBySsoIdentifier_DisabledAccount() throws Exception {
+        java.lang.reflect.Field enabledField = HostelUser.class.getDeclaredField("isEnabled");
+        enabledField.setAccessible(true);
+        enabledField.set(hostelUser, false);
+
+        when(hostelUserRepository.findByRollNumber(730421104001L)).thenReturn(Optional.of(hostelUser));
+
+        InvalidCredentialsException ex = assertThrows(
+                InvalidCredentialsException.class,
+                () -> studentAuthService.loginBySsoIdentifier("730421104001")
+        );
+        assertTrue(ex.getMessage().contains("disabled"));
+    }
 }

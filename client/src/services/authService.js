@@ -126,6 +126,23 @@ export const setStudentAuth = (token, userData) => {
   requestFcmToken().catch(() => {});
 };
 
+export const exchangeStudentSsoCode = async (code) => {
+  const response = await apiClient.post('/api/auth/sso-exchange', { code });
+  const data = response.data;
+  if (!data?.token) {
+    throw new Error('Invalid SSO response from server.');
+  }
+  const userData = {
+    name: data.name,
+    studentId: data.studentId,
+    registerNo: data.registerNo,
+    rollNo: data.rollNo,
+    token: data.token,
+  };
+  setStudentAuth(data.token, userData);
+  return data;
+};
+
 export const clearStudentAuth = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_type');

@@ -62,7 +62,7 @@ public class StudentRegistrationAndAuthFlowTest {
 
     @BeforeEach
     void setUp() {
-        studentAuthService = new StudentAuthService(studentDetailsRepo, hostelUserRepository, hostelStudentRepository, passwordEncoder, jwtUtil);
+        studentAuthService = new StudentAuthService(studentDetailsRepo, hostelUserRepository, hostelStudentRepository, studentVerificationService, passwordEncoder, jwtUtil);
 
         hostelUser = new HostelUser();
         try {

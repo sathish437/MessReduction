@@ -2,8 +2,10 @@ package com.hostel.MessReduction.Service;
 
 import com.hostel.MessReduction.CustomException.InvalidCredentialsException;
 import com.hostel.MessReduction.DTO.ReqDTO.CompleteProfileReqDTO;
+import com.hostel.MessReduction.DTO.ReqDTO.HostelVerifyReqDTO;
 import com.hostel.MessReduction.DTO.ReqDTO.StudentLoginReqDTO;
 import com.hostel.MessReduction.DTO.ResDTO.AuthResponseDTO;
+import com.hostel.MessReduction.DTO.ResDTO.HostelVerifyResDTO;
 import com.hostel.MessReduction.Entity.Gender;
 import com.hostel.MessReduction.Entity.StudentDetails;
 import com.hostel.MessReduction.Entity.readonly.HostelStudent;
@@ -30,6 +32,7 @@ public class StudentAuthService {
     private final StudentDetailsRepo studentDetailsRepo;
     private final HostelUserRepository hostelUserRepository;
     private final HostelStudentRepository hostelStudentRepository;
+    private final StudentVerificationService studentVerificationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -43,30 +46,47 @@ public class StudentAuthService {
         String identifier = loginRequest.getIdentifier().trim();
         String rawPassword = loginRequest.getPassword();
 
-        // 1. Look up student from HostelUserRepository (by rollNumber Long or id String)
-        HostelUser hostelUser = findHostelUser(identifier)
-                .orElseThrow(() -> {
-                    logger.warn("Student login failed: user not found in hostel users table with identifier '{}'", identifier);
-                    return new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
-                });
+        // 1. Look up student from HostelUserRepository (when sharing hosteldb)
+        Optional<HostelUser> hostelUserOpt = findHostelUser(identifier);
+        if (hostelUserOpt.isPresent()) {
+            HostelUser hostelUser = hostelUserOpt.get();
 
-        // 2. Verify account is enabled and is a student account
-        if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
-            logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
-            throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
-        }
-        if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
-            logger.warn("Student login failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), identifier);
-            throw new InvalidCredentialsException("Only student accounts can sign in here.");
+            // Verify account is enabled and is a student account
+            if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
+                logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
+                throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+            }
+            if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+                logger.warn("Student login failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), identifier);
+                throw new InvalidCredentialsException("Only student accounts can sign in here.");
+            }
+
+            // Verify BCrypt password against hostelUser.password
+            if (hostelUser.getPassword() == null || !passwordEncoder.matches(rawPassword, hostelUser.getPassword())) {
+                logger.warn("Student login failed: password mismatch for identifier '{}'", identifier);
+                throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
+            }
+
+            return issueAuthResponseForHostelUser(hostelUser);
         }
 
-        // 3. Verify BCrypt password against hostelUser.password
-        if (hostelUser.getPassword() == null || !passwordEncoder.matches(rawPassword, hostelUser.getPassword())) {
-            logger.warn("Student login failed: password mismatch for identifier '{}'", identifier);
+        // 2. Fallback: verify credentials via HostelApp API (/api/auth/verify-details) when using separate DBs
+        HostelVerifyResDTO verifyRes;
+        try {
+            verifyRes = studentVerificationService.verifyHostelCredentials(
+                    new HostelVerifyReqDTO(identifier, rawPassword)
+            );
+        } catch (Exception e) {
+            logger.error("Hostel API verification failed for identifier '{}': {}", identifier, e.getMessage());
+            throw new InvalidCredentialsException("Unable to verify hostel credentials right now. Please try again.");
+        }
+
+        if (verifyRes == null || !verifyRes.isVerified()) {
+            logger.warn("Student login failed: Hostel API rejected credentials for identifier '{}'", identifier);
             throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
         }
 
-        return issueAuthResponseForHostelUser(hostelUser);
+        return issueAuthResponseForVerifiedStudent(identifier, verifyRes);
     }
 
     /**
@@ -79,22 +99,78 @@ public class StudentAuthService {
         }
 
         String trimmed = identifier.trim();
-        HostelUser hostelUser = findHostelUser(trimmed)
-                .orElseThrow(() -> {
-                    logger.warn("Student SSO failed: user not found in hostel users table with identifier '{}'", trimmed);
-                    return new InvalidCredentialsException("Student account not found in hostel records.");
-                });
-
-        if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
-            logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
-            throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+        Optional<HostelUser> hostelUserOpt = findHostelUser(trimmed);
+        if (hostelUserOpt.isPresent()) {
+            HostelUser hostelUser = hostelUserOpt.get();
+            if (Boolean.FALSE.equals(hostelUser.getIsEnabled())) {
+                logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
+                throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+            }
+            if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+                logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), trimmed);
+                throw new InvalidCredentialsException("Only student accounts can sign in here.");
+            }
+            return issueAuthResponseForHostelUser(hostelUser);
         }
-        if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
-            logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), trimmed);
-            throw new InvalidCredentialsException("Only student accounts can sign in here.");
+
+        // Separate DB mode: HostelSsoService already verified the HMAC-SHA256 signature from GCESHostel
+        return issueAuthResponseForVerifiedStudent(trimmed, null);
+    }
+
+    private AuthResponseDTO issueAuthResponseForVerifiedStudent(String identifier, HostelVerifyResDTO verifyRes) {
+        String regNo = (verifyRes != null && verifyRes.getRegisterNo() != null && !verifyRes.getRegisterNo().isBlank())
+                ? verifyRes.getRegisterNo().trim()
+                : identifier;
+        String rollNo = (verifyRes != null && verifyRes.getRollNo() != null && !verifyRes.getRollNo().isBlank())
+                ? verifyRes.getRollNo().trim()
+                : regNo;
+
+        Optional<StudentDetails> existingStudentOpt = studentDetailsRepo.findByRegisterNo(regNo)
+                .or(() -> studentDetailsRepo.findByRollNo(rollNo))
+                .or(() -> studentDetailsRepo.findByRollNo(regNo))
+                .or(() -> studentDetailsRepo.findByRegisterNo(rollNo))
+                .or(() -> studentDetailsRepo.findByRegisterNo(identifier))
+                .or(() -> studentDetailsRepo.findByRollNo(identifier));
+
+        StudentDetails student;
+        boolean onboardingRequired;
+
+        if (existingStudentOpt.isPresent()) {
+            student = existingStudentOpt.get();
+            onboardingRequired = student.getDob() == null
+                    || student.getPhoneNo() == null
+                    || student.getPhoneNo().trim().isEmpty();
+        } else {
+            onboardingRequired = true;
+            student = new StudentDetails();
+            student.setName((verifyRes != null && verifyRes.getName() != null && !verifyRes.getName().isBlank())
+                    ? verifyRes.getName().trim()
+                    : "Student");
+            student.setRegisterNo(regNo);
+            student.setRollNo(rollNo);
+            student.setEmailId(regNo + "@hostel.local");
+            student.setDepartment((verifyRes != null && verifyRes.getDepartment() != null && !verifyRes.getDepartment().isBlank())
+                    ? verifyRes.getDepartment().trim()
+                    : "GENERAL");
+            if (verifyRes != null && verifyRes.getGender() != null) {
+                try {
+                    student.setGender(Gender.valueOf(verifyRes.getGender().trim().toUpperCase()));
+                } catch (Exception ignored) {
+                }
+            }
+            student = studentDetailsRepo.save(student);
         }
 
-        return issueAuthResponseForHostelUser(hostelUser);
+        String token = jwtUtil.generateToken(student.getRegisterNo(), student.getStudentId());
+
+        AuthResponseDTO response = new AuthResponseDTO();
+        response.setToken(token);
+        response.setStudentId(student.getStudentId());
+        response.setName(student.getName());
+        response.setRegisterNo(student.getRegisterNo());
+        response.setRollNo(student.getRollNo());
+        response.setOnboardingRequired(onboardingRequired);
+        return response;
     }
 
     private AuthResponseDTO issueAuthResponseForHostelUser(HostelUser hostelUser) {

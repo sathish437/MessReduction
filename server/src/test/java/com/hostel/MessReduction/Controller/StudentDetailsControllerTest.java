@@ -85,7 +85,6 @@ class StudentDetailsControllerTest {
     @DisplayName("POST /api/student/complete-profile successfully completes student profile")
     void testCompleteProfile_Success() throws Exception {
         CompleteProfileReqDTO req = new CompleteProfileReqDTO();
-        req.setDob(LocalDate.of(2003, 5, 15));
         req.setPhoneNo("9876543210");
 
         doNothing().when(studentAuthService).completeProfile(any(), any(), any(CompleteProfileReqDTO.class));

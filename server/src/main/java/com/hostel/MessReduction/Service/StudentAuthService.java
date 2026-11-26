@@ -137,8 +137,7 @@ public class StudentAuthService {
 
         if (existingStudentOpt.isPresent()) {
             student = existingStudentOpt.get();
-            onboardingRequired = student.getDob() == null
-                    || student.getPhoneNo() == null
+            onboardingRequired = student.getPhoneNo() == null
                     || student.getPhoneNo().trim().isEmpty();
         } else {
             onboardingRequired = true;
@@ -189,7 +188,7 @@ public class StudentAuthService {
 
         if (existingStudentOpt.isPresent()) {
             student = existingStudentOpt.get();
-            if (student.getDob() != null && student.getPhoneNo() != null && !student.getPhoneNo().trim().isEmpty()) {
+            if (student.getPhoneNo() != null && !student.getPhoneNo().trim().isEmpty()) {
                 onboardingRequired = false;
             } else {
                 onboardingRequired = true;
@@ -285,7 +284,6 @@ public class StudentAuthService {
             throw new InvalidCredentialsException("Student record not found. Please log in again.");
         }
 
-        student.setDob(req.getDob());
         student.setPhoneNo(req.getPhoneNo().trim());
         studentDetailsRepo.save(student);
         logger.info("Student profile completed for registerNo: {}, studentId: {}", student.getRegisterNo(), student.getStudentId());

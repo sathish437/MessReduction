@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { FiUser, FiArrowRight, FiAlertCircle, FiPhone, FiCalendar, FiCheckCircle, FiInfo } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import PasswordInput from "./PasswordInput"
-import DobInputComponent from "./DobInputComponent"
 import { setStudentAuth } from "./services/authService"
 import AuthShell, { AuthCardHeader } from "./components/AuthShell"
 
@@ -36,7 +35,6 @@ function StudentLogin({ onNavigate }) {
 
   // First-Time Setup Modal State
   const [showSetupModal, setShowSetupModal] = useState(false)
-  const [modalDob, setModalDob] = useState("")
   const [modalPhone, setModalPhone] = useState("")
   const [modalLoading, setModalLoading] = useState(false)
   const [modalError, setModalError] = useState("")
@@ -95,12 +93,6 @@ function StudentLogin({ onNavigate }) {
     e.preventDefault()
     setModalError("")
 
-    // Validate DOB
-    if (!modalDob) {
-      setModalError("Please select your Date of Birth.")
-      return
-    }
-
     // Validate phone number: exactly 10 digits
     const cleanPhone = modalPhone.trim()
     if (!/^\d{10}$/.test(cleanPhone)) {
@@ -112,7 +104,6 @@ function StudentLogin({ onNavigate }) {
 
     try {
       await apiClient.post('/api/student/complete-profile', {
-        dob: modalDob,
         phoneNo: cleanPhone
       })
 
@@ -265,16 +256,11 @@ function StudentLogin({ onNavigate }) {
                   Complete First-Time Setup
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
-                  Welcome to the Mess Reduction Portal! Please provide your Date of Birth and 10-digit Phone Number to complete your profile before proceeding to your dashboard.
+                  Welcome to the Mess Reduction Portal! Please provide your 10-digit Phone Number to complete your profile before proceeding to your dashboard.
                 </p>
               </div>
 
               <form onSubmit={handleCompleteProfile} className="flex flex-col gap-4">
-                <DobInputComponent
-                  value={modalDob}
-                  onChange={(e) => setModalDob(e.target.value)}
-                  error={!!modalError && !modalDob}
-                />
 
                 <div className="flex w-full flex-col gap-1.5 text-left">
                   <label htmlFor="modal-phone-input" className="field-label">

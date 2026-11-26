@@ -13,6 +13,7 @@ import com.hostel.MessReduction.Entity.readonly.HostelUser;
 import com.hostel.MessReduction.Repo.HostelStudentRepository;
 import com.hostel.MessReduction.Repo.HostelUserRepository;
 import com.hostel.MessReduction.Repo.StudentDetailsRepo;
+import com.hostel.MessReduction.Service.HostelDbReadService;
 import com.hostel.MessReduction.Service.StudentAuthService;
 import com.hostel.MessReduction.Service.StudentRegistrationService;
 import com.hostel.MessReduction.Service.StudentVerificationService;
@@ -53,6 +54,9 @@ public class StudentRegistrationAndAuthFlowTest {
     private StudentRegistrationService studentRegistrationService;
 
     @Mock
+    private HostelDbReadService hostelDbReadService;
+
+    @Mock
     private StudentVerificationService studentVerificationService;
 
     private StudentAuthService studentAuthService;
@@ -62,7 +66,7 @@ public class StudentRegistrationAndAuthFlowTest {
 
     @BeforeEach
     void setUp() {
-        studentAuthService = new StudentAuthService(studentDetailsRepo, hostelUserRepository, hostelStudentRepository, studentVerificationService, passwordEncoder, jwtUtil);
+        studentAuthService = new StudentAuthService(studentDetailsRepo, hostelUserRepository, hostelStudentRepository, hostelDbReadService, studentVerificationService, passwordEncoder, jwtUtil);
 
         hostelUser = new HostelUser();
         try {

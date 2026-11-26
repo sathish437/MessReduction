@@ -40,6 +40,9 @@ public class StudentAuthServiceTest {
     private HostelStudentRepository hostelStudentRepository;
 
     @Mock
+    private HostelDbReadService hostelDbReadService;
+
+    @Mock
     private StudentVerificationService studentVerificationService;
 
     @Mock

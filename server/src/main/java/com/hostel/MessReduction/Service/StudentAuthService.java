@@ -32,6 +32,7 @@ public class StudentAuthService {
     private final StudentDetailsRepo studentDetailsRepo;
     private final HostelUserRepository hostelUserRepository;
     private final HostelStudentRepository hostelStudentRepository;
+    private final HostelDbReadService hostelDbReadService;
     private final StudentVerificationService studentVerificationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -46,7 +47,30 @@ public class StudentAuthService {
         String identifier = loginRequest.getIdentifier().trim();
         String rawPassword = loginRequest.getPassword();
 
-        // 1. Look up student from HostelUserRepository (when sharing hosteldb)
+        // 1. Direct read-only lookup from hosteldb (when HOSTEL_DATABASE_URL is configured)
+        if (hostelDbReadService != null && hostelDbReadService.isConfigured()) {
+            Optional<HostelDbReadService.HostelUserRecord> directOpt = hostelDbReadService.findByIdentifier(identifier);
+            if (directOpt.isEmpty()) {
+                logger.warn("Student login failed: user not found in hosteldb with identifier '{}'", identifier);
+                throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
+            }
+            HostelDbReadService.HostelUserRecord rec = directOpt.get();
+            if (Boolean.FALSE.equals(rec.isEnabled())) {
+                logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
+                throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+            }
+            if (rec.role() != null && !"STUDENT".equalsIgnoreCase(rec.role().trim())) {
+                logger.warn("Student login failed: non-student role '{}' for identifier '{}'", rec.role(), identifier);
+                throw new InvalidCredentialsException("Only student accounts can sign in here.");
+            }
+            if (rec.password() == null || !passwordEncoder.matches(rawPassword, rec.password())) {
+                logger.warn("Student login failed: password mismatch for identifier '{}'", identifier);
+                throw new InvalidCredentialsException("Invalid credentials. Please verify your Register Number / Roll Number and Password.");
+            }
+            return issueAuthResponseForVerifiedStudent(identifier, toHostelVerifyResDTO(rec));
+        }
+
+        // 2. Look up student from HostelUserRepository (when sharing hosteldb)
         Optional<HostelUser> hostelUserOpt = findHostelUser(identifier);
         if (hostelUserOpt.isPresent()) {
             HostelUser hostelUser = hostelUserOpt.get();
@@ -106,6 +130,24 @@ public class StudentAuthService {
         }
 
         String trimmed = identifier.trim();
+        if (hostelDbReadService != null && hostelDbReadService.isConfigured()) {
+            Optional<HostelDbReadService.HostelUserRecord> directOpt = hostelDbReadService.findByIdentifier(trimmed);
+            if (directOpt.isEmpty()) {
+                logger.warn("Student SSO failed: user not found in hosteldb with identifier '{}'", trimmed);
+                throw new InvalidCredentialsException("Student account not found in hostel records.");
+            }
+            HostelDbReadService.HostelUserRecord rec = directOpt.get();
+            if (Boolean.FALSE.equals(rec.isEnabled())) {
+                logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
+                throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
+            }
+            if (rec.role() != null && !"STUDENT".equalsIgnoreCase(rec.role().trim())) {
+                logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", rec.role(), trimmed);
+                throw new InvalidCredentialsException("Only student accounts can sign in here.");
+            }
+            return issueAuthResponseForVerifiedStudent(trimmed, toHostelVerifyResDTO(rec));
+        }
+
         Optional<HostelUser> hostelUserOpt = findHostelUser(trimmed);
         if (hostelUserOpt.isPresent()) {
             HostelUser hostelUser = hostelUserOpt.get();
@@ -123,6 +165,21 @@ public class StudentAuthService {
         // Separate DB mode: HostelSsoService already verified the HMAC-SHA256 signature from GCESHostel
         HostelVerifyResDTO fetched = studentVerificationService.fetchHostelStudentDetails(trimmed);
         return issueAuthResponseForVerifiedStudent(trimmed, fetched);
+    }
+
+    private HostelVerifyResDTO toHostelVerifyResDTO(HostelDbReadService.HostelUserRecord rec) {
+        String regNo = rec.registerNumber() != null ? String.valueOf(rec.registerNumber()) : rec.id();
+        String rollNo = rec.id() != null ? rec.id() : regNo;
+        return HostelVerifyResDTO.builder()
+                .verified(true)
+                .name(rec.name())
+                .registerNo(regNo)
+                .rollNo(rollNo)
+                .emailId(rec.email())
+                .department(rec.dept())
+                .currentYear(rec.year())
+                .gender(rec.gender())
+                .build();
     }
 
     private AuthResponseDTO issueAuthResponseForVerifiedStudent(String identifier, HostelVerifyResDTO verifyRes) {

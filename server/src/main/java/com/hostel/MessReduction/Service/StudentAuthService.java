@@ -177,15 +177,17 @@ public class StudentAuthService {
             // Not a numeric Long
         }
 
-        // Try lookup by user ID (e.g. roll number string like 21CS001)
-        Optional<HostelUser> userById = hostelUserRepository.findById(identifier);
+        // Try lookup by user ID (e.g. roll number string like 21CS001, case-insensitive)
+        Optional<HostelUser> userById = hostelUserRepository.findById(identifier)
+                .or(() -> hostelUserRepository.findByIdIgnoreCase(identifier));
         if (userById.isPresent()) {
             return userById;
         }
 
         // Try lookup by email if identifier contains '@'
         if (identifier.contains("@")) {
-            return hostelUserRepository.findByEmail(identifier);
+            return hostelUserRepository.findByEmail(identifier)
+                    .or(() -> hostelUserRepository.findByEmailIgnoreCase(identifier));
         }
 
         return Optional.empty();

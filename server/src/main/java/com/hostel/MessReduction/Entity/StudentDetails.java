@@ -6,7 +6,6 @@ import com.hostel.MessReduction.Entity.Gender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -46,15 +45,13 @@ public class StudentDetails {
     private String department;
     @Enumerated(EnumType.STRING)
     private Gender gender;
-    @NotNull
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate dob;
     @NotBlank
     @Column(nullable = false,unique = true)
     @Email 
     private String emailId;
-    @NotBlank
-    @Column(nullable = false,unique = true,length = 10)
+    @Column(nullable = true,unique = true,length = 10)
     private String phoneNo;
 
     @Column(name = "current_year")

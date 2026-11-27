@@ -25,6 +25,7 @@ public class HostelDbReadService {
             String password,
             String role,
             Boolean isEnabled,
+            boolean isStudent,
             String dept,
             Integer year,
             String gender
@@ -78,7 +79,7 @@ public class HostelDbReadService {
         String sql = numericReg != null
                 ? """
                   SELECT u.id, u.name, u.register_number, u.email, u.password, u.role, u.is_enabled,
-                         s.dept, s.year, s.gender
+                         (s.user_id IS NOT NULL) AS is_student, s.dept, s.year, s.gender
                   FROM users u
                   LEFT JOIN students s ON s.user_id = u.id
                   WHERE u.register_number = ? OR LOWER(u.id) = LOWER(?)
@@ -86,7 +87,7 @@ public class HostelDbReadService {
                   """
                 : """
                   SELECT u.id, u.name, u.register_number, u.email, u.password, u.role, u.is_enabled,
-                         s.dept, s.year, s.gender
+                         (s.user_id IS NOT NULL) AS is_student, s.dept, s.year, s.gender
                   FROM users u
                   LEFT JOIN students s ON s.user_id = u.id
                   WHERE LOWER(u.id) = LOWER(?) OR LOWER(u.email) = LOWER(?)
@@ -104,6 +105,7 @@ public class HostelDbReadService {
             Integer year = rs.wasNull() ? null : yearVal;
             Object enabledObj = rs.getObject("is_enabled");
             Boolean enabled = enabledObj instanceof Boolean b ? b : null;
+            boolean isStudent = rs.getBoolean("is_student");
 
             return new HostelUserRecord(
                     rs.getString("id"),
@@ -113,6 +115,7 @@ public class HostelDbReadService {
                     rs.getString("password"),
                     rs.getString("role"),
                     enabled,
+                    isStudent,
                     rs.getString("dept"),
                     year,
                     rs.getString("gender")

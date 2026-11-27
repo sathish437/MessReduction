@@ -59,7 +59,7 @@ public class StudentAuthService {
                 logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
                 throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
             }
-            if (rec.role() != null && !"STUDENT".equalsIgnoreCase(rec.role().trim())) {
+            if (!isStudentAccount(rec.role(), rec.isStudent())) {
                 logger.warn("Student login failed: non-student role '{}' for identifier '{}'", rec.role(), identifier);
                 throw new InvalidCredentialsException("Only student accounts can sign in here.");
             }
@@ -80,7 +80,7 @@ public class StudentAuthService {
                 logger.warn("Student login failed: account disabled for identifier '{}'", identifier);
                 throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
             }
-            if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+            if (!isStudentAccount(hostelUser.getRole(), false)) {
                 logger.warn("Student login failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), identifier);
                 throw new InvalidCredentialsException("Only student accounts can sign in here.");
             }
@@ -141,7 +141,7 @@ public class StudentAuthService {
                 logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
                 throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
             }
-            if (rec.role() != null && !"STUDENT".equalsIgnoreCase(rec.role().trim())) {
+            if (!isStudentAccount(rec.role(), rec.isStudent())) {
                 logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", rec.role(), trimmed);
                 throw new InvalidCredentialsException("Only student accounts can sign in here.");
             }
@@ -155,7 +155,7 @@ public class StudentAuthService {
                 logger.warn("Student SSO failed: account disabled for identifier '{}'", trimmed);
                 throw new InvalidCredentialsException("Your hostel account is currently disabled. Please contact the hostel office.");
             }
-            if (hostelUser.getRole() != null && !"STUDENT".equalsIgnoreCase(hostelUser.getRole().trim())) {
+            if (!isStudentAccount(hostelUser.getRole(), false)) {
                 logger.warn("Student SSO failed: non-student role '{}' for identifier '{}'", hostelUser.getRole(), trimmed);
                 throw new InvalidCredentialsException("Only student accounts can sign in here.");
             }
@@ -165,6 +165,22 @@ public class StudentAuthService {
         // Separate DB mode: HostelSsoService already verified the HMAC-SHA256 signature from GCESHostel
         HostelVerifyResDTO fetched = studentVerificationService.fetchHostelStudentDetails(trimmed);
         return issueAuthResponseForVerifiedStudent(trimmed, fetched);
+    }
+
+    private boolean isStudentAccount(String role, boolean isStudentRow) {
+        if (isStudentRow) {
+            return true;
+        }
+        if (role == null || role.isBlank()) {
+            return true;
+        }
+        String normalized = role.trim().toUpperCase();
+        return normalized.equals("STUDENT")
+                || normalized.equals("NONE")
+                || normalized.equals("NORMAL")
+                || normalized.equals("HEAD")
+                || normalized.equals("HEAD_DEPT")
+                || normalized.equals("DEV_ADMIN");
     }
 
     private HostelVerifyResDTO toHostelVerifyResDTO(HostelDbReadService.HostelUserRecord rec) {

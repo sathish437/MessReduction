@@ -433,6 +433,7 @@ public class ReductionFormService {
             return java.util.Collections.emptyList();
         }
         return forms.stream()
+                .filter(form -> !form.isDeletedByStudent())
                 .map(ReductionFormMapper::mapToReductionFormResDTO)
                 .toList();
     }

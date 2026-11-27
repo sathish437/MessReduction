@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { FiUser, FiArrowRight, FiAlertCircle, FiPhone, FiCalendar, FiCheckCircle, FiInfo } from "react-icons/fi"
+import { FiUser, FiArrowRight, FiAlertCircle, FiPhone, FiCalendar, FiCheckCircle, FiInfo, FiHash } from "react-icons/fi"
 import apiClient from "./api/apiClient"
 import PasswordInput from "./PasswordInput"
 import { setStudentAuth } from "./services/authService"
@@ -35,6 +35,7 @@ function StudentLogin({ onNavigate }) {
 
   // First-Time Setup Modal State
   const [showSetupModal, setShowSetupModal] = useState(false)
+  const [modalRollNo, setModalRollNo] = useState("")
   const [modalPhone, setModalPhone] = useState("")
   const [modalLoading, setModalLoading] = useState(false)
   const [modalError, setModalError] = useState("")
@@ -93,6 +94,12 @@ function StudentLogin({ onNavigate }) {
     e.preventDefault()
     setModalError("")
 
+    const cleanRollNo = modalRollNo.trim().toUpperCase()
+    if (!/^[A-Za-z0-9._-]{1,20}$/.test(cleanRollNo)) {
+      setModalError("Please enter a valid Roll Number (1–20 alphanumeric characters).")
+      return
+    }
+
     // Validate phone number: exactly 10 digits
     const cleanPhone = modalPhone.trim()
     if (!/^\d{10}$/.test(cleanPhone)) {
@@ -104,6 +111,7 @@ function StudentLogin({ onNavigate }) {
 
     try {
       await apiClient.post('/api/student/complete-profile', {
+        rollNo: cleanRollNo,
         phoneNo: cleanPhone
       })
 
@@ -256,11 +264,38 @@ function StudentLogin({ onNavigate }) {
                   Complete First-Time Setup
                 </h3>
                 <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
-                  Welcome to the Mess Reduction Portal! Please provide your 10-digit Phone Number to complete your profile before proceeding to your dashboard.
+                  Welcome to the Mess Reduction Portal! Please provide your Roll Number and 10-digit Phone Number to complete your profile before proceeding to your dashboard.
                 </p>
               </div>
 
               <form onSubmit={handleCompleteProfile} className="flex flex-col gap-4">
+
+                <div className="flex w-full flex-col gap-1.5 text-left">
+                  <label htmlFor="modal-rollno-input" className="field-label">
+                    Roll Number
+                  </label>
+                  <div
+                    className="field-shell"
+                    style={modalError && !/^[A-Za-z0-9._-]{1,20}$/.test(modalRollNo.trim()) ? { borderColor: 'var(--color-danger-border)' } : undefined}
+                  >
+                    <span
+                      className="shrink-0"
+                      style={{ color: modalError ? 'var(--color-danger)' : 'var(--theme-text-faint)' }}
+                    >
+                      <FiHash size={16} />
+                    </span>
+                    <input
+                      id="modal-rollno-input"
+                      type="text"
+                      maxLength={20}
+                      placeholder="e.g. 23CS032"
+                      value={modalRollNo}
+                      onChange={(e) => setModalRollNo(e.target.value.toUpperCase())}
+                      required
+                      className="w-full flex-1 bg-transparent font-medium tracking-wide focus:outline-none"
+                    />
+                  </div>
+                </div>
 
                 <div className="flex w-full flex-col gap-1.5 text-left">
                   <label htmlFor="modal-phone-input" className="field-label">

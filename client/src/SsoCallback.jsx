@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiAlertCircle, FiArrowRight, FiCheckCircle, FiPhone } from "react-icons/fi";
+import { FiAlertCircle, FiArrowRight, FiCheckCircle, FiHash, FiPhone } from "react-icons/fi";
 import apiClient from "./api/apiClient";
 import { exchangeStudentSsoCode } from "./services/authService";
 import AuthShell, { AuthCardHeader } from "./components/AuthShell";
@@ -13,6 +13,7 @@ function SsoCallback({ onNavigate }) {
   const [error, setError] = useState("");
 
   // First-time onboarding modal state (if backend returns onboardingRequired: true)
+  const [modalRollNo, setModalRollNo] = useState("");
   const [modalPhone, setModalPhone] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -64,6 +65,12 @@ function SsoCallback({ onNavigate }) {
     e.preventDefault();
     setModalError("");
 
+    const cleanRollNo = modalRollNo.trim().toUpperCase();
+    if (!/^[A-Za-z0-9._-]{1,20}$/.test(cleanRollNo)) {
+      setModalError("Please enter a valid Roll Number (1–20 alphanumeric characters).");
+      return;
+    }
+
     const cleanPhone = modalPhone.trim();
     if (!/^\d{10}$/.test(cleanPhone)) {
       setModalError("Please enter a valid 10-digit mobile phone number.");
@@ -73,6 +80,7 @@ function SsoCallback({ onNavigate }) {
     setModalLoading(true);
     try {
       await apiClient.post("/api/student/complete-profile", {
+        rollNo: cleanRollNo,
         phoneNo: cleanPhone,
       });
       goTo("/student-dashboard");
@@ -161,12 +169,47 @@ function SsoCallback({ onNavigate }) {
                 Complete First-Time Setup
               </h3>
               <p className="mt-1 text-xs leading-relaxed text-[var(--theme-text-secondary)]">
-                Welcome to the Mess Reduction Portal! Please provide your 10-digit Phone Number to
-                complete your profile before proceeding to your dashboard.
+                Welcome to the Mess Reduction Portal! Please provide your Roll Number and 10-digit
+                Phone Number to complete your profile before proceeding to your dashboard.
               </p>
             </div>
 
             <form onSubmit={handleCompleteProfile} className="flex flex-col gap-4">
+
+              <div className="flex w-full flex-col gap-1.5 text-left">
+                <label htmlFor="sso-rollno-input" className="field-label">
+                  Roll Number
+                </label>
+                <div
+                  className="field-shell"
+                  style={
+                    modalError && !/^[A-Za-z0-9._-]{1,20}$/.test(modalRollNo.trim())
+                      ? { borderColor: "var(--color-danger-border)" }
+                      : undefined
+                  }
+                >
+                  <span
+                    className="shrink-0"
+                    style={{
+                      color: modalError
+                        ? "var(--color-danger)"
+                        : "var(--theme-text-faint)",
+                    }}
+                  >
+                    <FiHash size={16} />
+                  </span>
+                  <input
+                    id="sso-rollno-input"
+                    type="text"
+                    maxLength={20}
+                    placeholder="e.g. 23CS032"
+                    value={modalRollNo}
+                    onChange={(e) => setModalRollNo(e.target.value.toUpperCase())}
+                    required
+                    className="w-full flex-1 bg-transparent font-medium tracking-wide focus:outline-none"
+                  />
+                </div>
+              </div>
 
               <div className="flex w-full flex-col gap-1.5 text-left">
                 <label htmlFor="sso-phone-input" className="field-label">

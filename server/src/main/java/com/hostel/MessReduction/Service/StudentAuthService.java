@@ -185,7 +185,7 @@ public class StudentAuthService {
 
     private HostelVerifyResDTO toHostelVerifyResDTO(HostelDbReadService.HostelUserRecord rec) {
         String regNo = rec.registerNumber() != null ? String.valueOf(rec.registerNumber()) : rec.id();
-        String rollNo = rec.id() != null ? rec.id() : regNo;
+        String rollNo = regNo;
         return HostelVerifyResDTO.builder()
                 .verified(true)
                 .name(rec.name())
@@ -293,7 +293,7 @@ public class StudentAuthService {
     private AuthResponseDTO issueAuthResponseForHostelUser(HostelUser hostelUser) {
         // Resolve registerNo and rollNo
         String regNo = hostelUser.getRollNumber() != null ? String.valueOf(hostelUser.getRollNumber()) : hostelUser.getId();
-        String rollNo = hostelUser.getId() != null ? hostelUser.getId() : regNo;
+        String rollNo = regNo;
 
         // Check if student exists in mr_student_details
         Optional<StudentDetails> existingStudentOpt = studentDetailsRepo.findByRegisterNo(regNo)
@@ -400,6 +400,17 @@ public class StudentAuthService {
 
         if (student == null) {
             throw new InvalidCredentialsException("Student record not found. Please log in again.");
+        }
+
+        if (req.getRollNo() != null && !req.getRollNo().isBlank()) {
+            String cleanRollNo = req.getRollNo().trim().toUpperCase();
+            Long currentStudentId = student.getStudentId();
+            studentDetailsRepo.findByRollNo(cleanRollNo)
+                    .filter(existing -> !existing.getStudentId().equals(currentStudentId))
+                    .ifPresent(existing -> {
+                        throw new IllegalArgumentException("Roll number is already registered to another student.");
+                    });
+            student.setRollNo(cleanRollNo);
         }
 
         student.setPhoneNo(req.getPhoneNo().trim());

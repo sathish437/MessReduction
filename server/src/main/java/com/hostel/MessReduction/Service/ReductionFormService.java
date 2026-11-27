@@ -191,7 +191,7 @@ public class ReductionFormService {
         java.util.List<com.hostel.MessReduction.DTO.ResDTO.ReductionFormResDTO> formDTOs = new java.util.ArrayList<>();
         if (forms != null) {
             for (com.hostel.MessReduction.Entity.ReductionForm form : forms) {
-                if (form != null) {
+                if (form != null && !form.isDeletedByStudent()) {
                     formDTOs.add(com.hostel.MessReduction.MappingDTO.ReductionFormMapper.mapToReductionFormResDTO(form));
                 }
             }
